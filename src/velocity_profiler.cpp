@@ -338,6 +338,9 @@ int main(int argc, char **argv)
   ros::Publisher pub = n.advertise<geometry_msgs::Twist>("cmd_vel",1);
   ros::Subscriber sub = n.subscribe("motors_enabled",1,estopCallback);
 
+  ros::AsyncSpinner spinner(0); // use same number of threads as cores
+  spinner.start();
+ 
   while(!ros::Time::isValid()) {}
 
   straight(pub,4.2);
