@@ -6,3 +6,5 @@ build
 Desktop.ini
 Thumbs.db
 tmp
+bin/
+msg_gen/
