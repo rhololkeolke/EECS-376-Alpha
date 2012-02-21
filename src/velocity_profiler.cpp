@@ -136,30 +136,30 @@ void straight(ros::Publisher& pub, double distance)
   else
     ROS_INFO("Started a straight line segment for %f meters in the positive x direction", segLength);
 
-  bool lastStopped = stopped;
+  bool lastStopped = stopped; // keeps track of the last state of stopped
 
-  while(segDistDone < segLength) {
+  while(segDistDone < segLength && ros::ok()) {
     
-    if(stopped)
+    if(stopped) // stopped is updated by the estopCallback function asynchronously
     {
       lastStopped = stopped;
       ROS_INFO("STOPPED!");
-      v_cmd = 0;
+      v_cmd = 0; // we don't want the robot to move
       omega_cmd = 0;
-      currentState.stop();
+      currentState.stop(); // set the internal state to no velocity
 
-      vel_object.linear.x = 0.0;
+      vel_object.linear.x = 0.0; // this is so the simulator acts correctly when using our estopPublisher program
       vel_object.angular.z = 0.0;
      
       pub.publish(vel_object);
-      naptime.sleep();
-      continue;
+      naptime.sleep(); // this is here so that the loop keeps the same rate and doesn't take up all the CPU time
+      continue; // restart the while loop
     }
-    else if(lastStopped)
+    else if(lastStopped) // the last iteration was stopped but this one isn't
     {
       ROS_INFO("Sleeping for 2.0 seconds");
-      lastStopped = 0;
-      ros::Duration(2.0).sleep();
+      lastStopped = 0; // set lastStopped to false
+      ros::Duration(2.0).sleep(); // this is so the motor controllers have time to come back online
     }
       
     currentState.updateState(v_cmd, omega_cmd, dt); // advance where the robot thinks its at
@@ -267,7 +267,7 @@ void turn(ros::Publisher& pub, double angle)
 
   while(segRadsDone < segRads && ros::ok()) {
 
-    if(stopped)
+    if(stopped) // see straight for how this works
     {
       lastStopped = stopped;
       ROS_INFO("STOPPED!");
@@ -357,13 +357,17 @@ int main(int argc, char **argv)
   ros::NodeHandle n;
 
   ros::Publisher pub = n.advertise<geometry_msgs::Twist>("cmd_vel",1);
-  ros::Subscriber sub = n.subscribe("motors_enabled",1,estopCallback);
+  ros::Subscriber sub = n.subscribe("motors_enabled",1,estopCallback); // listen for estop values
 
+  // this is necessary or callbacks will never be processed.
+  // AsyncSpinner lets them run in the background
   ros::AsyncSpinner spinner(0); // use same number of threads as cores
   spinner.start();
  
-  while(!ros::Time::isValid()) {}
+  while(!ros::Time::isValid()) {} // wait for simulator
 
+  // this is the set of hard coded directions that will make the robot drive to the vending
+  // machines
   straight(pub,4.2);
   turn(pub,-PI/2);
   straight(pub,12.5);
