@@ -142,6 +142,7 @@ void straight(ros::Publisher& pub, double distance)
     {
       ROS_INFO("STOPPED!");
       v_cmd = 0;
+      omega_cmd = 0;
       currentState.stop();
 
       vel_object.linear.x = 0.0;
@@ -260,6 +261,9 @@ void turn(ros::Publisher& pub, double angle)
     {
       ROS_INFO("STOPPED!");
       currentState.stop();
+
+      v_cmd = 0;
+      o_cmd = 0;
 
       vel_object.linear.x = 0.0;
       vel_object.angular.z = 0.0;
