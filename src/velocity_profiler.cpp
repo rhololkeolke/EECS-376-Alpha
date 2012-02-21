@@ -136,10 +136,13 @@ void straight(ros::Publisher& pub, double distance)
   else
     ROS_INFO("Started a straight line segment for %f meters in the positive x direction", segLength);
 
+  bool lastStopped = stopped;
+
   while(segDistDone < segLength) {
     
     if(stopped)
     {
+      lastStopped = stopped;
       ROS_INFO("STOPPED!");
       v_cmd = 0;
       omega_cmd = 0;
@@ -150,10 +153,14 @@ void straight(ros::Publisher& pub, double distance)
      
       pub.publish(vel_object);
       naptime.sleep();
-      sleep(2);
       continue;
     }
-      
+    else if(lastStopped)
+    {
+      ROS_INFO("Sleeping for 2.0 seconds");
+      lastStopped = 0;
+      ros::Duration(2.0).sleep();
+    }
       
     currentState.updateState(v_cmd, omega_cmd, dt); // advance where the robot thinks its at
 
@@ -256,10 +263,13 @@ void turn(ros::Publisher& pub, double angle)
   else
     ROS_INFO("Started turning for %f radians, in the positive direction about the z axis", segRads);
 
+  bool lastStopped = stopped;
+
   while(segRadsDone < segRads && ros::ok()) {
 
     if(stopped)
     {
+      lastStopped = stopped;
       ROS_INFO("STOPPED!");
       currentState.stop();
 
@@ -271,9 +281,14 @@ void turn(ros::Publisher& pub, double angle)
 
       pub.publish(vel_object);
       naptime.sleep();
-      sleep(2);
       continue;
     }  
+    else if(lastStopped)
+    {
+      ROS_INFO("Sleeping for 2.0 seconds");
+      lastStopped = 0;
+      ros::Duration(2.0).sleep();
+    }
     
     currentState.updateState(v_cmd, o_cmd, dt); // advance where the robot thinks its at
 
