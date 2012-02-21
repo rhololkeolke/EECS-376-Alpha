@@ -150,7 +150,7 @@ void straight(ros::Publisher& pub, double distance)
      
       pub.publish(vel_object);
       naptime.sleep();
-      pause(2000);
+      sleep(2);
       continue;
     }
       
@@ -271,6 +271,7 @@ void turn(ros::Publisher& pub, double angle)
 
       pub.publish(vel_object);
       naptime.sleep();
+      sleep(2);
       continue;
     }  
     
