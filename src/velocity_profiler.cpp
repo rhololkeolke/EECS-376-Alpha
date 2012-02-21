@@ -150,6 +150,7 @@ void straight(ros::Publisher& pub, double distance)
      
       pub.publish(vel_object);
       naptime.sleep();
+      pause(2000);
       continue;
     }
       
