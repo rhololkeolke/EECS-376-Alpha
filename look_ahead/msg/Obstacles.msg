@@ -1,5 +1,9 @@
-#An obstacle exists: 0 or 1
-bool exists
+#The message tells whether or not an obstacle exists on current and next path segements and the distance along the path
 
-#Distance obstacle is along the path
-uint32 distance
+look_ahead/PathVector current
+		      
+		      
+
+look_ahead/PathVector next
+		      
+		      
