@@ -1,0 +1,16 @@
+<package>
+  <description brief="look_ahead">
+
+     look_ahead
+
+  </description>
+  <author>root</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/look_ahead</url>
+  <depend package="roscpp"/>
+  <depend package="cwru_sim_stage"/>
+
+</package>
+
+
