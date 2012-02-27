@@ -65,23 +65,24 @@ void State::updateState(double vCmd, double dt)
 	}
 	else if(currSeg->seg_type == 2) // arc segment
 	{
-		cout << "running seg_type 2" << endl;
 		// calculate desired path
 		double rhoDes = currSeg->curvature;
 		double r = 1/fabs(rhoDes); // turn radius of inverse curvature
 		double arcAngleStart;
 
 		if(rhoDes >= 0)
+		  {
 			arcAngleStart = tf::getYaw(currSeg->init_tan_angle)-PI/2;
+		  }
 		else
-			arcAngleStart = tf::getYaw(currSeg->init_tan_angle)+PI/2;
+		  {
+		  arcAngleStart = tf::getYaw(currSeg->init_tan_angle)+PI/2;
+		  }
 
 		double dAng = expSegDistDone*rhoDes;
 		double arcAng = arcAngleStart+dAng;
+
 		xPath = currSeg->ref_point.x + r*cos(arcAng);
-		cout << "y: " << currSeg->ref_point.y << endl;
-		cout << "r: " << r << endl;
-		cout << "arcAng: " << arcAng << endl;
 		yPath = currSeg->ref_point.y + r*sin(arcAng);
 		psiPath = tf::getYaw(currSeg->init_tan_angle)+dAng;
 

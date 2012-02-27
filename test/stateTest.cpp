@@ -69,7 +69,7 @@ TEST(StateTestSuite, perfectArc)
 	seg.ref_point.x = 0.0;
 	seg.ref_point.y = 0.0;
 	seg.seg_number = 123;
-	seg.seg_type = 1;
+	seg.seg_type = 2;
 	seg.init_tan_angle = tf::createQuaternionMsgFromYaw(0.0);
 	seg.max_speeds.linear.x = 1.0;
 	seg.max_speeds.angular.z = 1.0;
@@ -97,8 +97,8 @@ TEST(StateTestSuite, perfectArc)
 	{
 		state.updateState(1.0,0.1);
 
-		ASSERT_NEAR((double)(i+1) * (1/seg.curvature)*cos(tf::getYaw(seg.init_tan_angle)-PI/2+(double)(i+1)*.1*seg.curvature),state.getXPath(),.0001);
-		ASSERT_NEAR((double)(i+1) * (1/seg.curvature)*sin(tf::getYaw(seg.init_tan_angle)-PI/2+(double)(i+1)*.1*seg.curvature), state.getYPath(),.0001);
+		ASSERT_NEAR((1/seg.curvature)*cos(tf::getYaw(seg.init_tan_angle)-PI/2+(double)(i+1)*.1*seg.curvature),state.getXPath(),.0001);
+		ASSERT_NEAR((1/seg.curvature)*sin(tf::getYaw(seg.init_tan_angle)-PI/2+(double)(i+1)*.1*seg.curvature), state.getYPath(),.0001);
 		ASSERT_NEAR(tf::getYaw(seg.init_tan_angle)+(double)(i+1)*.1*seg.curvature,state.getPsiPath(),.0001);
 		ASSERT_NEAR((double)(i+1)*0.1,state.getSegDistDone(),.1);
 	}
