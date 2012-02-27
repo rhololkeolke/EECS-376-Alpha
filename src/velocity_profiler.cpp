@@ -20,7 +20,17 @@ queue<eecs_376_alpha::PathSegment*> segments;
 void pathSegmentCallback(const eecs_376_alpha::PathSegment::ConstPtr& segment)
 {
   eecs_376_alpha::PathSegment newSeg;
+  // copy all of the values over
   newSeg.seg_number = segment->seg_number;
+  newSeg.seg_type = segment->seg_type;
+  newSeg.curvature = segment->curvature;
+  newSeg.seg_length = segment->seg_length;
+  newSeg.ref_point = segment->ref_point;
+  newSeg.init_tan_angle = segment->init_tan_angle;
+  newSeg.max_speeds = segment->max_speeds;
+  newSeg.accel_limit = segment->accel_limit;
+  newSeg.decel_limit = segment->decel_limit;
+
   segments.push(&newSeg); // I don't think this is thread safe
 }
 
@@ -315,10 +325,11 @@ int main(int argc, char **argv)
 
   while(ros::ok())
   {
-      if(segments.size() < 0)
+      if(segments.size() > 0)
       {
 	currSeg = segments.front();
 	cout << "queue size: " << segments.size() << " segment number: " << currSeg->seg_number << endl;
+	cout << "\tmax_speed.linear.x: " << currSeg->max_speeds.linear.x << endl;
 	segments.pop();
 	naptime.sleep();
       }
