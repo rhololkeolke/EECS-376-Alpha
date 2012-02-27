@@ -3,18 +3,35 @@
 #include <math.h>
 #include <std_msgs/Bool.h>
 #include <cwru_base/cRIOSensors.h>
+#include <eecs_376_alpha/PathSegment.h>
+#include <eecs_376_alpha/SegStatus.h>
 #include "state.h"
+#include <queue>
 
-#define PI 3.14159 // set the number of decimals of PI up here
-#define RATE 20.0 // set the rate of refresh
+using namespace std;
+
+const double PI = 3.14159; // set the number of decimals of PI up here
+const double RATE = 20.0; // set the rate of refresh
 
 bool stopped = false; // stores the value of the estop
+
+queue<eecs_376_alpha::PathSegment*> segments;
+
+void pathSegmentCallback(const eecs_376_alpha::PathSegment::ConstPtr& segment)
+{
+  eecs_376_alpha::PathSegment newSeg;
+  newSeg.seg_number = segment->seg_number;
+  segments.push(&newSeg); // I don't think this is thread safe
+}
 
 void estopCallback(const std_msgs::Bool::ConstPtr& estop)
 {
   stopped = !(estop->data);
 }
-    
+
+
+
+/*
 void straight(ros::Publisher& pub, double distance)
 {
 
@@ -273,15 +290,17 @@ void turn(ros::Publisher& pub, double angle)
   vel_object.linear.x = 0.0;
   vel_object.angular.z = 0.0;
   pub.publish(vel_object);
-}
+}*/
 
 int main(int argc, char **argv)
 {
   ros::init(argc,argv,"velocity_profiler"); // name of this node
   ros::NodeHandle n;
 
-  ros::Publisher pub = n.advertise<geometry_msgs::Twist>("cmd_vel",1);
-  ros::Subscriber sub = n.subscribe("motors_enabled",1,estopCallback); // listen for estop values
+  ros::Publisher velocityPub = n.advertise<geometry_msgs::Twist>("cmd_vel",1);
+  ros::Publisher segStatusPub = n.advertise<eecs_376_alpha::SegStatus>("seg_status",1);
+  ros::Subscriber estopSub = n.subscribe("motors_enabled",1,estopCallback); // listen for estop values
+  ros::Subscriber segmentSub = n.subscribe("path_segs",1,pathSegmentCallback);
 
   // this is necessary or callbacks will never be processed.
   // AsyncSpinner lets them run in the background
@@ -290,13 +309,27 @@ int main(int argc, char **argv)
  
   while(!ros::Time::isValid()) {} // wait for simulator
 
+  ros::Rate naptime(10);
+
+  eecs_376_alpha::PathSegment *currSeg;
+
+  while(ros::ok())
+  {
+      if(segments.size() < 0)
+      {
+	currSeg = segments.front();
+	cout << "queue size: " << segments.size() << " segment number: " << currSeg->seg_number << endl;
+	segments.pop();
+	naptime.sleep();
+      }
+  }
   // this is the set of hard coded directions that will make the robot drive to the vending
   // machines
-  straight(pub,4.2);
+  /*straight(pub,4.2);
   turn(pub,-PI/2);
   straight(pub,12.5);
   turn(pub,-PI/2);
-  straight(pub,4.0);
+  straight(pub,4.0);*/
 
   return 0;
 }
