@@ -8,7 +8,7 @@
 #include "../src/state.h"
 #include <gtest/gtest.h>
 
-TEST(TestSuite, testCase1)
+TEST(StateTestSuite, perfectStraight)
 {
 	State state = State();
 
@@ -18,7 +18,7 @@ TEST(TestSuite, testCase1)
 	ASSERT_DOUBLE_EQ(0.0, state.getY());
 }
 
-TEST(TestSuite, testCase2)
+TEST(StateTestSuite, perfectArc)
 {
 	State state = State();
 
@@ -26,6 +26,11 @@ TEST(TestSuite, testCase2)
 	state.stop();
 	ASSERT_DOUBLE_EQ(10, state.getVCmd());
 	ASSERT_DOUBLE_EQ(10, state.getOCmd());
+}
+
+TEST(StateTestSuite, perfectSpin)
+{
+	State state = State();
 }
 
 int main(int argc, char **argv)

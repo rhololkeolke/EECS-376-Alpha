@@ -8,61 +8,105 @@
 #include "state.h"
 #include <math.h>
 
-State::State() {
-  x = 0.0;
-  y = 0.0;
-  phi = 0.0;
-  v = 0.0; // assume start from rest
-  omega = 0.0; // assume start from rest
-  segDistDone = 0.0;
-  spinAngDone = 0.0;
-};
+const double PI = 3.14159;
 
-void State::updateState(double v_cmd, double omega_cmd, double dt) {
-  double avg_v = (v+v_cmd)/2; // average the velocity over this time step
-  double avg_omega = (omega+omega_cmd)/2; // average angular velocity over this time step
-  double avg_phi = phi + avg_omega*dt/2; // average heading over time step
+State::State(double x0, double y0, double psi0)
+{
+	xPath = x0;
+	yPath = y0;
+	psiPath = psi0;
+	currSeg = NULL;
+}
 
-  x = x+avg_v*dt*cos(avg_phi); // advance x coordinate
-  y = y+avg_v*dt*sin(avg_phi); // advance y coordinate
-  phi = phi + avg_omega*dt; // advance the heading
-  segDistDone = segDistDone+fabs(avg_v)*dt; // update the distance traveled
-  spinAngDone = spinAngDone+fabs(avg_omega)*dt; // update the sin-in-place angle done
+State::State(double x0, double y0, double psi0, eecs_376_alpha::PathSegment segment)
+{
+	xPath = x0;
+	yPath = y0;
+	psiPath = psi0;
+	currSeg = segment; // may make this pass by reference so that velocity profiler can update the ending positions and velocities via callbacks
+}
 
-  v = v_cmd;
-  omega = omega_cmd;
+void State::updateState(double vCmd, double dt)
+{
+	double dL = vCmd*dt;
+	double expSegDistDone = segDistDone + dL; // compute how much more the robot should complete based on previous segment distance done
+
+	if(currSeg.seg_type == 1) // straight line segment
+	{
+		// compute the theoretical line position
+		double psiDes = tf::getYaw(currSeg.init_tan_angle);
+		double rhoDes = 0; // this is zero because lines have no curvature
+		// line starts at xPath and yPath and is an an angle psiDes
+		double xDes = xPath+expSegDistDone*cos(psiDes);
+		double yDes = yPath+expSegDistDone*sin(psiDes);
+		// calculate the actual line position
+
+		// project actual onto desired
+
+		// calculate the segDistDone
+	}
+	else if(currSeg.seg_type == 2) // arc segment
+	{
+		double rhoDes = currSeg.curvature;
+		double r = 1/fabs(rhoDes); // turn radius of inverse curvature
+		double arcAngleStart;
+
+		if(rhoDes >= 0)
+			arcAngleStart = tf::getYaw(currSeg.init_tan_angle)-PI/2;
+		else
+			arcAngleStart = tf::getYaw(currSeg.init_tan_angle)+PI/2;
+
+		double dAng = expSegDistDone*rhoDes;
+		double arcAng = arcAngleStart+dAng;
+		xDes = xPath + r*cos(arcAng);
+		yDes = yPath + r*sin(arcAng);
+		psiDes = tf::getYaw(currSeg.init_tan_angle)+dAng;
+	}
+	else if(currSeg.seg_type == 3)
+	{
+		xDes = xPath;
+		yDes = yPath;
+		psiDes = tf::getYaw(currSeg.init_tan_angle) + currSeg.curvature()*expSegDistDone;
+	}
+}
+
+// make segment the new current segment
+void State::newSegment(eecs_376_alpha::PathSegment segment)
+{
+	currSeg = segment;
 }
 
 void State::stop()
 {
-  v = 0.0;
-  omega = 0.0;
+	vCmd = 0.0;
 }
 
-double State::getX() {
-  return x;
+double State::getXPath()
+{
+	return xPath;
 }
 
-double State::getY() {
-  return y;
+double State::getYPath()
+{
+	return yPath;
 }
 
-double State::getPhi() {
-  return phi;
+double State::getPsiPath()
+{
+	return psiPath;
 }
 
-double State::getVCmd() {
-  return v;
+double State::getVCmd()
+{
+	return vCmd;
 }
 
-double State::getOCmd() {
-  return omega;
+double State::getSegDistDone()
+{
+	return segDistDone;
 }
 
-double State::getDistDone() {
-  return segDistDone;
-}
-
-double State::getAngDone() {
-  return spinAngDone;
+eecs_376_alpha::PathSegment State::getSegment()
+{
+	return currSeg;
 }
