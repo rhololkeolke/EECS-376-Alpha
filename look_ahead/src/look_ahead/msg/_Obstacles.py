@@ -4,22 +4,26 @@ import struct
 
 
 class Obstacles(roslib.message.Message):
-  _md5sum = "b0f6e5f2d0168d24b0fbfd6e573e583c"
+  _md5sum = "6a6ed0579253914e2688ac2caf87f545"
   _type = "look_ahead/Obstacles"
   _has_header = False #flag to mark the presence of a Header object
   _full_text = """#The message tells whether or not an obstacle exists on current and next path segements and the distance along the path
+bool exists		      
+uint8 distance
 
 
-bool curExists		      
-float64 curDistance
+
+
+
+
 		      
-bool nextExists
-float64 nextDistance		      
+
+
 		      
 
 """
-  __slots__ = ['curExists','curDistance','nextExists','nextDistance']
-  _slot_types = ['bool','float64','bool','float64']
+  __slots__ = ['exists','distance']
+  _slot_types = ['bool','uint8']
 
   def __init__(self, *args, **kwds):
     """
@@ -29,7 +33,7 @@ float64 nextDistance
     changes.  You cannot mix in-order arguments and keyword arguments.
     
     The available fields are:
-       curExists,curDistance,nextExists,nextDistance
+       exists,distance
     
     @param args: complete set of field values, in .msg order
     @param kwds: use keyword arguments corresponding to message field names
@@ -38,19 +42,13 @@ float64 nextDistance
     if args or kwds:
       super(Obstacles, self).__init__(*args, **kwds)
       #message fields cannot be None, assign default values for those that are
-      if self.curExists is None:
-        self.curExists = False
-      if self.curDistance is None:
-        self.curDistance = 0.
-      if self.nextExists is None:
-        self.nextExists = False
-      if self.nextDistance is None:
-        self.nextDistance = 0.
+      if self.exists is None:
+        self.exists = False
+      if self.distance is None:
+        self.distance = 0
     else:
-      self.curExists = False
-      self.curDistance = 0.
-      self.nextExists = False
-      self.nextDistance = 0.
+      self.exists = False
+      self.distance = 0
 
   def _get_types(self):
     """
@@ -66,7 +64,7 @@ float64 nextDistance
     """
     try:
       _x = self
-      buff.write(_struct_BdBd.pack(_x.curExists, _x.curDistance, _x.nextExists, _x.nextDistance))
+      buff.write(_struct_2B.pack(_x.exists, _x.distance))
     except struct.error as se: self._check_types(se)
     except TypeError as te: self._check_types(te)
 
@@ -80,10 +78,9 @@ float64 nextDistance
       end = 0
       _x = self
       start = end
-      end += 18
-      (_x.curExists, _x.curDistance, _x.nextExists, _x.nextDistance,) = _struct_BdBd.unpack(str[start:end])
-      self.curExists = bool(self.curExists)
-      self.nextExists = bool(self.nextExists)
+      end += 2
+      (_x.exists, _x.distance,) = _struct_2B.unpack(str[start:end])
+      self.exists = bool(self.exists)
       return self
     except struct.error as e:
       raise roslib.message.DeserializationError(e) #most likely buffer underfill
@@ -99,7 +96,7 @@ float64 nextDistance
     """
     try:
       _x = self
-      buff.write(_struct_BdBd.pack(_x.curExists, _x.curDistance, _x.nextExists, _x.nextDistance))
+      buff.write(_struct_2B.pack(_x.exists, _x.distance))
     except struct.error as se: self._check_types(se)
     except TypeError as te: self._check_types(te)
 
@@ -115,13 +112,12 @@ float64 nextDistance
       end = 0
       _x = self
       start = end
-      end += 18
-      (_x.curExists, _x.curDistance, _x.nextExists, _x.nextDistance,) = _struct_BdBd.unpack(str[start:end])
-      self.curExists = bool(self.curExists)
-      self.nextExists = bool(self.nextExists)
+      end += 2
+      (_x.exists, _x.distance,) = _struct_2B.unpack(str[start:end])
+      self.exists = bool(self.exists)
       return self
     except struct.error as e:
       raise roslib.message.DeserializationError(e) #most likely buffer underfill
 
 _struct_I = roslib.message.struct_I
-_struct_BdBd = struct.Struct("<BdBd")
+_struct_2B = struct.Struct("<2B")
