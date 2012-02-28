@@ -41,16 +41,19 @@ void curPath(ros::Publisher &obsPub)
   
   for (uint i = 0; i < cPings;  i++)
     {
+
       if(curLaserData[i] < cNotificationDistance)
-	{
- 	  obsData.exists = true; //boolean for obstacle existance
-	  obsData.distance = 0;
+	{    
+	  obsData.exists = true; //boolean for obstacle existance
+	  obsData.distance = curLaserData[i];
+	  obsPub.publish(obsData);
+	}         
+      else
+	{   
+	  obsData.exists = false;
+	  obsData.distance = 0.0;
 	  obsPub.publish(obsData);
 	}
-
-      obsData.exists = false;
-      obsData.distance = 0.0;
-      obsPub.publish(obsData);
     }
 }
 
