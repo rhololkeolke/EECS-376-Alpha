@@ -1,7 +1,7 @@
 #include <ros/ros.h>
 #include <cwru_base/Pose.h>
 #include <sensor_msgs/LaserScan.h>
-#include<look_ahead/Obstacles.h>
+#include <eecs_376_alpha/Obstacles.h>
 #include <iostream> 
 
 
@@ -37,7 +37,7 @@ void curPath(ros::Publisher &obsPub)
   ros::Time time = ros::Time::now();
   ros::Rate loop_rate(10);   
 
-  look_ahead::Obstacles obsData;  //create an instance of the obstacle msg
+  eecs_376_alpha::Obstacles obsData;  //create an instance of the obstacle msg
   
   for (uint i = 0; i < cPings;  i++)
     {
@@ -59,7 +59,7 @@ void setFalse(ros::Publisher &obsPub)
   ros::Time time = ros::Time::now();
 
 
-  look_ahead::Obstacles obsData;
+  eecs_376_alpha::Obstacles obsData;
   
   obsData.exists = false;
   obsData.distance = 0.0;
