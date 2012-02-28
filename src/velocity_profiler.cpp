@@ -16,6 +16,10 @@ const double RATE = 20.0; // set the rate of refresh
 
 bool stopped = false; // stores the value of the estop
 
+// variables that will be updated by the obstacles callback function
+bool obs = false;
+double obs_dist = 0.0;
+
 queue<eecs_376_alpha::PathSegment*> segments;
 
 void pathSegmentCallback(const eecs_376_alpha::PathSegment::ConstPtr& segment)
@@ -41,7 +45,8 @@ void estopCallback(const std_msgs::Bool::ConstPtr& estop)
   stopped = !(estop->data);
 }
 void obstaclesCallback(const eecs_376_alpha::Obstacles::ConstPtr& obstacle){
-	stopped = obstacle->exists;
+	obs = obstacle->exists;
+	obs_dist = obstacle->distance;
 }
 
 void straight(ros::Publisher& velocityPub, ros::Publisher& segStatusPub, State& currState)
@@ -57,6 +62,8 @@ void straight(ros::Publisher& velocityPub, ros::Publisher& segStatusPub, State& 
   double dt = 1/RATE;
   eecs_376_alpha::PathSegment *currSeg = segments.front();
   segments.pop();
+
+  cout << "segment number: " << currSeg->seg_number << endl;
 
   double v_max = currSeg->max_speeds.linear.x; // the maximum speed in m/s
   double accel_max = currSeg->accel_limit; // the maximum acceleration in m/s^2
@@ -105,9 +112,10 @@ void straight(ros::Publisher& velocityPub, ros::Publisher& segStatusPub, State& 
   bool lastStopped = stopped; // keeps track of the last state of stopped
   double segDistDone = 0.0;
 
+  double v_scheduled = 0.0;
+
   while(segDistDone < currSeg->seg_length && ros::ok())
   {
-
     if(stopped)
     {
       lastStopped = stopped;
@@ -133,10 +141,74 @@ void straight(ros::Publisher& velocityPub, ros::Publisher& segStatusPub, State& 
     
   // check for an obstacle in the way
   // if there is an obstacle then look at the new path distance from lookahead and come to a stop by that distance
-    //else if(ros::obstacles()){}
+    if(obs) // if there is an obstacle
+    {
+      dist_accel = 0.0;
+      dist_const_v = 0.0;
+      dist_decel = obs_dist;
+    }
+    else // check queue
+    {
+
+    }
+
+    currState.updateState(v_cmd,dt); // advance where the robot thinks it is at
+
+    segDistDone = currState.getSegDistDone();
+
+    v_cmd = currState.getVCmd();
+    if(segDistDone < dist_accel)
+    {
+      v_scheduled = sqrt(2*segDistDone*fabs(accel_max));
+      if(fabs(v_scheduled) < fabs(accel_max)*dt)
+      {
+	v_scheduled = accel_max*dt; // add some extra to avoid sticking in place
+      }
+    }
+    else if(segDistDone<dist_accel+dist_const_v)
+    {
+      v_scheduled = v_max;
+    }
+    else 
+    {
+      v_scheduled = sqrt(2*(segLength-segDistDone)*accel_max);
+    }
+
+    if(fabs(v_cmd) < fabs(v_scheduled)) {
+      double v_test = v_cmd + accel_max*dt;
+      if(fabs(v_test) < fabs(v_scheduled))
+      {
+	v_cmd = v_test;
+      }
+      else
+      {
+	v_cmd = v_scheduled;
+      }
+    }
+    else if(fabs(v_cmd) > fabs(v_scheduled)) {
+      double v_test = v_cmd - (1.2*accel_max*dt);
+      if(fabs(v_test) > fabs(v_scheduled))
+      {
+	v_cmd = v_test;
+      }
+      else
+      {
+	v_cmd = v_scheduled;
+      }
+    }
+
+    vel_object.linear.x = v_cmd;
+    vel_object.angular.z = 0.0;
+    velocityPub.publish(vel_object);
+
+    naptime.sleep();
+  }
+
+  vel_object.linear.x = 0.0;
+  vel_object.angular.z = 0.0;
+  velocityPub.publish(vel_object);
 
     // If no obstacle update the acceleration, constant velocity and deceleration time based on next time in queue and current segment (pretty much like initialization code above.  This is so that when resuming from an obstacle the robot will accelerate again and continue.  Also if a new segment is added to the queue when there was no segment before this will take that into account
-  }
 }
 
 void arc(ros::Publisher& velocityPub, ros::Publisher& segStatusPub, State& currState)
@@ -449,7 +521,8 @@ int main(int argc, char **argv)
     else
     {
       currSeg = segments.front();
-      cout << "New segment! Type " << currSeg->seg_type << endl;
+
+      //cout << "New segment! Type " << currSeg->seg_type << endl;
       currState.newSegment(*currSeg);
       if(currSeg->seg_type == 1)
       {

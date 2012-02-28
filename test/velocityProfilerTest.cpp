@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 #include <geometry_msgs/Twist.h>
 #include <eecs_376_alpha/PathSegment.h>
+#include <tf/transform_datatypes.h>
 
 using namespace std;
 
@@ -16,13 +17,21 @@ int main(int argc, char **argv)
 
   eecs_376_alpha::PathSegment segment;
 
-  int i = 0;
-  while(ros::ok())
+  for(int i = 0; i<10; i++)
     {
       segment.seg_number = i;
-      segment.max_speeds.linear.x = 5.0;
+      segment.seg_type = 1;
+      segment.max_speeds.linear.x = 1.0;
+      segment.max_speeds.angular.z = 0.0;
+      segment.accel_limit = 0.5;
+      segment.decel_limit = -0.5;
+      segment.init_tan_angle = tf::createQuaternionMsgFromYaw(0.0);
+      segment.curvature = 0.0;
+      segment.seg_length = 1.0;
+      segment.ref_point.x = 0.0;
+      segment.ref_point.y = 0.0;
+
       segmentPub.publish(segment);
-      i++;
       naptime.sleep();
     }
 
