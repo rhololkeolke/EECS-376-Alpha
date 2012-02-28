@@ -3,94 +3,151 @@
 #include <math.h>
 #include <std_msgs/Bool.h>
 #include <cwru_base/cRIOSensors.h>
+#include <eecs_376_alpha/PathSegment.h>
+#include <eecs_376_alpha/SegStatus.h>
+#include "state.h"
+#include <queue>
 
-#define PI 3.14159 // set the number of decimals of PI up here
-#define RATE 20.0 // set the rate of refresh
+using namespace std;
+
+const double PI = 3.14159; // set the number of decimals of PI up here
+const double RATE = 20.0; // set the rate of refresh
 
 bool stopped = false; // stores the value of the estop
 
-class State
+queue<eecs_376_alpha::PathSegment*> segments;
+
+void pathSegmentCallback(const eecs_376_alpha::PathSegment::ConstPtr& segment)
 {
-public:
-  State();
-  void updateState(double v_cmd, double omega_cmd, double dt);
-  void stop();
-  // getters
-  double getX();
-  double getY();
-  double getPhi();
-  double getVCmd();
-  double getOCmd();
-  double getDistDone();
-  double getAngDone();
-private:
-  double x,y,phi,v,omega,segDistDone,spinAngDone;
-};
+  eecs_376_alpha::PathSegment newSeg;
+  // copy all of the values over
+  newSeg.seg_number = segment->seg_number;
+  newSeg.seg_type = segment->seg_type;
+  newSeg.curvature = segment->curvature;
+  newSeg.seg_length = segment->seg_length;
+  newSeg.ref_point = segment->ref_point;
+  newSeg.init_tan_angle = segment->init_tan_angle;
+  newSeg.max_speeds = segment->max_speeds;
+  newSeg.accel_limit = segment->accel_limit;
+  newSeg.decel_limit = segment->decel_limit;
 
-State::State() {
-  x = 0.0;
-  y = 0.0;
-  phi = 0.0;
-  v = 0.0; // assume start from rest
-  omega = 0.0; // assume start from rest
-  segDistDone = 0.0;
-  spinAngDone = 0.0;
-};
-
-void State::updateState(double v_cmd, double omega_cmd, double dt) {
-  double avg_v = (v+v_cmd)/2; // average the velocity over this time step
-  double avg_omega = (omega+omega_cmd)/2; // average angular velocity over this time step
-  double avg_phi = phi + avg_omega*dt/2; // average heading over time step
-  
-  x = x+avg_v*dt*cos(avg_phi); // advance x coordinate
-  y = y+avg_v*dt*sin(avg_phi); // advance y coordinate
-  phi = phi + avg_omega*dt; // advance the heading
-  segDistDone = segDistDone+fabs(avg_v)*dt; // update the distance traveled
-  spinAngDone = spinAngDone+fabs(avg_omega)*dt; // update the sin-in-place angle done
-
-  v = v_cmd;
-  omega = omega_cmd;
+  segments.push(&newSeg); // I don't think this is thread safe
 }
 
-void State::stop()
-{
-  v = 0.0;
-  omega = 0.0;
-}
-
-double State::getX() {
-  return x;
-}
-
-double State::getY() {
-  return y;
-}
-
-double State::getPhi() {
-  return phi;
-}
-
-double State::getVCmd() {
-  return v;
-}
-
-double State::getOCmd() {
-  return omega;
-}
-
-double State::getDistDone() {
-  return segDistDone;
-}
-
-double State::getAngDone() {
-  return spinAngDone;
-}
-
+// processes updates from the eStop
 void estopCallback(const std_msgs::Bool::ConstPtr& estop)
 {
   stopped = !(estop->data);
 }
+void obstaclesCallback(const eecs_376_alpha::Obstacle::ConstPtr& obstacle){
+	stopped = obstacle->exists;
+}
+
+void straight(ros::Publisher& velocityPub, ros::Publisher& segStatusPub, State& currState)
+{
+  // compute initial path profile
+  geometry_msgs::Twist vel_object;
+
+  ros::Rate naptime(RATE);
+
+  double v_cmd = 0.0;
+  double o_cmd = 0.0;
+  
+  double dt = 1/RATE;
+  eecs_376_alpha::PathSegment *currSeg = segments.front();
+  segments.pop();
+
+  double v_max = currSeg->max_speeds.linear.x; // the maximum speed in m/s
+  double accel_max = currSeg->accel_limit; // the maximum acceleration in m/s^2
+  double decel_max = currSeg->decel_limit; // the maximum deceleration in m/s^2
+  
+  double segLength = currSeg->seg_length; // the distance of this straight line segment
+
+  double final_vel; // this will be used to determine if the robot should ever decelerate
+  if(segments.size() > 0)
+  {
+    eecs_376_alpha::PathSegment *nextSeg = segments.front();
+
+    if(nextSeg->seg_type == 1 || nextSeg->seg_type == 2) // still a straight line or an arc
+    {
+      if(nextSeg->max_speeds.linear.x >= v_max) // the next segment is bigger or the same
+      {
+	final_vel = v_max; // don't decelerate; also can't accelerate till next seg or the robot would break this segments speed limit
+      }
+      else if(nextSeg->max_speeds.linear.x >= 0)
+      {
+	final_vel = nextSeg->max_speeds.linear.x;
+      }
+      else // this is just in case the next segment says to go backwards
+      {
+	final_vel = 0;
+      }
+    }
+    else if(nextSeg->seg_type == 3)
+    {
+      final_vel = 0; // to spin in place the robot must come to a complete halt
+    }
+  }
+  else // no more new segments after this so assume stope
+  {
+    final_vel = 0;
+  }
+
+  ros::Duration T_accel((v_max-currState.getVCmd())/accel_max); // if the last command was higher than the max then the robot will never accelerate
+
+  ros::Duration T_decel((final_vel-v_max)/decel_max); // calculate the deceleration
+
+  double dist_accel = 0.5*fabs(accel_max)*pow(T_accel.toSec(),2);
+  double dist_decel = 0.5*fabs(decel_max)*pow(T_decel.toSec(),2);
+  double dist_const_v = segLength - dist_accel - dist_decel;
+
+  bool lastStopped = stopped; // keeps track of the last state of stopped
+  double segDistDone = 0.0;
+
+  while(segDistDone < currSeg->seg_length && ros::ok())
+  {
+
+    if(stopped)
+    {
+      lastStopped = stopped;
+      ROS_INFO("STOPPED!");
+      v_cmd = 0; // don't want the robot to move
+      o_cmd = 0;
+      currState.stop(); // set the internal state to no velocity
+
+      vel_object.linear.x = 0.0;
+      vel_object.angular.z = 0.0;
+
+      velocityPub.publish(vel_object);
+      ros::spinOnce();
+      naptime.sleep();
+      continue;
+    }
+    else if(lastStopped) // the last iteration was stopped but this one isn't
+    {
+      ROS_INFO("Sleeping for 2.0 seconds");
+      lastStopped = 0; // set lastStoppped to false
+      ros::Duration(2.0).sleep(); // this is so the motor controllers have time to come back online
+    }
     
+  // check for an obstacle in the way
+  // if there is an obstacle then look at the new path distance from lookahead and come to a stop by that distance
+    //else if(ros::obstacles()){}
+
+    // If no obstacle update the acceleration, constant velocity and deceleration time based on next time in queue and current segment (pretty much like initialization code above.  This is so that when resuming from an obstacle the robot will accelerate again and continue.  Also if a new segment is added to the queue when there was no segment before this will take that into account
+  }
+}
+
+void arc(ros::Publisher& velocityPub, ros::Publisher& segStatusPub, State& currState)
+{
+
+}
+
+void spinInPlace(ros::Publisher& velocityPub, ros::Publisher& segStatusPub, State& currState)
+{
+
+}
+/*
 void straight(ros::Publisher& pub, double distance)
 {
 
@@ -349,15 +406,18 @@ void turn(ros::Publisher& pub, double angle)
   vel_object.linear.x = 0.0;
   vel_object.angular.z = 0.0;
   pub.publish(vel_object);
-}
+}*/
 
 int main(int argc, char **argv)
 {
   ros::init(argc,argv,"velocity_profiler"); // name of this node
   ros::NodeHandle n;
 
-  ros::Publisher pub = n.advertise<geometry_msgs::Twist>("cmd_vel",1);
-  ros::Subscriber sub = n.subscribe("motors_enabled",1,estopCallback); // listen for estop values
+  ros::Publisher velocityPub = n.advertise<geometry_msgs::Twist>("cmd_vel",1);
+  ros::Publisher segStatusPub = n.advertise<eecs_376_alpha::SegStatus>("seg_status",1);
+  ros::Subscriber estopSub = n.subscribe("motors_enabled",1,estopCallback); // listen for estop values
+  ros::Subscriber segmentSub = n.subscribe("path_segs",1,pathSegmentCallback);
+  ros::Subscriber obstaclesSub = n.subscribe("exists",1,obstaclesCallback); //listen for possible obstacles in the way
 
   // this is necessary or callbacks will never be processed.
   // AsyncSpinner lets them run in the background
@@ -366,13 +426,60 @@ int main(int argc, char **argv)
  
   while(!ros::Time::isValid()) {} // wait for simulator
 
+  ros::Rate naptime(RATE);
+
+  eecs_376_alpha::PathSegment *currSeg;
+
+  State currState = State();
+
+  while(ros::ok())
+  {
+    if(segments.size() <= 0) // if there are no more segments
+    {
+      geometry_msgs::Twist vel_object;
+
+      // make sure the robot is stopped
+      vel_object.linear.x = 0.0; 
+      vel_object.angular.z = 0.0; 
+
+      velocityPub.publish(vel_object);
+      naptime.sleep(); // there is no more work so take a nap
+    }
+    else
+    {
+      currSeg = segments.front();
+      cout << "New segment! Type " << currSeg->seg_type << endl;
+      currState.newSegment(*currSeg);
+      if(currSeg->seg_type == 1)
+      {
+	straight(velocityPub, segStatusPub, currState);
+      }
+      else if(currSeg->seg_type == 2)
+      {
+	arc(velocityPub, segStatusPub, currState);
+      }
+      else
+      {
+	spinInPlace(velocityPub, segStatusPub, currState);
+      }
+    }
+  }
+  /*    if(segments.size() > 0)
+      {
+	currSeg = segments.front();
+	cout << "queue size: " << segments.size() << " segment number: " << currSeg->seg_number << endl;
+	cout << "\tmax_speed.linear.x: " << currSeg->max_speeds.linear.x << endl;
+	segments.pop();
+	naptime.sleep();
+      }
+      }*/
   // this is the set of hard coded directions that will make the robot drive to the vending
   // machines
-  straight(pub,4.2);
+  /*straight(pub,4.2);
   turn(pub,-PI/2);
   straight(pub,12.5);
   turn(pub,-PI/2);
-  straight(pub,4.0);
+  straight(pub,4.0);*/
 
   return 0;
 }

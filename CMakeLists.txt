@@ -17,7 +17,7 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 #uncomment if you have defined messages
-#rosbuild_genmsg()
+rosbuild_genmsg()
 #uncomment if you have defined services
 #rosbuild_gensrv()
 
@@ -27,6 +27,17 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #rosbuild_add_boost_directories()
 #rosbuild_link_boost(${PROJECT_NAME} thread)
 #rosbuild_add_executable(example examples/example.cpp)
+# State class for computing the ideal location of the robot
+rosbuild_add_library(state src/state.cpp)
+# Responsible for reading path segments from path publisher and calculating velocity commands
 rosbuild_add_executable(velocity_profiler src/velocity_profiler)
+target_link_libraries(velocity_profiler state)
+# this is used to test the eStop code in the simulator
 rosbuild_add_executable(estopPublisher src/estopPublisher)
+# unit test for the state class
+rosbuild_add_gtest(test/stateTest test/stateTest.cpp)
+target_link_libraries(test/stateTest state)
+# test program for velocity_profiler
+rosbuild_add_executable(velocityProfilerTest test/velocityProfilerTest.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
+

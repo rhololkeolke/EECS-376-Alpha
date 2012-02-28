@@ -8,3 +8,7 @@ Thumbs.db
 tmp
 bin/
 msg_gen/
+.project
+.cproject
+.pydevproject
+cmake_install.cmake
