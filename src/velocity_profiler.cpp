@@ -39,6 +39,9 @@ void estopCallback(const std_msgs::Bool::ConstPtr& estop)
 {
   stopped = !(estop->data);
 }
+void obstaclesCallback(const eecs_376_alpha::Obstacle::ConstPtr& obstacle){
+	stopped = obstacle->exists;
+}
 
 void straight(ros::Publisher& velocityPub, ros::Publisher& segStatusPub, State& currState)
 {
@@ -113,7 +116,6 @@ void straight(ros::Publisher& velocityPub, ros::Publisher& segStatusPub, State& 
       currState.stop(); // set the internal state to no velocity
 
       vel_object.linear.x = 0.0;
-      
       vel_object.angular.z = 0.0;
 
       velocityPub.publish(vel_object);
@@ -130,7 +132,7 @@ void straight(ros::Publisher& velocityPub, ros::Publisher& segStatusPub, State& 
     
   // check for an obstacle in the way
   // if there is an obstacle then look at the new path distance from lookahead and come to a stop by that distance
-    else if(ros::obstacles()
+    //else if(ros::obstacles()){}
 
     // If no obstacle update the acceleration, constant velocity and deceleration time based on next time in queue and current segment (pretty much like initialization code above.  This is so that when resuming from an obstacle the robot will accelerate again and continue.  Also if a new segment is added to the queue when there was no segment before this will take that into account
   }
