@@ -4,6 +4,7 @@
 #include <eecs_376_alpha/Obstacles.h>
 #include <iostream> 
 #include <math.h>
+#include <iostream>
 
 #define _USE_MATH_DEFINES
 
@@ -11,7 +12,7 @@ using namespace std;
 
 const uint cPings = 181;
 const double cBoxHeight = 1.0; //distance in front of the robot
-const double cBoxWidth = 0.3; // distance from x axis to side of box (double this is width of box) 
+const double cBoxWidth = 0.5; // distance from x axis to side of box (double this is width of box) 
 
 double curLaserData [cPings]; //current path lidar info
 
@@ -46,10 +47,13 @@ void curPath(ros::Publisher &obsPub)
   
   for (uint i = 0; i < cPings;  i++)
   {
+    //    cout << "ping: " << i << endl;
       if(i < 90-angleSwitch || i > 90+angleSwitch)
       {
+	//	cout << "\ti<90-" << angleSwitch << " || i>90+" << angleSwitch << endl;
 	if(curLaserData[i] < cBoxWidth/cos((180.0-(double)i)*M_PI/180.0))
 	{
+	  //cout << "\t\tcurLaserData[" << i << "]: " << curLaserData[i] << " < " << cBoxWidth/cos((180.0-(double)i)*M_PI/180.0) << endl;
 	  if(curLaserData[i] < closestObs)
 	  {
 	    closestObs = curLaserData[i];
@@ -58,8 +62,10 @@ void curPath(ros::Publisher &obsPub)
       }
       else if(i > 90-angleSwitch && i < 90+angleSwitch)
       {
+	//cout << "\ti>90-" << angleSwitch << " && i < 90+" << angleSwitch << endl;
 	if(curLaserData[i] < cBoxHeight/cos(((double)i-90.0)*M_PI/180.0))
 	{
+	  // cout << "\t\tcurLaserData[" << i << "]: " << curLaserData[i] << " < " << cBoxHeight/cos(((double)i-90.0)*M_PI/180.0) << endl;
 	  if(curLaserData[i] < closestObs)
 	  {
 	    closestObs = curLaserData[i];
@@ -87,7 +93,7 @@ int main(int argc, char **argv)
 
   ros::NodeHandle n;
     
-  ros::Subscriber laserSub = n.subscribe("base_scan",1,laserCallback);
+  ros::Subscriber laserSub = n.subscribe("base_laser1_scan",1,laserCallback);
   ros::Publisher obsPub = n.advertise<eecs_376_alpha::Obstacles>("obstacles",1);
 
   while(!ros::Time::isValid()) {}
