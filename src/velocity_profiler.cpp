@@ -130,6 +130,7 @@ void straight(ros::Publisher& velocityPub, ros::Publisher& segStatusPub, State& 
     
   // check for an obstacle in the way
   // if there is an obstacle then look at the new path distance from lookahead and come to a stop by that distance
+    else if(ros::obstacles()
 
     // If no obstacle update the acceleration, constant velocity and deceleration time based on next time in queue and current segment (pretty much like initialization code above.  This is so that when resuming from an obstacle the robot will accelerate again and continue.  Also if a new segment is added to the queue when there was no segment before this will take that into account
   }
@@ -414,6 +415,7 @@ int main(int argc, char **argv)
   ros::Publisher segStatusPub = n.advertise<eecs_376_alpha::SegStatus>("seg_status",1);
   ros::Subscriber estopSub = n.subscribe("motors_enabled",1,estopCallback); // listen for estop values
   ros::Subscriber segmentSub = n.subscribe("path_segs",1,pathSegmentCallback);
+  ros::Subscriber obstaclesSub = n.subscribe("exists",1,obstaclesCallback); //listen for possible obstacles in the way
 
   // this is necessary or callbacks will never be processed.
   // AsyncSpinner lets them run in the background
