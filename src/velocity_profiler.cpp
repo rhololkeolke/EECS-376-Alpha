@@ -3,11 +3,19 @@
 #include <math.h>
 #include <std_msgs/Bool.h>
 #include <cwru_base/cRIOSensors.h>
+#include <eecs_376_alpha/Obstacles.h>
+#include <iostream>
 
 #define PI 3.14159 // set the number of decimals of PI up here
 #define RATE 20.0 // set the rate of refresh
 
+using namespace std;
+
 bool stopped = false; // stores the value of the estop
+
+// stores the values of the obstacles in the way
+bool obs = false;
+double obs_dist = 0.0;
 
 class State
 {
@@ -90,6 +98,12 @@ void estopCallback(const std_msgs::Bool::ConstPtr& estop)
 {
   stopped = !(estop->data);
 }
+
+void obstaclesCallback(const eecs_376_alpha::Obstacles::ConstPtr& obsData)
+{
+  obs = obsData->exists;
+  obs_dist = obsData->distance;
+}
     
 void straight(ros::Publisher& pub, double distance)
 {
@@ -137,6 +151,10 @@ void straight(ros::Publisher& pub, double distance)
     ROS_INFO("Started a straight line segment for %f meters in the positive x direction", segLength);
 
   bool lastStopped = stopped; // keeps track of the last state of stopped
+  bool lastobs = false;
+  double startingPos = 0.0;
+  double obsDist = 0.0;
+  double decel_rate = 0.0;
 
   while(segDistDone < segLength && ros::ok()) {
     
@@ -160,6 +178,45 @@ void straight(ros::Publisher& pub, double distance)
       ROS_INFO("Sleeping for 2.0 seconds");
       lastStopped = 0; // set lastStopped to false
       ros::Duration(2.0).sleep(); // this is so the motor controllers have time to come back online
+    }
+
+    if(obs && !lastobs)
+    {
+      //ROS_INFO("Initializing obstacles");
+      startingPos = currentState.getDistDone();
+      obsDist = obs_dist;
+      lastobs = true;
+      decel_rate = pow(v_cmd,2)/(obs_dist-.1);
+      cout << "obs_dist: " << obs_dist << ", decel_rate: " << decel_rate << ", startingPos: " << startingPos << endl; 
+    }
+
+    if(lastobs && obs && fabs(distance)-startingPos >= obs_dist) // there is an obstacle in the way
+    {
+      //ROS_INFO("Running obstacle code");
+      // calculate the deceleration rate
+            
+      if(v_cmd > .001)
+      {
+	v_cmd = v_cmd - decel_rate*dt;
+	currentState.updateState(v_cmd, omega_cmd, dt);
+	vel_object.linear.x = v_cmd;
+      }
+      else
+      {
+	vel_object.linear.x = 0.0;
+	currentState.stop();
+      }
+      
+
+      vel_object.angular.z = 0.0;
+      pub.publish(vel_object);
+
+      naptime.sleep();
+      continue;
+    }
+    else
+    {
+      lastobs = false;
     }
       
     currentState.updateState(v_cmd, omega_cmd, dt); // advance where the robot thinks its at
@@ -357,7 +414,8 @@ int main(int argc, char **argv)
   ros::NodeHandle n;
 
   ros::Publisher pub = n.advertise<geometry_msgs::Twist>("cmd_vel",1);
-  ros::Subscriber sub = n.subscribe("motors_enabled",1,estopCallback); // listen for estop values
+  ros::Subscriber estopSub = n.subscribe("motors_enabled",1,estopCallback); // listen for estop values
+  ros::Subscriber obsSub = n.subscribe("obstacles",1,obstaclesCallback);
 
   // this is necessary or callbacks will never be processed.
   // AsyncSpinner lets them run in the background
