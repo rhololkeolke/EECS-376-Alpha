@@ -3,15 +3,19 @@
 #include <sensor_msgs/LaserScan.h>
 #include <eecs_376_alpha/Obstacles.h>
 #include <iostream> 
+#include <math.h>
 
-
+#define _USE_MATH_DEFINES
 
 using namespace std;
 
 const uint cPings = 181;
-const double cNotificationDistance = 0.75; //distance at which to publish that an obstacle exists for current path
+const double cBoxHeight = 1.0; //distance in front of the robot
+const double cBoxWidth = 0.3; // distance from x axis to side of box (double this is width of box) 
 
 double curLaserData [cPings]; //current path lidar info
+
+int angleSwitch; // stores the angle used to switch between distance formulas
 
 //Summary: Receive scan for the current path which is 1m and the next path which is the second meter and place them into accessible arrays
 //Parameters: Laser Scan Data
@@ -35,43 +39,47 @@ void laserCallback(const sensor_msgs::LaserScan::ConstPtr& laserScan)
 void curPath(ros::Publisher &obsPub)
 {
   ros::Time time = ros::Time::now();
-  ros::Rate loop_rate(10);   
 
   eecs_376_alpha::Obstacles obsData;  //create an instance of the obstacle msg
   
+  double closestObs = 90.0; // laser range is up to 80 so nothing should be worse than this
+  
   for (uint i = 0; i < cPings;  i++)
-    {
-
-      if(curLaserData[i] < cNotificationDistance)
-	{    
-	  obsData.exists = true; //boolean for obstacle existance
-	  obsData.distance = curLaserData[i];
-	  obsPub.publish(obsData);
-	}         
-      else
-	{   
-	  obsData.exists = false;
-	  obsData.distance = 0.0;
-	  obsPub.publish(obsData);
+  {
+      if(i < 90-angleSwitch || i > 90+angleSwitch)
+      {
+	if(curLaserData[i] < cBoxWidth/cos((180.0-(double)i)*M_PI/180.0))
+	{
+	  if(curLaserData[i] < closestObs)
+	  {
+	    closestObs = curLaserData[i];
+	  }
 	}
-    }
-}
-
-void setFalse(ros::Publisher &obsPub)
-{
-  ros::Time time = ros::Time::now();
-
-
-  eecs_376_alpha::Obstacles obsData;
+      }
+      else if(i > 90-angleSwitch && i < 90+angleSwitch)
+      {
+	if(curLaserData[i] < cBoxHeight/cos(((double)i-90.0)*M_PI/180.0))
+	{
+	  if(curLaserData[i] < closestObs)
+	  {
+	    closestObs = curLaserData[i];
+	  }
+	}
+      }
+  }
   
-  obsData.exists = false;
-  obsData.distance = 0.0;
-  obsPub.publish(obsData);
-
+  if(closestObs < 90.0)
+  {
+    obsData.exists = true;
+    obsData.distance = closestObs;
+  }
+  else  
+  {
+    obsData.exists = false; // nothing is in the way
+    obsData.distance = 0.0;
+  }
+  obsPub.publish(obsData); // publish the data
 }
-  
-
-
 
 int main(int argc, char **argv)
 {
@@ -84,19 +92,17 @@ int main(int argc, char **argv)
 
   while(!ros::Time::isValid()) {}
 
+  angleSwitch = atan(cBoxWidth)*180/M_PI;
+
   ros::Rate naptime(100);  
   while(ros::ok())
-    {
+  {
       curPath(obsPub);
 
       ros::spinOnce();
 
       naptime.sleep();
-    }
-  
-
-    
-
+  }
 
   return 0;
 }
