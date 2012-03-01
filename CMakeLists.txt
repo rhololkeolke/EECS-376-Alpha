@@ -40,3 +40,5 @@ rosbuild_add_gtest(test/stateTest test/stateTest.cpp)
 target_link_libraries(test/stateTest state)
 # test program for velocity_profiler
 rosbuild_add_executable(velocityProfilerTest test/velocityProfilerTest.cpp)
+rosbuild_add_executable(look_ahead src/look_ahead)
+#target_link_libraries(example ${PROJECT_NAME})
