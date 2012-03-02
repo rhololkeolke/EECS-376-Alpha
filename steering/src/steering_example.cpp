@@ -9,6 +9,7 @@
 #include <iostream>
 #include <fstream>
 
+using namespace std;
 
 //Note that this initializes to all 0's... so until you get an "initial pose" from the first callback, it's prolly gonna be way wrong for any algorithm to use
 nav_msgs::Odometry last_odom;
@@ -59,20 +60,20 @@ int main(int argc,char **argv)
 	double x_current,y_current; // current x,y position of robot in map coords
 	double tx,ty,nx,ny;  //path tangent and normal vector components
 	double xrs,yrs; // x and y coords of robot relative to start (xs,ys)
-	
-	
-	// open config file for reading.
-	ifstream infile("../config/steering_constants.txt");
-	if(!infile){
-		cout << "there was a problem reading the file for input << endl;
-	}
-
 	// tune these values, Kd and Ktheta, for steering
 	double Kd =0.5;
 	double Ktheta = 1.0;
-
-	infile >> Kd;
-	infile >> Ktheta;
+	
+	// open config file for reading.
+	std::ifstream infile;
+	infile.open("../config/steering_constants.txt");
+	if(infile.good() && !infile.bad()){
+		infile >> Kd;
+		infile >> Ktheta;
+	} else {
+		cout << "there was a problem reading the file for input" << endl;
+	}
+	infile.close();
 	
 	double dt = .05;
 	double pi = 3.14159;
