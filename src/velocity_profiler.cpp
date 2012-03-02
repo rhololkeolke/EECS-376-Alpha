@@ -5,6 +5,7 @@
 #include <cwru_base/cRIOSensors.h>
 #include <eecs_376_alpha/PathSegment.h>
 #include <eecs_376_alpha/SegStatus.h>
+#include <eecs_376_alpha/Obstacles.h>
 #include "state.h"
 #include <queue>
 
@@ -39,7 +40,7 @@ void estopCallback(const std_msgs::Bool::ConstPtr& estop)
 {
   stopped = !(estop->data);
 }
-void obstaclesCallback(const eecs_376_alpha::Obstacle::ConstPtr& obstacle){
+void obstaclesCallback(const eecs_376_alpha::Obstacles::ConstPtr& obstacle){
 	stopped = obstacle->exists;
 }
 
