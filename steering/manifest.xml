@@ -8,7 +8,7 @@
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/steering</url>
-  <depend package="rospy"/>
+  <depend package="roscpp"/>
   <depend package="cwru_sim_stage"/>
 
 </package>
