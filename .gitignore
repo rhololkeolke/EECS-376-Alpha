@@ -12,3 +12,9 @@ msg_gen/
 .cproject
 .pydevproject
 cmake_install.cmake
+.gitignore
+*#.gitignore#*
+.#.gitignore
+lib/*
+src/eecs_376_alpha/*
+src/velocity_profiler_old.cpp
