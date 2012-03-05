@@ -3,9 +3,9 @@
 #include <math.h>
 #include <std_msgs/Bool.h>
 #include <cwru_base/cRIOSensors.h>
-#include <eecs_376_alpha/PathSegment.h>
-#include <eecs_376_alpha/SegStatus.h>
-#include <eecs_376_alpha/Obstacles.h>
+#include <velocity_profiler/PathSegment.h>
+#include <velocity_profiler/SegStatus.h>
+#include <velocity_profiler/Obstacles.h>
 #include <iostream>
 
 using namespace std;
@@ -101,7 +101,7 @@ void estopCallback(const std_msgs::Bool::ConstPtr& estop)
   stopped = !(estop->data);
 }
 
-void obstaclesCallback(const eecs_376_alpha::Obstacles::ConstPtr& obsData)
+void obstaclesCallback(const velocity_profiler::Obstacles::ConstPtr& obsData)
 {
   obs = obsData->exists;
   obs_dist = obsData->distance;
