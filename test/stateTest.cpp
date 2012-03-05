@@ -29,7 +29,16 @@ TEST(StateTestSuite, perfectStraight)
 	seg.accel_limit=.5;
 	seg.decel_limit = .5;
 
-	State state = State(seg);
+	geometry_msgs::Point initPos;
+	initPos.x = 0.0;
+	initPos.y = 0.0;
+	initPos.z = 0.0;
+
+	geometry_msgs::Twist vel;
+	vel.linear.x = 1.0;
+	vel.angular.z = 0;
+
+	State state = State(.1,initPos,0.0,&seg);
 
 	ASSERT_NEAR(0.0,state.getXPath(),.001);
 	ASSERT_NEAR(0.0,state.getYPath(),.001);
@@ -48,7 +57,7 @@ TEST(StateTestSuite, perfectStraight)
 
 	for(int i=0; i<10; i++)
 	{
-		state.updateState(1.0,0.1);
+		state.updateState(vel);
 
 		ASSERT_NEAR((double)(i+1) * .1*cos(PI/4),state.getXPath(),.0001);
 		ASSERT_NEAR(state.getXPath(), state.getYPath(),.0001);
@@ -76,7 +85,15 @@ TEST(StateTestSuite, perfectArc)
 	seg.accel_limit=.5;
 	seg.decel_limit = .5;
 
-	State state = State(seg);
+	geometry_msgs::Point initPos;
+	initPos.x = 0.0;
+	initPos.y = 0.0;
+	initPos.z = 0.0;
+
+	State state = State(.1,initPos,0.0,&seg);
+	geometry_msgs::Twist vel;
+	vel.linear.x = 1.0;
+	vel.angular.z = 0;
 
 	ASSERT_NEAR(0.0,state.getXPath(),.001);
 	ASSERT_NEAR(0.0,state.getYPath(),.001);
@@ -95,7 +112,7 @@ TEST(StateTestSuite, perfectArc)
 
 	for(int i=0;i<10;i++)
 	{
-		state.updateState(1.0,0.1);
+		state.updateState(vel);
 
 		ASSERT_NEAR((1/seg.curvature)*cos(tf::getYaw(seg.init_tan_angle)-PI/2+(double)(i+1)*.1*seg.curvature),state.getXPath(),.0001);
 		ASSERT_NEAR((1/seg.curvature)*sin(tf::getYaw(seg.init_tan_angle)-PI/2+(double)(i+1)*.1*seg.curvature), state.getYPath(),.0001);
@@ -123,7 +140,16 @@ TEST(StateTestSuite, perfectSpin)
 	seg.accel_limit=.5;
 	seg.decel_limit = .5;
 
-	State state = State(seg);
+	geometry_msgs::Point initPos;
+	initPos.x = 0.0;
+	initPos.y = 0.0;
+	initPos.z = 0.0;
+
+	geometry_msgs::Twist vel;
+	vel.linear.x = 0.0;
+	vel.angular.z = PI/4.0;
+
+	State state = State(.1,initPos,0.0,&seg);
 
 	ASSERT_NEAR(0.0,state.getXPath(),.0001);
 	ASSERT_NEAR(0.0,state.getYPath(),.0001);
@@ -142,7 +168,7 @@ TEST(StateTestSuite, perfectSpin)
 
 	for(int i=0; i<10; i++)
 	{
-		state.updateState(PI/4,0.1);
+		state.updateState(vel);
 
 		ASSERT_NEAR(state.getXPath(),0.0,.0001);
 		ASSERT_NEAR(state.getYPath(), 0.0,.0001);
