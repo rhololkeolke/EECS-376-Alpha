@@ -14,6 +14,7 @@ using namespace std;
 //Note that this initializes to all 0's... so until you get an "initial pose" from the first callback, it's prolly gonna be way wrong for any algorithm to use
 nav_msgs::Odometry last_odom;
 geometry_msgs::PoseStamped last_map_pose;
+geometry_msgs::Twist des;
 tf::TransformListener *tfl;
 
 geometry_msgs::PoseStamped temp;
@@ -21,6 +22,7 @@ void odomCallback(const nav_msgs::Odometry::ConstPtr& odom) {
         last_odom = *odom;
         temp.pose = last_odom.pose.pose;
         temp.header = last_odom.header;
+	cout << "pose " << temp.pose << ", header " << temp.header << endl;
         try {
           tfl->transformPose("map", temp, last_map_pose); // given most recent odometry and most recent coord-frame transform, compute
                                                           // estimate of most recent pose in map coordinates..."last_map_pose"
@@ -28,13 +30,18 @@ void odomCallback(const nav_msgs::Odometry::ConstPtr& odom) {
           ROS_ERROR("%s", ex.what());
         }
 }
+void velCallback(const geometry_msgs::Twist::ConstPtr& vel) {
+	des = vel;
+}
 
 int main(int argc,char **argv)
 {
+
 	ros::init(argc,argv,"steering_example");//name of this node
 	ros::NodeHandle n;
         tfl = new tf::TransformListener();
 	ros::Publisher pub = n.advertise<geometry_msgs::Twist>("cmd_vel",1);
+	ros::Subscriber dec_vel = n.subscribe<geometry_msgs::Twist>("des_vel",1, velCallback);
         ros::Subscriber sub = n.subscribe<nav_msgs::Odometry>("odom", 1, odomCallback); 
 	//"cmd_vel" is the topic name to publish velocity commands
 	//"1" is the buffer size (could use buffer>1 in case network bogs down)
@@ -42,8 +49,8 @@ int main(int argc,char **argv)
 	geometry_msgs::Twist vel_object;
 	geometry_msgs::Twist cmd_vel;
         geometry_msgs::PoseStamped desired_pose;  // not used in this program...ideally, get by subscription
-	while (!ros::Time::isValid()) {ros::spinOnce();} // simulation time sometimes initializes slowly. Wait until ros::Time::now() will be valid, but let any callbacks happen
-        while (!tfl->canTransform("map", "odom", ros::Time::now())) {ros::spinOnce();} // wait until there is transform data available before starting our controller loop
+	while (!ros::Time::isValid()) {/*ros::spinOnce();*/} // simulation time sometimes initializes slowly. Wait until ros::Time::now() will be valid, but let any callbacks happen
+        while (!tfl->canTransform("map", "odom", ros::Time::now())) {/*ros::spinOnce();*/} // wait until there is transform data available before starting our controller loop
 	//ros::Duration run_duration(3.0); // specify desired duration of this command segment to be 3 seconds
 	ros::Duration elapsed_time; // define a variable to hold elapsed time
 	ros::Rate naptime(10); //will perform sleeps to enforce loop rate of "10" Hz
@@ -138,7 +145,13 @@ int main(int argc,char **argv)
 		ROS_INFO("Offset=%f, dtheta=%f, cmd omega=%f",offset,dtheta,cmd_vel.angular.z);
 		cout << "variables " << Kd << ", " << Ktheta << endl;
 		
-		
+		if(des.linear.x < 0.001 && des.linear.x > -0.001) {
+			cmd_vel.linear.x == 0.0;
+		} else if (cmd_vel.linear.x > 1.25*des.linear.x) {
+			cmd_vel.linear.x == 1.25*des.linear.x;
+		} else if (cmd_vel.linear.x > 0.75*des.linear.x) {
+			cmd_vel.linear.x == 0.75*des.linear.x;
+		}
 		pub.publish(cmd_vel); // Publish the velocity (incorporating feedback)
 		
 		naptime.sleep(); //Sleep, thus enforcing the desired update rate
