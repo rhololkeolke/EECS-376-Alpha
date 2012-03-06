@@ -4,10 +4,9 @@
 <machine name="jinx" address="192.168.0.150" default="true" />
 -->
 
-<!--Initialization of basic nodes, remember ROS does NOT guarantee the order in which nodes will be published -->
-<node name="estopPublisher" pkg="eecs_376_alpha" type="estopPublisher" respawn="true" />
-<node name="laser_listener" pkg="eecs_376_alpha" type="look_ahead" respawn="true" /> 
-<node name="velocity_profiler" pkg="eecs_376_alpha" type="velocity_profiler" respawn="true"/>
+<node name="estopPublisher" pkg="eecs_376_alpha" type="estopPublisher.cpp" respawn="true" />
+<!--<node name="laser_listener" pkg="eecs_376_alpha" type="look_ahead.cpp" respawn="true" /> -->
+<node name="velocity_profiler" pkg="eecs_376_alpha" type="velocity_profiler.cpp" respawn="true"/>
 
 
 </launch>
