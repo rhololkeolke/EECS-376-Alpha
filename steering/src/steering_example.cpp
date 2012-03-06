@@ -91,7 +91,7 @@ int main(int argc,char **argv)
 	ros::Subscriber desVelSub = n.subscribe<geometry_msgs::Twist>("des_vel",1, velCallback);
         ros::Subscriber sub = n.subscribe<nav_msgs::Odometry>("odom", 1, odomCallback); 
 	ros::Subscriber path = n.subscribe<steering::PathSegment>("path_seg", 10, pathSegCallback);
-	ros::Subscriber seg_status = n.subscribe<steering::SegStatus>("seg_status",1,segStatusCallback);
+	ros::Subscriber seg_status = n.subscribe<steering::SegStatus>("seg_status",10,segStatusCallback);
 	ros::Subscriber obsSub = n.subscribe<steering::Obstacles>("obstacles",1,obstaclesCallback);
 	//"cmd_vel" is the topic name to publish velocity commands
 	//"1" is the buffer size (could use buffer>1 in case network bogs down)
@@ -284,14 +284,14 @@ int main(int argc,char **argv)
 		cout << "variables " << Kd << ", " << Ktheta << endl;
 	
 		// saturate around desired velocities
-		/*		if(des_vel.linear.x < 0.001 && des_vel.linear.x > -0.001) {
+		if(des_vel.linear.x < 0.001 && des_vel.linear.x > -0.001) {
 			cmd_vel.linear.x == 0.0;
 		} else if (cmd_vel.linear.x > 1.25*des_vel.linear.x) {
 			cmd_vel.linear.x == 1.25*des_vel.linear.x;
 		} else if (cmd_vel.linear.x > 0.75*des_vel.linear.x) {
 			cmd_vel.linear.x == 0.75*des_vel.linear.x;
-			}*/
-		cmd_vel.linear.x = des_vel.linear.x;
+			}
+		//cmd_vel.linear.x = des_vel.linear.x;
 		pub.publish(cmd_vel); // Publish the velocity (incorporating feedback)
 		
 		naptime.sleep(); //Sleep, thus enforcing the desired update rate
@@ -303,6 +303,7 @@ int main(int argc,char **argv)
 	  }
 	  else
 	  {
+	    ROS_INFO("Completed a segment");
 	    segComplete = false;
 	    delete currSeg; // new segment so delete this one to free up memory
 	    currSeg = NULL; // set this to null so that if statements behave correctly

@@ -118,6 +118,8 @@ void obstaclesCallback(const velocity_profiler::Obstacles::ConstPtr& obsData)
 
 void pathSegCallback(const velocity_profiler::PathSegment::ConstPtr& seg)
 {
+  ROS_INFO("SegCallback: Started callback");
+  ROS_INFO("SegCallback: segments.size: %i",segments.size());
   velocity_profiler::PathSegment *newSeg = new velocity_profiler::PathSegment();
   newSeg->seg_number = seg->seg_number;
   newSeg->seg_type = seg->seg_type;
@@ -129,6 +131,7 @@ void pathSegCallback(const velocity_profiler::PathSegment::ConstPtr& seg)
   newSeg->accel_limit = seg->accel_limit;
   newSeg->decel_limit = seg->decel_limit;
   segments.push(newSeg);
+  ROS_INFO("SegCallback: segments.size: %i",segments.size());
 }
 
 void velCallback(const geometry_msgs::Twist::ConstPtr& vel)
