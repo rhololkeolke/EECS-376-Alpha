@@ -7,6 +7,8 @@
 #include <velocity_profiler/SegStatus.h>
 #include <velocity_profiler/Obstacles.h>
 #include <iostream>
+#include <tf/transform_datatypes.h>
+#include "lockedQueue.h"
 
 using namespace std;
 
@@ -18,6 +20,13 @@ bool stopped = false; // stores the value of the estop
 // stores the values of the obstacles in the way
 bool obs = false;
 double obs_dist = 0.0;
+
+double lastVCmd = 0;
+double lastOCmd = 0;
+
+int seg_number = 0;
+
+lockedQueue<velocity_profiler::PathSegment*> segments;
 
 class State
 {
@@ -106,8 +115,29 @@ void obstaclesCallback(const velocity_profiler::Obstacles::ConstPtr& obsData)
   obs = obsData->exists;
   obs_dist = obsData->distance;
 }
+
+void pathSegCallback(const velocity_profiler::PathSegment::ConstPtr& seg)
+{
+  velocity_profiler::PathSegment *newSeg = new velocity_profiler::PathSegment();
+  newSeg->seg_number = seg->seg_number;
+  newSeg->seg_type = seg->seg_type;
+  newSeg->curvature = seg->curvature;
+  newSeg->seg_length = seg->seg_length;
+  newSeg->ref_point = seg->ref_point;
+  newSeg->init_tan_angle = seg->init_tan_angle;
+  newSeg->max_speeds = seg->max_speeds;
+  newSeg->accel_limit = seg->accel_limit;
+  newSeg->decel_limit = seg->decel_limit;
+  segments.push(newSeg);
+}
+
+void velCallback(const geometry_msgs::Twist::ConstPtr& vel)
+{
+  lastVCmd = vel->linear.x;
+  lastOCmd = vel->angular.z;
+}
     
-void straight(ros::Publisher& pub, double distance)
+void straight(ros::Publisher& pub, ros::Publisher& segStatusPub, double distance)
 {
 
   geometry_msgs::Twist vel_object;
@@ -143,8 +173,8 @@ void straight(ros::Publisher& pub, double distance)
   State currentState = State();
 
   // these will store the values for the command
-  double v_cmd = 0.0;
-  double omega_cmd = 0.0; // this should never change in the case of a straight line
+  double v_cmd = lastVCmd;
+  double omega_cmd = lastOCmd; // this should never change in the case of a straight line
   double v_scheduled = 0.0;
 
   if(a_max < 0.0)
@@ -160,6 +190,8 @@ void straight(ros::Publisher& pub, double distance)
 
   while(segDistDone < segLength && ros::ok()) {
     
+    v_cmd = lastVCmd;
+    omega_cmd = lastOCmd;
     if(stopped) // stopped is updated by the estopCallback function asynchronously
     {
       lastStopped = stopped;
@@ -167,6 +199,14 @@ void straight(ros::Publisher& pub, double distance)
       v_cmd = 0; // we don't want the robot to move
       omega_cmd = 0;
       currentState.stop(); // set the internal state to no velocity
+
+  velocity_profiler::SegStatus status;
+  status.segComplete = false;
+  status.seg_number = seg_number;
+  status.progress_made = currentState.getDistDone();
+
+  segStatusPub.publish(status);      
+
 
       vel_object.linear.x = 0.0; // this is so the simulator acts correctly when using our estopPublisher program
       vel_object.angular.z = 0.0;
@@ -208,7 +248,13 @@ void straight(ros::Publisher& pub, double distance)
 	vel_object.linear.x = 0.0;
 	currentState.stop();
       }
-      
+
+  velocity_profiler::SegStatus status;
+  status.segComplete = false;
+  status.seg_number = seg_number;
+  status.progress_made = currentState.getDistDone();
+
+  segStatusPub.publish(status);      
 
       vel_object.angular.z = 0.0;
       pub.publish(vel_object);
@@ -266,18 +312,32 @@ void straight(ros::Publisher& pub, double distance)
       }
     }
 
+    velocity_profiler::SegStatus status;
+    status.segComplete = false;
+    status.seg_number = seg_number;
+    status.progress_made = currentState.getDistDone();
+
+    segStatusPub.publish(status);
+
     vel_object.linear.x = v_cmd;
     vel_object.angular.z = 0.0;
     pub.publish(vel_object);
 
     naptime.sleep();
   }
+  velocity_profiler::SegStatus status;
+  status.segComplete = true;
+  status.seg_number = seg_number;
+  status.progress_made = currentState.getDistDone();
+
+  segStatusPub.publish(status);
+
   vel_object.linear.x = 0.0;
   vel_object.angular.z = 0.0;
   pub.publish(vel_object);
 }
      
-void turn(ros::Publisher& pub, double angle)
+void turn(ros::Publisher& pub, ros::Publisher& segStatusPub, double angle)
 {
  
   geometry_msgs::Twist vel_object;
@@ -325,6 +385,8 @@ void turn(ros::Publisher& pub, double angle)
   bool lastStopped = stopped;
 
   while(segRadsDone < segRads && ros::ok()) {
+    v_cmd = lastVCmd;
+    o_cmd = lastOCmd;
 
     if(stopped) // see straight for how this works
     {
@@ -337,6 +399,14 @@ void turn(ros::Publisher& pub, double angle)
 
       vel_object.linear.x = 0.0;
       vel_object.angular.z = 0.0;
+
+  velocity_profiler::SegStatus status;
+  status.segComplete = false;
+  status.seg_number = seg_number;
+  status.progress_made = currentState.getDistDone();
+
+  segStatusPub.publish(status);
+
 
       pub.publish(vel_object);
       naptime.sleep();
@@ -398,12 +468,26 @@ void turn(ros::Publisher& pub, double angle)
       }
     }
 
+  velocity_profiler::SegStatus status;
+  status.segComplete = false;
+  status.seg_number = seg_number;
+  status.progress_made = currentState.getDistDone();
+
+  segStatusPub.publish(status);
+
     vel_object.linear.x = 0.0;
     vel_object.angular.z = o_cmd;
     pub.publish(vel_object);
       
     naptime.sleep(); // wait until its time to publish.  This keeps publisher at rate specified by RATE
   }
+  velocity_profiler::SegStatus status;
+  status.segComplete = true;
+  status.seg_number = seg_number;
+  status.progress_made = currentState.getDistDone();
+
+  segStatusPub.publish(status);
+
 
   vel_object.linear.x = 0.0;
   vel_object.angular.z = 0.0;
@@ -415,9 +499,14 @@ int main(int argc, char **argv)
   ros::init(argc,argv,"velocity_profiler"); // name of this node
   ros::NodeHandle n;
 
-  ros::Publisher pub = n.advertise<geometry_msgs::Twist>("cmd_vel",1);
+  ros::Publisher desVelPub = n.advertise<geometry_msgs::Twist>("des_vel",1);
+  ros::Publisher segStatusPub = n.advertise<velocity_profiler::SegStatus>("seg_status",1);
   ros::Subscriber estopSub = n.subscribe("motors_enabled",1,estopCallback); // listen for estop values
   ros::Subscriber obsSub = n.subscribe("obstacles",1,obstaclesCallback);
+  ros::Subscriber velSub = n.subscribe("cmd_vel",1,velCallback);
+  ros::Subscriber pathSub = n.subscribe("path_seg",10,pathSegCallback);
+
+  ros::Rate naptime(RATE);
 
   // this is necessary or callbacks will never be processed.
   // AsyncSpinner lets them run in the background
@@ -426,13 +515,66 @@ int main(int argc, char **argv)
  
   while(!ros::Time::isValid()) {} // wait for simulator
 
+  velocity_profiler::PathSegment* currSeg = NULL;
+
+  double dist = 0.0;
+  while(ros::ok())
+  {
+    if(currSeg == NULL); // while there is nothing to do
+    {
+      if(segments.size() > 0) // see if something new was added to the queue
+      {
+	currSeg = segments.front(); // if so look at it
+	segments.pop();
+
+	if(currSeg->seg_type == 1)
+	{
+	  double xs = currSeg->ref_point.x;
+	  double ys = currSeg->ref_point.y;
+	
+	  double desired_heading = tf::getYaw(currSeg->init_tan_angle);
+
+	  double xf = xs + currSeg->seg_length*cos(desired_heading);
+	  double yf = ys + currSeg->seg_length*sin(desired_heading);
+
+	  dist = sqrt(pow(xf-xs,2)+pow(yf-ys,2));
+	  seg_number = currSeg->seg_number;
+	  straight(desVelPub,segStatusPub,dist);
+	  delete currSeg;
+	  currSeg = NULL;
+	}
+	else if(currSeg->seg_type == 3)
+	{
+	  seg_number = currSeg->seg_number;
+	  dist = currSeg->seg_length;	  
+	  turn(desVelPub,segStatusPub,dist);
+	  delete currSeg;
+	  currSeg = NULL;
+	}
+	else
+	{
+	  delete currSeg;
+	  currSeg = NULL;
+	}
+      }
+      else
+      {
+	geometry_msgs::Twist vel_object;
+	vel_object.linear.x = 0.0;
+	vel_object.angular.z = 0.0;
+	desVelPub.publish(vel_object);
+	naptime.sleep();
+	continue; // nothing to do start again
+      }
+    }
+  }
   // this is the set of hard coded directions that will make the robot drive to the vending
   // machines
-  straight(pub,4.2);
+  /*  straight(pub,4.2);
   turn(pub,-PI/2);
   straight(pub,12.5);
   turn(pub,-PI/2);
-  straight(pub,4.0);
+  straight(pub,4.0);*/
 
   return 0;
 }

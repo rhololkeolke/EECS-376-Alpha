@@ -8,14 +8,21 @@
 #include<cmath>
 #include <iostream>
 #include <fstream>
+#include <steering/SegStatus.h>
+#include <steering/PathSegment.h>
+#include "lockedQueue.h"
 
 using namespace std;
 
 //Note that this initializes to all 0's... so until you get an "initial pose" from the first callback, it's prolly gonna be way wrong for any algorithm to use
 nav_msgs::Odometry last_odom;
 geometry_msgs::PoseStamped last_map_pose;
-geometry_msgs::Twist des;
+geometry_msgs::Twist des_vel;
 tf::TransformListener *tfl;
+
+lockedQueue<steering::PathSegment*> segments;
+
+int seg_number = 0;
 
 geometry_msgs::PoseStamped temp;
 void odomCallback(const nav_msgs::Odometry::ConstPtr& odom) {
@@ -30,8 +37,31 @@ void odomCallback(const nav_msgs::Odometry::ConstPtr& odom) {
           ROS_ERROR("%s", ex.what());
         }
 }
+
 void velCallback(const geometry_msgs::Twist::ConstPtr& vel) {
-	des = vel;
+  des_vel.linear.x = vel->linear.x;
+  des_vel.angular.z = vel->angular.z;
+}
+
+void pathSegCallback(const steering::PathSegment::ConstPtr& seg)
+{
+  steering::PathSegment *newSeg = new steering::PathSegment();
+  ROS_INFO("path segment Callback");
+  newSeg->seg_number = seg->seg_number;
+  newSeg->seg_type = seg->seg_type;
+  newSeg->curvature = seg->curvature;
+  newSeg->seg_length = seg->seg_length;
+  newSeg->ref_point = seg->ref_point;
+  newSeg->init_tan_angle = seg->init_tan_angle;
+  newSeg->max_speeds = seg->max_speeds;
+  newSeg->accel_limit = seg->accel_limit;
+  newSeg->decel_limit = seg->decel_limit;
+  segments.push(newSeg);
+}
+
+void segStatusCallback(const steering::SegStatus::ConstPtr& status)
+{
+  seg_number = status->seg_number;
 }
 
 int main(int argc,char **argv)
@@ -41,8 +71,10 @@ int main(int argc,char **argv)
 	ros::NodeHandle n;
         tfl = new tf::TransformListener();
 	ros::Publisher pub = n.advertise<geometry_msgs::Twist>("cmd_vel",1);
-	ros::Subscriber dec_vel = n.subscribe<geometry_msgs::Twist>("des_vel",1, velCallback);
+	ros::Subscriber desVelSub = n.subscribe<geometry_msgs::Twist>("des_vel",1, velCallback);
         ros::Subscriber sub = n.subscribe<nav_msgs::Odometry>("odom", 1, odomCallback); 
+	ros::Subscriber path = n.subscribe<steering::PathSegment>("path_seg", 10, pathSegCallback);
+	ros::Subscriber seg_status = n.subscribe<steering::SegStatus>("seg_status",1,segStatusCallback);
 	//"cmd_vel" is the topic name to publish velocity commands
 	//"1" is the buffer size (could use buffer>1 in case network bogs down)
 
@@ -54,6 +86,10 @@ int main(int argc,char **argv)
 	//ros::Duration run_duration(3.0); // specify desired duration of this command segment to be 3 seconds
 	ros::Duration elapsed_time; // define a variable to hold elapsed time
 	ros::Rate naptime(10); //will perform sleeps to enforce loop rate of "10" Hz
+
+	ros::AsyncSpinner spinner(0);
+	spinner.start();
+
 	ros::Time birthday= ros::Time::now(); // get the current time, which defines our start time, called "birthday"
 	ROS_INFO("birthday started as %f", birthday.toSec());
 
@@ -91,18 +127,55 @@ int main(int argc,char **argv)
 	
 	double dt = .05;
 	double pi = 3.14159;
+
         // instead of subscribing to path segments, for this simple example, hard-code a single line
-	xs = 5.12; // start point
+	/*xs = 5.12; // start point
 	ys = 12.04;
 
 	xf = -16.58; // end point (or a second point, forward, on the line)
 	yf = 33.59;
-	desired_heading = atan2(yf-ys,xf-xs);
-	ROS_INFO("desired heading: %",desired_heading);
+	desired_heading = atan2(yf-ys,xf-xs);*/
+	ROS_INFO("desired heading: %f",desired_heading);
 	
+	steering::PathSegment* currSeg = NULL;
+
 	while (ros::ok()) // do work here
 	{
-		ros::spinOnce(); // allow any subscriber callbacks that have been queued up to fire, but don't spin infinitely
+	  if(currSeg == NULL) // while there is no current segment
+	  {
+	    ROS_INFO("currSeg is NULL");
+	    if(segments.size() > 0) // see if there are any new segments
+	    {
+	      ROS_INFO("segments.size() >0");
+	      currSeg = segments.front(); // get the new segment
+	      segments.pop(); // remove it from the queue
+
+	      if(currSeg->seg_type == 1)
+		{
+		  ROS_INFO("segment type == 1");
+		  xs = currSeg->ref_point.x; // get the start point
+		  ys = currSeg->ref_point.y;
+
+		  desired_heading = tf::getYaw(currSeg->init_tan_angle); // get the path's heading
+	      
+		  xf = xs + currSeg->seg_length*cos(desired_heading); // get the final point
+		  yf = ys + currSeg->seg_length*sin(desired_heading);
+		}
+	    }
+	    else
+	    {
+	      vel_object.linear.x = 0.0;
+	      vel_object.angular.z = 0.0;
+	      pub.publish(vel_object);
+	      continue; // nothing to do start again
+	    }
+	  }
+	  
+	  if(currSeg->seg_number == seg_number) // make sure we are steering to the same line
+	  {
+	    if(currSeg->seg_type == 1) // straight lines, so far enable steering only for straights
+	    {
+	      //ros::spinOnce(); // allow any subscriber callbacks that have been queued up to fire, but don't spin infinitely
 		ros::Time current_time = ros::Time::now();
 		elapsed_time= current_time-birthday;
                 
@@ -144,17 +217,29 @@ int main(int argc,char **argv)
 		
 		ROS_INFO("Offset=%f, dtheta=%f, cmd omega=%f",offset,dtheta,cmd_vel.angular.z);
 		cout << "variables " << Kd << ", " << Ktheta << endl;
-		
-		if(des.linear.x < 0.001 && des.linear.x > -0.001) {
+	
+		// saturate around desired velocities
+		if(des_vel.linear.x < 0.001 && des_vel.linear.x > -0.001) {
 			cmd_vel.linear.x == 0.0;
-		} else if (cmd_vel.linear.x > 1.25*des.linear.x) {
-			cmd_vel.linear.x == 1.25*des.linear.x;
-		} else if (cmd_vel.linear.x > 0.75*des.linear.x) {
-			cmd_vel.linear.x == 0.75*des.linear.x;
+		} else if (cmd_vel.linear.x > 1.25*des_vel.linear.x) {
+			cmd_vel.linear.x == 1.25*des_vel.linear.x;
+		} else if (cmd_vel.linear.x > 0.75*des_vel.linear.x) {
+			cmd_vel.linear.x == 0.75*des_vel.linear.x;
 		}
 		pub.publish(cmd_vel); // Publish the velocity (incorporating feedback)
 		
 		naptime.sleep(); //Sleep, thus enforcing the desired update rate
+	    }
+	    else
+	    {
+	      pub.publish(des_vel); // no control so simply published the desired velocity
+	    }
+	  }
+	  else
+	  {
+	    delete currSeg; // new segment so delete this one to free up memory
+	    currSeg = NULL; // set this to null so that if statements behave correctly
+	  }
 	}// while
 	
   delete tfl;
