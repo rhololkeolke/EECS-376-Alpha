@@ -65,9 +65,16 @@ int main(int argc,char **argv)
 	double Ktheta = 1.0;
 	
 	// open config file for reading.
-	std::ifstream infile;
-	infile.open("../config/steering_constants.txt");
-	if(infile.good() && !infile.bad()){
+	cout << argv[0] << endl;
+	string base = argv[0];
+	int path_loc = base.find("bin/");
+	string new_part = "config/steering_constants.txt";
+	base.replace(path_loc,29,new_part);
+	cout << "base: " << base << endl;
+	
+	std::ifstream infile(base.c_str());
+	//infile.open("../config/steering_constants.txt");
+	if(infile.good()){
 		infile >> Kd;
 		infile >> Ktheta;
 	} else {
@@ -129,6 +136,7 @@ int main(int argc,char **argv)
 		
 		
 		ROS_INFO("Offset=%f, dtheta=%f, cmd omega=%f",offset,dtheta,cmd_vel.angular.z);
+		cout << "variables " << Kd << ", " << Ktheta << endl;
 		
 		
 		pub.publish(cmd_vel); // Publish the velocity (incorporating feedback)
