@@ -43,5 +43,16 @@ int main(int argc, char **argv)
 
   naptime.sleep();
 
+  currSeg.seg_number = 3;
+  currSeg.seg_type = 1;
+  currSeg.seg_length = 12.34;
+  currSeg.ref_point.x = 5.45;
+  currSeg.ref_point.y = 11.92;
+  currSeg.init_tan_angle = tf::createQuaternionMsgFromYaw(40.46*PI/180.0);
+
+  pathPub.publish(currSeg);
+  
+  naptime.sleep();
+
   return 0;
 }

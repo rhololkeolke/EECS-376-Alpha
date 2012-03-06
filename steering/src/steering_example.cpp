@@ -23,6 +23,7 @@ tf::TransformListener *tfl;
 lockedQueue<steering::PathSegment*> segments;
 
 int seg_number = 0;
+bool segComplete = false;
 
 geometry_msgs::PoseStamped temp;
 void odomCallback(const nav_msgs::Odometry::ConstPtr& odom) {
@@ -46,7 +47,8 @@ void velCallback(const geometry_msgs::Twist::ConstPtr& vel) {
 void pathSegCallback(const steering::PathSegment::ConstPtr& seg)
 {
   steering::PathSegment *newSeg = new steering::PathSegment();
-  ROS_INFO("path segment Callback");
+  ROS_INFO("Callback: path segment callback");
+  ROS_INFO("Callback: queue size %i",segments.size());
   newSeg->seg_number = seg->seg_number;
   newSeg->seg_type = seg->seg_type;
   newSeg->curvature = seg->curvature;
@@ -56,12 +58,16 @@ void pathSegCallback(const steering::PathSegment::ConstPtr& seg)
   newSeg->max_speeds = seg->max_speeds;
   newSeg->accel_limit = seg->accel_limit;
   newSeg->decel_limit = seg->decel_limit;
+  ROS_INFO("Callback: pushing");
   segments.push(newSeg);
+  ROS_INFO("Callback: new queue size %i", segments.size());
 }
 
 void segStatusCallback(const steering::SegStatus::ConstPtr& status)
 {
   seg_number = status->seg_number;
+  if(!segComplete)
+    segComplete = status->segComplete;
 }
 
 int main(int argc,char **argv)
@@ -171,7 +177,7 @@ int main(int argc,char **argv)
 	    }
 	  }
 	  
-	  if(currSeg->seg_number == seg_number) // make sure we are steering to the same line
+	  if(!segComplete) // make sure we are steering to the same line
 	  {
 	    if(currSeg->seg_type == 1) // straight lines, so far enable steering only for straights
 	    {
@@ -237,6 +243,7 @@ int main(int argc,char **argv)
 	  }
 	  else
 	  {
+	    segComplete = false;
 	    delete currSeg; // new segment so delete this one to free up memory
 	    currSeg = NULL; // set this to null so that if statements behave correctly
 	  }
