@@ -21,7 +21,11 @@ geometry_msgs::PoseStamped last_map_pose;
 geometry_msgs::Twist des_vel;
 tf::TransformListener *tfl;
 
-lockedQueue<steering::PathSegment*> segments;
+//lockedQueue<steering::PathSegment*> segments;
+
+const double PI=3.14159;
+
+steering::PathSegment newSeg;
 
 int seg_number = 0;
 bool segComplete = false;
@@ -57,21 +61,21 @@ void velCallback(const geometry_msgs::Twist::ConstPtr& vel) {
 
 void pathSegCallback(const steering::PathSegment::ConstPtr& seg)
 {
-  steering::PathSegment *newSeg = new steering::PathSegment();
   ROS_INFO("Callback: path segment callback");
-  ROS_INFO("Callback: queue size %i",segments.size());
-  newSeg->seg_number = seg->seg_number;
-  newSeg->seg_type = seg->seg_type;
-  newSeg->curvature = seg->curvature;
-  newSeg->seg_length = seg->seg_length;
-  newSeg->ref_point = seg->ref_point;
-  newSeg->init_tan_angle = seg->init_tan_angle;
-  newSeg->max_speeds = seg->max_speeds;
-  newSeg->accel_limit = seg->accel_limit;
-  newSeg->decel_limit = seg->decel_limit;
-  ROS_INFO("Callback: pushing");
-  segments.push(newSeg);
-  ROS_INFO("Callback: new queue size %i", segments.size());
+  //ROS_INFO("Callback: queue size %i",segments.size());
+  newSeg.seg_number = seg->seg_number;
+  newSeg.seg_type = seg->seg_type;
+  newSeg.curvature = seg->curvature;
+  newSeg.seg_length = seg->seg_length;
+  newSeg.ref_point = seg->ref_point;
+  newSeg.init_tan_angle = seg->init_tan_angle;
+  newSeg.max_speeds = seg->max_speeds;
+  newSeg.accel_limit = seg->accel_limit;
+  newSeg.decel_limit = seg->decel_limit;
+  // ROS_INFO("Callback: pushing");
+  //  segments.push(newSeg);
+  //currSeg = &newSeg;
+  //  ROS_INFO("Callback: new queue size %i", segments.size());
 }
 
 void segStatusCallback(const steering::SegStatus::ConstPtr& status)
@@ -163,41 +167,49 @@ int main(int argc,char **argv)
 
 	double xStart,yStart;
 
+	int seg_type = 1;
+
 	while (ros::ok()) // do work here
 	{
-	  if(currSeg == NULL) // while there is no current segment
-	  {
-	    ROS_INFO("currSeg is NULL");
-	    if(segments.size() > 0) // see if there are any new segments
+	  switch(seg_number)
 	    {
-	      ROS_INFO("segments.size() >0");
-	      currSeg = segments.front(); // get the new segment
-	      segments.pop(); // remove it from the queue
-
-	      if(currSeg->seg_type == 1)
-		{
-		  ROS_INFO("segment type == 1");
-		  xs = currSeg->ref_point.x; // get the start point
-		  ys = currSeg->ref_point.y;
-
-		  desired_heading = tf::getYaw(currSeg->init_tan_angle); // get the path's heading
+	    case 1:
+	      xs = 8.27;
+	      ys = 14.74;
+	      desired_heading = -137.16*PI/180.0;
 	      
-		  xf = xs + currSeg->seg_length*cos(desired_heading); // get the final point
-		  yf = ys + currSeg->seg_length*sin(desired_heading);
-		}
+	      xf = xs + 4.2*cos(desired_heading);
+	      yf = ys + 4.2*sin(desired_heading);
+	      seg_type = 1;
+	      break;
+	    case 3:
+	      xs = xf;
+	      ys = yf;
+
+	      desired_heading = 129.0*PI/180.0;
+	      
+	      xf = xs + 12.34*cos(desired_heading);
+	      yf = ys + 12.34*sin(desired_heading);
+	      seg_type = 1;
+	      break;
+	    case 5:
+	      xs = xf;
+	      ys = yf;
+
+	      desired_heading = 45.22*PI/280.0;
+	      
+	      xf = xs + 12.34*cos(desired_heading);
+	      yf = ys + 12.34*sin(desired_heading);
+	      seg_type = 1;
+	      break;
+	    default:
+	      seg_type = 3;
+	      break;
 	    }
-	    else
-	    {
-	      vel_object.linear.x = 0.0;
-	      vel_object.angular.z = 0.0;
-	      pub.publish(vel_object);
-	      continue; // nothing to do start again
-	    }
-	  }
-	  
-	  if(!segComplete) // make sure we are steering to the same line
-	  {
-	    if(currSeg->seg_type == 1) // straight lines, so far enable steering only for straights
+	      
+	  /* if(!segComplete) // make sure we are steering to the same line
+	     {*/
+	    if(seg_type == 1) // straight lines, so far enable steering only for straights
 	    {
 	      if(obs && !lastobs)
 		{
@@ -230,6 +242,7 @@ int main(int argc,char **argv)
 		  cmd_vel.angular.z = 0.0;
 		  pub.publish(cmd_vel);
 
+		  //ros::spinOnce();
 		  naptime.sleep();
 		  continue;
 		}
@@ -293,23 +306,25 @@ int main(int argc,char **argv)
 			}
 		//cmd_vel.linear.x = des_vel.linear.x;
 		pub.publish(cmd_vel); // Publish the velocity (incorporating feedback)
-		
+		 
+		//ros::spinOnce();
 		naptime.sleep(); //Sleep, thus enforcing the desired update rate
 	    }
 	    else
 	    {
 	      pub.publish(des_vel); // no control so simply published the desired velocity
 	    }
-	  }
+	    /*}
 	  else
 	  {
 	    ROS_INFO("Completed a segment");
 	    segComplete = false;
-	    delete currSeg; // new segment so delete this one to free up memory
-	    currSeg = NULL; // set this to null so that if statements behave correctly
-	  }
+	    //delete currSeg; // new segment so delete this one to free up memory
+	    //currSeg = NULL; // set this to null so that if statements behave correctly
+	    }*/
 	}// while
 	
   delete tfl;
-	return 0; // this code will only get here if this node was told to shut down
+  return 0; // this code will only get here if this node was told to shut down
 }// main
+

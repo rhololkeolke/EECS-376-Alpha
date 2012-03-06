@@ -26,7 +26,10 @@ double lastOCmd = 0;
 
 int seg_number = 0;
 
-lockedQueue<velocity_profiler::PathSegment*> segments;
+velocity_profiler::PathSegment newSeg;
+velocity_profiler::PathSegment *currSeg;
+
+//lockedQueue<velocity_profiler::PathSegment*> segments;
 
 class State
 {
@@ -119,19 +122,17 @@ void obstaclesCallback(const velocity_profiler::Obstacles::ConstPtr& obsData)
 void pathSegCallback(const velocity_profiler::PathSegment::ConstPtr& seg)
 {
   ROS_INFO("SegCallback: Started callback");
-  ROS_INFO("SegCallback: segments.size: %i",segments.size());
-  velocity_profiler::PathSegment *newSeg = new velocity_profiler::PathSegment();
-  newSeg->seg_number = seg->seg_number;
-  newSeg->seg_type = seg->seg_type;
-  newSeg->curvature = seg->curvature;
-  newSeg->seg_length = seg->seg_length;
-  newSeg->ref_point = seg->ref_point;
-  newSeg->init_tan_angle = seg->init_tan_angle;
-  newSeg->max_speeds = seg->max_speeds;
-  newSeg->accel_limit = seg->accel_limit;
-  newSeg->decel_limit = seg->decel_limit;
-  segments.push(newSeg);
-  ROS_INFO("SegCallback: segments.size: %i",segments.size());
+  newSeg.seg_number = seg->seg_number;
+  newSeg.seg_type = seg->seg_type;
+  newSeg.curvature = seg->curvature;
+  newSeg.seg_length = seg->seg_length;
+  newSeg.ref_point = seg->ref_point;
+  newSeg.init_tan_angle = seg->init_tan_angle;
+  newSeg.max_speeds = seg->max_speeds;
+  newSeg.accel_limit = seg->accel_limit;
+  newSeg.decel_limit = seg->decel_limit;
+  //  segments.push(newSeg);
+  //ROS_INFO("SegCallback: segments.size: %i",segments.size());
 }
 
 void velCallback(const geometry_msgs::Twist::ConstPtr& vel)
@@ -215,6 +216,7 @@ void straight(ros::Publisher& pub, ros::Publisher& segStatusPub, double distance
       vel_object.angular.z = 0.0;
      
       pub.publish(vel_object);
+      //ros::spinOnce();
       naptime.sleep(); // this is here so that the loop keeps the same rate and doesn't take up all the CPU time
       continue; // restart the while loop
     }
@@ -262,6 +264,7 @@ void straight(ros::Publisher& pub, ros::Publisher& segStatusPub, double distance
       vel_object.angular.z = 0.0;
       pub.publish(vel_object);
 
+      //ros::spinOnce();
       naptime.sleep();
       continue;
     }
@@ -326,6 +329,7 @@ void straight(ros::Publisher& pub, ros::Publisher& segStatusPub, double distance
     vel_object.angular.z = 0.0;
     pub.publish(vel_object);
 
+    //ros::spinOnce();
     naptime.sleep();
   }
   velocity_profiler::SegStatus status;
@@ -412,6 +416,7 @@ void turn(ros::Publisher& pub, ros::Publisher& segStatusPub, double angle)
 
 
       pub.publish(vel_object);
+      //ros::spinOnce();
       naptime.sleep();
       continue;
     }  
@@ -482,6 +487,7 @@ void turn(ros::Publisher& pub, ros::Publisher& segStatusPub, double angle)
     vel_object.angular.z = o_cmd;
     pub.publish(vel_object);
       
+    //ros::spinOnce();
     naptime.sleep(); // wait until its time to publish.  This keeps publisher at rate specified by RATE
   }
   velocity_profiler::SegStatus status;
@@ -520,64 +526,105 @@ int main(int argc, char **argv)
 
   velocity_profiler::PathSegment* currSeg = NULL;
 
-  double dist = 0.0;
+  /*double dist = 0.0;
   while(ros::ok())
   {
-    if(currSeg == NULL); // while there is nothing to do
+    if(newSeg.seg_number > 0); // while there is nothing to do
     {
-      if(segments.size() > 0) // see if something new was added to the queue
-      {
-	currSeg = segments.front(); // if so look at it
-	segments.pop();
 
-	if(currSeg->seg_type == 1)
+	if(newSeg.seg_type == 1)
 	{
-	  double xs = currSeg->ref_point.x;
-	  double ys = currSeg->ref_point.y;
+	  ROS_INFO("Seg_type == 1");
+	  double xs = newSeg.ref_point.x;
+	  double ys = newSeg.ref_point.y;
 	
-	  double desired_heading = tf::getYaw(currSeg->init_tan_angle);
+	  double desired_heading = tf::getYaw(newSeg.init_tan_angle);
 
-	  double xf = xs + currSeg->seg_length*cos(desired_heading);
-	  double yf = ys + currSeg->seg_length*sin(desired_heading);
+	  double xf = xs + newSeg.seg_length*cos(desired_heading);
+	  double yf = ys + newSeg.seg_length*sin(desired_heading);
 
 	  dist = sqrt(pow(xf-xs,2)+pow(yf-ys,2));
-	  seg_number = currSeg->seg_number;
+	  seg_number = newSeg.seg_number;
 	  straight(desVelPub,segStatusPub,dist);
-	  delete currSeg;
-	  currSeg = NULL;
+	  
+	  //delete currSeg;
+	  // currSeg = NULL;
 	}
-	else if(currSeg->seg_type == 3)
+	else if(newSeg.seg_type == 3)
 	{
-	  seg_number = currSeg->seg_number;
-	  dist = currSeg->seg_length;	  
+	  ROS_INFO("seg_type == 3");
+	  seg_number = newSeg.seg_number;
+	  dist = newSeg.seg_length;	  
 	  turn(desVelPub,segStatusPub,dist);
-	  delete currSeg;
-	  currSeg = NULL;
+	  // delete currSeg;
+	  //currSeg = NULL;
 	}
-	else
-	{
-	  delete currSeg;
-	  currSeg = NULL;
-	}
-      }
-      else
-      {
-	geometry_msgs::Twist vel_object;
-	vel_object.linear.x = 0.0;
-	vel_object.angular.z = 0.0;
-	desVelPub.publish(vel_object);
-	naptime.sleep();
-	continue; // nothing to do start again
-      }
+	else{
+	  ROS_INFO("unknown seg_type");
+	  velocity_profiler::SegStatus status;
+	  status.seg_number = newSeg.seg_number;
+	  status.segComplete = false;
+
+	  segStatusPub.publish(newSeg);
+
+	  geometry_msgs::Twist vel_object;
+	  vel_object.linear.x = 0.0;
+	  vel_object.angular.z = 0.0;
+	  desVelPub.publish(vel_object);
+	  //ros::spinOnce();
+	  naptime.sleep();
+	  continue; // nothing to do start again
+	  }
     }
-  }
+    }*/
   // this is the set of hard coded directions that will make the robot drive to the vending
   // machines
-  /*  straight(pub,4.2);
-  turn(pub,-PI/2);
-  straight(pub,12.5);
-  turn(pub,-PI/2);
-  straight(pub,4.0);*/
+  velocity_profiler::SegStatus status;
+  status.segComplete = false;
+  status.seg_number = 1;
+
+  segStatusPub.publish(status);
+
+  straight(desVelPub,segStatusPub,4.2);
+
+  status.segComplete = true;
+  segStatusPub.publish(status);
+
+  status.segComplete = false;
+  status.seg_number = 2;
+  segStatusPub.publish(status);
+
+  turn(desVelPub,segStatusPub,-PI/2);
+
+  status.segComplete = true;
+  segStatusPub.publish(status);
+
+  status.segComplete = false;
+  status.seg_number = 3;
+  segStatusPub.publish(status);
+
+  straight(desVelPub,segStatusPub,12.5);
+
+  status.segComplete = true;
+  segStatusPub.publish(status);
+
+  status.segComplete = false;
+  status.seg_number = 4;
+  segStatusPub.publish(status);
+
+  turn(desVelPub,segStatusPub,-PI/2);
+
+  status.segComplete = true;
+  segStatusPub.publish(status);
+
+  status.segComplete = false;
+  status.seg_number = 5;
+  segStatusPub.publish(status);
+
+  straight(desVelPub,segStatusPub,4.0);
+
+  status.segComplete = true;
+  segStatusPub.publish(status);
 
   return 0;
 }
