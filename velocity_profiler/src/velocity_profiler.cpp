@@ -149,12 +149,12 @@ void straight(ros::Publisher& pub, ros::Publisher& segStatusPub, double distance
   double a_max; // the maximum accelration in m/s^2
   double segLength;
   if(distance < 0.0){ // this function assumes the the sign of distance determines the direction
-    v_max = -1.0;
+    v_max = -0.5;
     a_max = -0.25;
     segLength = -1*distance;
   }
   else{
-    v_max = 1.0;
+    v_max = 0.5;
     a_max = 0.25;
     segLength = distance;
   }
@@ -200,12 +200,12 @@ void straight(ros::Publisher& pub, ros::Publisher& segStatusPub, double distance
       omega_cmd = 0;
       currentState.stop(); // set the internal state to no velocity
 
-  velocity_profiler::SegStatus status;
-  status.segComplete = false;
-  status.seg_number = seg_number;
-  status.progress_made = currentState.getDistDone();
+      velocity_profiler::SegStatus status;
+      status.segComplete = false;
+      status.seg_number = seg_number;
+      status.progress_made = currentState.getDistDone();
 
-  segStatusPub.publish(status);      
+      segStatusPub.publish(status);      
 
 
       vel_object.linear.x = 0.0; // this is so the simulator acts correctly when using our estopPublisher program
@@ -249,12 +249,12 @@ void straight(ros::Publisher& pub, ros::Publisher& segStatusPub, double distance
 	currentState.stop();
       }
 
-  velocity_profiler::SegStatus status;
-  status.segComplete = false;
-  status.seg_number = seg_number;
-  status.progress_made = currentState.getDistDone();
+      velocity_profiler::SegStatus status;
+      status.segComplete = false;
+      status.seg_number = seg_number;
+      status.progress_made = currentState.getDistDone();
 
-  segStatusPub.publish(status);      
+      segStatusPub.publish(status);      
 
       vel_object.angular.z = 0.0;
       pub.publish(vel_object);

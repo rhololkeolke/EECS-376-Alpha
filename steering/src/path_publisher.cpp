@@ -32,7 +32,7 @@ int main(int argc, char **argv)
   pathPub.publish(currSeg);
 
   naptime.sleep();
-
+  /*
   currSeg.seg_number = 2;
   currSeg.seg_type = 3;
   currSeg.seg_length = PI/2;
@@ -53,6 +53,6 @@ int main(int argc, char **argv)
   pathPub.publish(currSeg);
   
   naptime.sleep();
-
+  */
   return 0;
 }

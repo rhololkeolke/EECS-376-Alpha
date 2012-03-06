@@ -10,6 +10,7 @@
 #include <fstream>
 #include <steering/SegStatus.h>
 #include <steering/PathSegment.h>
+#include <steering/Obstacles.h>
 #include "lockedQueue.h"
 
 using namespace std;
@@ -24,6 +25,16 @@ lockedQueue<steering::PathSegment*> segments;
 
 int seg_number = 0;
 bool segComplete = false;
+
+// stores the values of the obstacles in the way
+bool obs = false;
+double obs_dist = 0.0;
+
+void obstaclesCallback(const steering::Obstacles::ConstPtr& obsData)
+{
+  obs = obsData->exists;
+  obs_dist = obsData->distance;
+}
 
 geometry_msgs::PoseStamped temp;
 void odomCallback(const nav_msgs::Odometry::ConstPtr& odom) {
@@ -81,6 +92,7 @@ int main(int argc,char **argv)
         ros::Subscriber sub = n.subscribe<nav_msgs::Odometry>("odom", 1, odomCallback); 
 	ros::Subscriber path = n.subscribe<steering::PathSegment>("path_seg", 10, pathSegCallback);
 	ros::Subscriber seg_status = n.subscribe<steering::SegStatus>("seg_status",1,segStatusCallback);
+	ros::Subscriber obsSub = n.subscribe<steering::Obstacles>("obstacles",1,obstaclesCallback);
 	//"cmd_vel" is the topic name to publish velocity commands
 	//"1" is the buffer size (could use buffer>1 in case network bogs down)
 
@@ -106,7 +118,7 @@ int main(int argc,char **argv)
 	
 	double dtheta, offset;
  	double desired_heading,current_heading; //desired and actual robot heading
-	double x_current,y_current; // current x,y position of robot in map coords
+	double x_current=0.0,y_current=0.0; // current x,y position of robot in map coords
 	double tx,ty,nx,ny;  //path tangent and normal vector components
 	double xrs,yrs; // x and y coords of robot relative to start (xs,ys)
 	// tune these values, Kd and Ktheta, for steering
@@ -145,6 +157,12 @@ int main(int argc,char **argv)
 	
 	steering::PathSegment* currSeg = NULL;
 
+	bool lastobs = false;
+	double obsDist = 0.0;
+	double decel_rate;
+
+	double xStart,yStart;
+
 	while (ros::ok()) // do work here
 	{
 	  if(currSeg == NULL) // while there is no current segment
@@ -181,6 +199,47 @@ int main(int argc,char **argv)
 	  {
 	    if(currSeg->seg_type == 1) // straight lines, so far enable steering only for straights
 	    {
+	      if(obs && !lastobs)
+		{
+		  ROS_INFO("Obstacles: Initializing obstacles");
+	       	  xStart = x_current;
+		  yStart = y_current;
+		  obsDist = obs_dist;
+		  lastobs = true;
+		  decel_rate = pow(cmd_vel.linear.x,2)/(obs_dist-.1);
+		  cout << "Obstacles: obs_dist: " << obs_dist << ", decel_rate: " << decel_rate << endl; 
+		}
+	      
+	      if(lastobs && obs && sqrt(pow(xStart-xf,2)+pow(yStart-yf,2)) >= obs_dist) // there is an obstacle in the way
+		{
+		  //ROS_INFO("Running obstacle code");
+		  // calculate the deceleration rate
+		  
+		  if(cmd_vel.linear.x > .001)
+		    {
+		      cmd_vel.linear.x = cmd_vel.linear.x - decel_rate*dt;
+		      ROS_INFO("Obstacles: cmd_vel: %f", cmd_vel.linear.x);
+		    }
+		  else
+		    {
+		      cmd_vel.linear.x = 0.0;
+		      ROS_INFO("Obstacles: I should be stopped");
+		    }
+		  
+		 		  
+		  cmd_vel.angular.z = 0.0;
+		  pub.publish(cmd_vel);
+
+		  naptime.sleep();
+		  continue;
+		}
+	      else
+		{
+		  ROS_INFO("Obstacles: Obstacle is now gone");
+		  lastobs = false;
+		}
+
+
 	      //ros::spinOnce(); // allow any subscriber callbacks that have been queued up to fire, but don't spin infinitely
 		ros::Time current_time = ros::Time::now();
 		elapsed_time= current_time-birthday;
@@ -225,13 +284,14 @@ int main(int argc,char **argv)
 		cout << "variables " << Kd << ", " << Ktheta << endl;
 	
 		// saturate around desired velocities
-		if(des_vel.linear.x < 0.001 && des_vel.linear.x > -0.001) {
+		/*		if(des_vel.linear.x < 0.001 && des_vel.linear.x > -0.001) {
 			cmd_vel.linear.x == 0.0;
 		} else if (cmd_vel.linear.x > 1.25*des_vel.linear.x) {
 			cmd_vel.linear.x == 1.25*des_vel.linear.x;
 		} else if (cmd_vel.linear.x > 0.75*des_vel.linear.x) {
 			cmd_vel.linear.x == 0.75*des_vel.linear.x;
-		}
+			}*/
+		cmd_vel.linear.x = des_vel.linear.x;
 		pub.publish(cmd_vel); // Publish the velocity (incorporating feedback)
 		
 		naptime.sleep(); //Sleep, thus enforcing the desired update rate
