@@ -215,7 +215,7 @@ int main(int argc,char **argv)
 		  //ROS_INFO("Running obstacle code");
 		  // calculate the deceleration rate
 		  
-		  if(cmd_vel.linear.x > .001)
+		  if(cmd_vel.linear.x > .001 && obs_dist > .2)
 		    {
 		      cmd_vel.linear.x = cmd_vel.linear.x - decel_rate*dt;
 		      ROS_INFO("Obstacles: cmd_vel: %f", cmd_vel.linear.x);
