@@ -21,6 +21,15 @@ int main(int argc, char **argv)
   while(!ros::Time::isValid()) {}
 
   steering::PathSegment currSeg;
+  
+  currSeg.seg_number = 0;
+  currSeg.seg_type = 1;
+  currSeg.seg_length = 0.0;
+  currSeg.ref_point.x = 8.27;
+  currSeg.ref_point.y = 14.754;
+  currSeg.init_tan_angle = tf::createQuaternionMsgFromYaw(-137.16*PI/180.0);
+  
+  pathPub.publish(currSeg);
 
   naptime.sleep();
 
