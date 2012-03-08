@@ -1,6 +1,7 @@
 #ifndef LOCKED_QUEUE_H_
 #define LOCKED_QUEUE_H_
 
+#include <ros/ros.h>
 #include <queue>
 #include <pthread.h>
 
@@ -16,91 +17,59 @@ class lockedQueue
     pthread_mutex_init(&the_mutex, NULL); // initialize the mutex with default attributes
   }
 
+  ~lockedQueue()
+  {
+    ros::Rate naptime(10);
+    while(pthread_mutex_destroy(&the_mutex) == EBUSY)
+    {
+      naptime.sleep();
+    }
+
+  }
+
   void push(const Data& data)
   {
-    int err;
-    if((err=pthread_mutex_lock(&the_mutex))!=0) // lock the queue, or block until lockable
-    {
-      throw err;
-    }
+    pthread_mutex_lock(&the_mutex);
     the_queue.push(data); // push the data
-    if((err=pthread_mutex_unlock(&the_mutex))!=0) // unlock the queue for other threads to use
-    {
-      throw err;
-    }
+    pthread_mutex_unlock(&the_mutex);
   }
 
   bool empty()
   {
-    int err;
-    if((err=pthread_mutex_lock(&the_mutex))!=0) // lock the queue, or block until lockable
-    {
-      throw err; // something went wrong throw the error
-    }
+    pthread_mutex_lock(&the_mutex);
     bool result = the_queue.empty(); // push the data
-    if((err=pthread_mutex_unlock(&the_mutex))!=0) // unlock the queue for other threads to use
-    {
-      throw err; // throw the error
-    }
+    pthread_mutex_unlock(&the_mutex);
     return result;
   }
 
   Data& front()
   {
-    int err;
-    if((err=pthread_mutex_lock(&the_mutex))!=0) // lock the queue, or block until lockable
-    {
-      throw err;
-    }
+    pthread_mutex_lock(&the_mutex);
     Data& data = the_queue.front(); // push the data
-    if((err=pthread_mutex_unlock(&the_mutex))!=0) // unlock the queue for other threads to use
-    {
-      throw err;
-    }
+    pthread_mutex_unlock(&the_mutex);
     return data;
   }
     
   Data const& front() const
   {
-    int err;
-    if((err=pthread_mutex_lock(&the_mutex))!=0) // lock the queue, or block until lockable
-    {
-      throw err;
-    }
+    pthread_mutex_lock(&the_mutex);
     Data const& data = the_queue.front(); // push the data
-    if((err=pthread_mutex_unlock(&the_mutex))!=0) // unlock the queue for other threads to use
-    {
-      throw err;
-    }
+    pthread_mutex_unlock(&the_mutex);
     return data;
   }
 
   void pop()
   {
-    int err;
-    if((err=pthread_mutex_lock(&the_mutex))!=0) // lock the queue, or block until lockable
-    {
-      throw err;
-    }
+    pthread_mutex_lock(&the_mutex);
     the_queue.pop(); // push the data
-    if((err=pthread_mutex_unlock(&the_mutex))!=0) // unlock the queue for other threads to use
-    {
-      throw err;
-    }
+    pthread_mutex_unlock(&the_mutex);
   }
 
   unsigned int size()
   {
-    int err;
-    if((err=pthread_mutex_lock(&the_mutex))!=0) // lock the queue, or block until lockable
-    {
-      throw err;
-    }
+    pthread_mutex_lock(&the_mutex);
     unsigned int result = the_queue.size();
-    if((err=pthread_mutex_unlock(&the_mutex))!=0) // unlock the queue for other threads to use
-    {
-      throw err;
-    }
+    pthread_mutex_lock(&the_mutex);
     return result;
   }
 };

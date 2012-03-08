@@ -1,9 +1,10 @@
 #include <ros/ros.h>
 #include <cwru_base/Pose.h>
 #include <sensor_msgs/LaserScan.h>
-#include <eecs_376_alpha/Obstacles.h>
+#include <velocity_profiler/Obstacles.h>
 #include <iostream> 
 #include <math.h>
+#include <string>
 #include <iostream>
 
 #define _USE_MATH_DEFINES
@@ -13,6 +14,7 @@ using namespace std;
 const uint cPings = 181;
 const double cBoxHeight = 1.0; //distance in front of the robot
 const double cBoxWidth = 0.5; // distance from x axis to side of box (double this is width of box) 
+const string cLaserTopic = "base_scan"; 
 
 double curLaserData [cPings]; //current path lidar info
 
@@ -41,7 +43,7 @@ void curPath(ros::Publisher &obsPub)
 {
   ros::Time time = ros::Time::now();
 
-  eecs_376_alpha::Obstacles obsData;  //create an instance of the obstacle msg
+  velocity_profiler::Obstacles obsData;  //create an instance of the obstacle msg
   
   double closestObs = 90.0; // laser range is up to 80 so nothing should be worse than this
   
@@ -93,8 +95,8 @@ int main(int argc, char **argv)
 
   ros::NodeHandle n;
     
-  ros::Subscriber laserSub = n.subscribe("base_laser1_scan",1,laserCallback);
-  ros::Publisher obsPub = n.advertise<eecs_376_alpha::Obstacles>("obstacles",1);
+  ros::Subscriber laserSub = n.subscribe(cLaserTopic,1,laserCallback);
+  ros::Publisher obsPub = n.advertise<velocity_profiler::Obstacles>("obstacles",1);
 
   while(!ros::Time::isValid()) {}
 

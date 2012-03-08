@@ -5,5 +5,7 @@
 #Requests a new path segment from the Path Planner Node
 bool segComplete
 
+uint64 seg_number
+
 #Distance made (Progress made thus far)
 float64 progress_made
