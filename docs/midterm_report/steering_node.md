@@ -1,26 +1,14 @@
-## Steering Node ##
+# Steering Node #
 The Steering node is responsible for taking the desired velocities from the 
 velocity planner, the desired path from the path planner, and the current 
 position to determine correction factors to the velocity command such that the 
 robot does not stray from its desired path.
 
-### Theory of Operation ###
-#### Input/Output ####
-Listener 			Information
--------- 			-----------
-command_velocity 	Desired speed
-path_planner 		Desired path
-odom 				Current location
+## Theory of Operation ##
+describe what we want the steering node to do in more exact detail. say how 
+they interconnect and how we use the messages
 
-Table: Input
-
-Publisher 	Information
---------- 	-----------
-cmd_vel 	Velocity vector
-
-Table: Output
-
-#### Steering Algorithm ####
+### Steering Algorithm ###
 We will use the linear steering algorithm. This algorithm takes a number of 
 inputs such as:
 
@@ -38,8 +26,13 @@ to the current point $xrs*nx+yrs*ny$. We take this product and add it to
 $d_\theta$ to get the final corrected heading 
 $-K_d*offset+K_{\theta}*d_\theta$.
 
-### Observations ###
+## Observations ##
+problems we ran into
+operating observations
 
-### Coding Procedure ###
+## Coding Procedure ##
 The `steering_example.cpp` sample code was tweaked to include a file
 reader to allow us to easily modify constants $K_d$ and $K_\theta$.
+
+## Future Plans ##
+* non linear steering
