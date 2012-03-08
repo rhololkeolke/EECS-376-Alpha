@@ -46,12 +46,14 @@ void curPath(ros::Publisher &obsPub)
   velocity_profiler::Obstacles obsData;  //create an instance of the obstacle msg
   
   double closestObs = 90.0; // laser range is up to 80 so nothing should be worse than this
-  
+
+  //An obstacle is present if the value at the index of the iterator i is within the range of the configuaration space box
+  //The iterator is always within bounds of the index of the array of laser data(cPings)
   for (uint i = 0; i < cPings;  i++)
   {
     if(i < 90-angleSwitch || i > 90+angleSwitch)
       {
-	
+
 	if(curLaserData[i] < cBoxWidth/cos((180.0-(double)i)*M_PI/180.0))
 	  {
 	    
