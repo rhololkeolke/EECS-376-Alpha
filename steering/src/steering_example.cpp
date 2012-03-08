@@ -21,7 +21,7 @@ geometry_msgs::PoseStamped last_map_pose;
 geometry_msgs::Twist des_vel;
 tf::TransformListener *tfl;
 
-lockedQueue<steering::PathSegment*> segments;
+//lockedQueue<steering::PathSegment*> segments;
 
 int seg_number = 0;
 bool segComplete = false;
@@ -29,6 +29,12 @@ bool segComplete = false;
 // stores the values of the obstacles in the way
 bool obs = false;
 double obs_dist = 0.0;
+
+// the current segment and the next segment
+bool nextSegExists = false;
+bool currSegExists = false;
+steering::PathSegment nextSeg;
+steering::PathSegment currSeg;
 
 void obstaclesCallback(const steering::Obstacles::ConstPtr& obsData)
 {
@@ -41,7 +47,8 @@ void odomCallback(const nav_msgs::Odometry::ConstPtr& odom) {
         last_odom = *odom;
         temp.pose = last_odom.pose.pose;
         temp.header = last_odom.header;
-	cout << "pose " << temp.pose << ", header " << temp.header << endl;
+	
+	//cout << "pose " << temp.pose << ", header " << temp.header << endl;
         try {
           tfl->transformPose("map", temp, last_map_pose); // given most recent odometry and most recent coord-frame transform, compute
                                                           // estimate of most recent pose in map coordinates..."last_map_pose"
@@ -57,28 +64,29 @@ void velCallback(const geometry_msgs::Twist::ConstPtr& vel) {
 
 void pathSegCallback(const steering::PathSegment::ConstPtr& seg)
 {
-  steering::PathSegment *newSeg = new steering::PathSegment();
-  ROS_INFO("Callback: path segment callback");
-  ROS_INFO("Callback: queue size %i",segments.size());
-  newSeg->seg_number = seg->seg_number;
-  newSeg->seg_type = seg->seg_type;
-  newSeg->curvature = seg->curvature;
-  newSeg->seg_length = seg->seg_length;
-  newSeg->ref_point = seg->ref_point;
-  newSeg->init_tan_angle = seg->init_tan_angle;
-  newSeg->max_speeds = seg->max_speeds;
-  newSeg->accel_limit = seg->accel_limit;
-  newSeg->decel_limit = seg->decel_limit;
-  ROS_INFO("Callback: pushing");
-  segments.push(newSeg);
-  ROS_INFO("Callback: new queue size %i", segments.size());
+  if(seg->seg_number != nextSeg.seg_number)
+  {
+    nextSegExists = true;
+   }
+  nextSeg.seg_number = seg->seg_number;
+  nextSeg.seg_type = seg->seg_type;
+  nextSeg.curvature = seg->curvature;
+  nextSeg.seg_length = seg->seg_length;
+  nextSeg.ref_point = seg->ref_point;
+  nextSeg.init_tan_angle = seg->init_tan_angle;
+  nextSeg.max_speeds = seg->max_speeds;
+  nextSeg.accel_limit = seg->accel_limit;
+  nextSeg.decel_limit = seg->decel_limit;
 }
 
 void segStatusCallback(const steering::SegStatus::ConstPtr& status)
 {
   seg_number = status->seg_number;
   if(!segComplete)
+  {
     segComplete = status->segComplete;
+    currSegExists = false;
+  }
 }
 
 int main(int argc,char **argv)
@@ -126,12 +134,12 @@ int main(int argc,char **argv)
 	double Ktheta = 1.0;
 	
 	// open config file for reading.
-	cout << argv[0] << endl;
+	//cout << argv[0] << endl;
 	string base = argv[0];
 	int path_loc = base.find("bin/");
 	string new_part = "config/steering_constants.txt";
 	base.replace(path_loc,29,new_part);
-	cout << "base: " << base << endl;
+	//cout << "base: " << base << endl;
 	
 	std::ifstream infile(base.c_str());
 	//infile.open("../config/steering_constants.txt");
@@ -155,8 +163,6 @@ int main(int argc,char **argv)
 	desired_heading = atan2(yf-ys,xf-xs);*/
 	ROS_INFO("desired heading: %f",desired_heading);
 	
-	steering::PathSegment* currSeg = NULL;
-
 	bool lastobs = false;
 	double obsDist = 0.0;
 	double decel_rate;
@@ -165,53 +171,64 @@ int main(int argc,char **argv)
 
 	while (ros::ok()) // do work here
 	{
-	  if(currSeg == NULL) // while there is no current segment
+	  ROS_INFO("line 174");
+	  if(!currSegExists) // while there is no current segment
 	  {
-	    ROS_INFO("currSeg is NULL");
-	    if(segments.size() > 0) // see if there are any new segments
+	    ROS_INFO("line 177");
+	    if(nextSegExists) // see if there are any new segments
 	    {
-	      ROS_INFO("segments.size() >0");
-	      currSeg = segments.front(); // get the new segment
-	      segments.pop(); // remove it from the queue
+	      ROS_INFO("line 180");
+	      currSegExists = true;
+	      nextSegExists = false;
+	      currSeg = nextSeg;
+	      segComplete = false;
+	      ROS_INFO("line 185");
+	      if(currSeg.seg_type == 1)
+	      {
+		ROS_INFO("line 188");
+		  xs = currSeg.ref_point.x; // get the start point
+		  ys = currSeg.ref_point.y;
 
-	      if(currSeg->seg_type == 1)
-		{
-		  ROS_INFO("segment type == 1");
-		  xs = currSeg->ref_point.x; // get the start point
-		  ys = currSeg->ref_point.y;
-
-		  desired_heading = tf::getYaw(currSeg->init_tan_angle); // get the path's heading
+		  desired_heading = tf::getYaw(currSeg.init_tan_angle); // get the path's heading
 	      
-		  xf = xs + currSeg->seg_length*cos(desired_heading); // get the final point
-		  yf = ys + currSeg->seg_length*sin(desired_heading);
-		}
+		  xf = xs + currSeg.seg_length*cos(desired_heading); // get the final point
+		  yf = ys + currSeg.seg_length*sin(desired_heading);
+	      }
 	    }
-	    else
+	    /*else
 	    {
+	      ROS_INFO("line 200");
 	      vel_object.linear.x = 0.0;
 	      vel_object.angular.z = 0.0;
 	      pub.publish(vel_object);
 	      continue; // nothing to do start again
-	    }
+	      }*/
 	  }
 	  
+	  ROS_INFO("segComplete %i",segComplete);
+	  ROS_INFO("nextSegExists %i",nextSegExists);
+	  ROS_INFO("currSegExists %i", currSegExists);
 	  if(!segComplete) // make sure we are steering to the same line
 	  {
-	    if(currSeg->seg_type == 1) // straight lines, so far enable steering only for straights
+	    ROS_INFO("line 213");
+	    if(currSeg.seg_type == 1) // straight lines, so far enable steering only for straights
 	    {
+	      ROS_INFO("line 216");
 	      if(obs && !lastobs)
 		{
-		  ROS_INFO("Obstacles: Initializing obstacles");
+		  ROS_INFO("line 219");
+		  //ROS_INFO("Obstacles: Initializing obstacles");
 	       	  xStart = x_current;
 		  yStart = y_current;
 		  obsDist = obs_dist;
 		  lastobs = true;
 		  decel_rate = pow(cmd_vel.linear.x,2)/(obs_dist-.1);
-		  cout << "Obstacles: obs_dist: " << obs_dist << ", decel_rate: " << decel_rate << endl; 
+		  // cout << "Obstacles: obs_dist: " << obs_dist << ", decel_rate: " << decel_rate << endl; 
 		}
 	      
 	      if(lastobs && obs && sqrt(pow(xStart-xf,2)+pow(yStart-yf,2)) >= obs_dist) // there is an obstacle in the way
 		{
+		  ROS_INFO("line_231");
 		  //ROS_INFO("Running obstacle code");
 		  // calculate the deceleration rate
 		  
@@ -226,20 +243,21 @@ int main(int argc,char **argv)
 		      ROS_INFO("Obstacles: I should be stopped");
 		    }
 		  
-		 		  
+		  ROS_INFO("line 246");		  
 		  cmd_vel.angular.z = 0.0;
 		  pub.publish(cmd_vel);
-
+		  
+		  ROS_INFO("About to take a nap");
 		  naptime.sleep();
 		  continue;
 		}
 	      else
-		{
+	      {
 		  ROS_INFO("Obstacles: Obstacle is now gone");
 		  lastobs = false;
-		}
+	      }
 
-
+	      ROS_INFO("line 260");
 	      //ros::spinOnce(); // allow any subscriber callbacks that have been queued up to fire, but don't spin infinitely
 		ros::Time current_time = ros::Time::now();
 		elapsed_time= current_time-birthday;
@@ -255,7 +273,8 @@ int main(int argc,char **argv)
 		ty = sin(desired_heading);
 		nx = -ty;
 		ny = tx;
-
+		
+		ROS_INFO("line 277");
 
 		// error in heading
 		dtheta = desired_heading-current_heading;
@@ -264,52 +283,56 @@ int main(int argc,char **argv)
 		if (dtheta<-3.14159)
                         dtheta=dtheta+2*pi;
 
+		ROS_INFO("line 286");
                 //compute offset error:
 		x_current = last_map_pose.pose.position.x;
 		y_current = last_map_pose.pose.position.y;
 
+		ROS_INFO("line 291");
 		//vector from start point to current robot point
 		xrs = x_current-xs;
 		yrs = y_current-ys;
 
+		ROS_INFO("line 296");
 		// dot this vector with path normal vector to get the offset (works for line segments)
 		offset = xrs*nx+yrs*ny;
 		
+		ROS_INFO("line 300");
 		// steering control law
 		cmd_vel.angular.z = -Kd*offset +Ktheta*dtheta; // simple, linear controller; can do better
 		cmd_vel.linear.x=0.5; //command constant fwd vel
 		
 		
-		ROS_INFO("Offset=%f, dtheta=%f, cmd omega=%f",offset,dtheta,cmd_vel.angular.z);
-		cout << "variables " << Kd << ", " << Ktheta << endl;
+		//ROS_INFO("Offset=%f, dtheta=%f, cmd omega=%f",offset,dtheta,cmd_vel.angular.z);
+		//cout << "variables " << Kd << ", " << Ktheta << endl;
 	
 		// saturate around desired velocities
-		if(des_vel.linear.x < 0.001 && des_vel.linear.x > -0.001) {
+		ROS_INFO("line 310");
+	        if(des_vel.linear.x < 0.001 && des_vel.linear.x > -0.001) {
+		  ROS_INFO("line 312");
 			cmd_vel.linear.x == 0.0;
 		} else if (cmd_vel.linear.x > 1.25*des_vel.linear.x) {
+		  ROS_INFO("line 315");
 			cmd_vel.linear.x == 1.25*des_vel.linear.x;
 		} else if (cmd_vel.linear.x > 0.75*des_vel.linear.x) {
+		  ROS_INFO("line 318");
 			cmd_vel.linear.x == 0.75*des_vel.linear.x;
 			}
+		ROS_INFO("line 321");
 		//cmd_vel.linear.x = des_vel.linear.x;
 		pub.publish(cmd_vel); // Publish the velocity (incorporating feedback)
-		
+		ROS_INFO("Published");
 		naptime.sleep(); //Sleep, thus enforcing the desired update rate
+		ROS_INFO("Good morning");
 	    }
 	    else
 	    {
+	      ROS_INFO("line 330");
 	      pub.publish(des_vel); // no control so simply published the desired velocity
 	    }
 	  }
-	  else
-	  {
-	    ROS_INFO("Completed a segment");
-	    segComplete = false;
-	    delete currSeg; // new segment so delete this one to free up memory
-	    currSeg = NULL; // set this to null so that if statements behave correctly
-	  }
 	}// while
-	
-  delete tfl;
+	ROS_INFO("line 335");
+	delete tfl;
 	return 0; // this code will only get here if this node was told to shut down
 }// main

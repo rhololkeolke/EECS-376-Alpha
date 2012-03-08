@@ -26,7 +26,13 @@ double lastOCmd = 0;
 
 int seg_number = 0;
 
-lockedQueue<velocity_profiler::PathSegment*> segments;
+//lockedQueue<velocity_profiler::PathSegment*> segments;
+
+// true when currSeg and nextSeg have actual values we want to follow
+bool currSegExists = false;
+bool nextSegExists = false;
+velocity_profiler::PathSegment nextSeg;
+velocity_profiler::PathSegment currSeg;
 
 class State
 {
@@ -118,20 +124,20 @@ void obstaclesCallback(const velocity_profiler::Obstacles::ConstPtr& obsData)
 
 void pathSegCallback(const velocity_profiler::PathSegment::ConstPtr& seg)
 {
-  ROS_INFO("SegCallback: Started callback");
-  ROS_INFO("SegCallback: segments.size: %i",segments.size());
-  velocity_profiler::PathSegment *newSeg = new velocity_profiler::PathSegment();
-  newSeg->seg_number = seg->seg_number;
-  newSeg->seg_type = seg->seg_type;
-  newSeg->curvature = seg->curvature;
-  newSeg->seg_length = seg->seg_length;
-  newSeg->ref_point = seg->ref_point;
-  newSeg->init_tan_angle = seg->init_tan_angle;
-  newSeg->max_speeds = seg->max_speeds;
-  newSeg->accel_limit = seg->accel_limit;
-  newSeg->decel_limit = seg->decel_limit;
-  segments.push(newSeg);
-  ROS_INFO("SegCallback: segments.size: %i",segments.size());
+  //ROS_INFO("SegCallback: Started callback");
+  if(seg->seg_number != nextSeg.seg_number)
+  {
+    nextSegExists = true;
+  }
+  nextSeg.seg_number = seg->seg_number;
+  nextSeg.seg_type = seg->seg_type;
+  nextSeg.curvature = seg->curvature;
+  nextSeg.seg_length = seg->seg_length;
+  nextSeg.ref_point = seg->ref_point;
+  nextSeg.init_tan_angle = seg->init_tan_angle;
+  nextSeg.max_speeds = seg->max_speeds;
+  nextSeg.accel_limit = seg->accel_limit;
+  nextSeg.decel_limit = seg->decel_limit;
 }
 
 void velCallback(const geometry_msgs::Twist::ConstPtr& vel)
@@ -328,6 +334,8 @@ void straight(ros::Publisher& pub, ros::Publisher& segStatusPub, double distance
 
     naptime.sleep();
   }
+  currSegExists = false;
+
   velocity_profiler::SegStatus status;
   status.segComplete = true;
   status.seg_number = seg_number;
@@ -484,6 +492,8 @@ void turn(ros::Publisher& pub, ros::Publisher& segStatusPub, double angle)
       
     naptime.sleep(); // wait until its time to publish.  This keeps publisher at rate specified by RATE
   }
+  currSegExists = false;
+
   velocity_profiler::SegStatus status;
   status.segComplete = true;
   status.seg_number = seg_number;
@@ -518,50 +528,55 @@ int main(int argc, char **argv)
  
   while(!ros::Time::isValid()) {} // wait for simulator
 
-  velocity_profiler::PathSegment* currSeg = NULL;
-
   double dist = 0.0;
   while(ros::ok())
   {
-    if(currSeg == NULL); // while there is nothing to do
+    if(!currSegExists) // while there is nothing to do
     {
-      if(segments.size() > 0) // see if something new was added to the queue
+      if(nextSegExists) // see if something new was added to the queue
       {
-	currSeg = segments.front(); // if so look at it
-	segments.pop();
+	currSegExists = true;
+	nextSegExists = false;
+	currSeg = nextSeg;
 
-	if(currSeg->seg_type == 1)
+	if(currSeg.seg_type == 1)
 	{
-	  double xs = currSeg->ref_point.x;
-	  double ys = currSeg->ref_point.y;
+	  double xs = currSeg.ref_point.x;
+	  double ys = currSeg.ref_point.y;
 	
-	  double desired_heading = tf::getYaw(currSeg->init_tan_angle);
+	  double desired_heading = tf::getYaw(currSeg.init_tan_angle);
 
-	  double xf = xs + currSeg->seg_length*cos(desired_heading);
-	  double yf = ys + currSeg->seg_length*sin(desired_heading);
+	  double xf = xs + currSeg.seg_length*cos(desired_heading);
+	  double yf = ys + currSeg.seg_length*sin(desired_heading);
 
 	  dist = sqrt(pow(xf-xs,2)+pow(yf-ys,2));
-	  seg_number = currSeg->seg_number;
+	  seg_number = currSeg.seg_number;
+	  ROS_INFO("#%i distance: %f",seg_number,dist);
 	  straight(desVelPub,segStatusPub,dist);
-	  delete currSeg;
-	  currSeg = NULL;
+	  currSegExists = false;
 	}
-	else if(currSeg->seg_type == 3)
+	else if(currSeg.seg_type == 3)
 	{
-	  seg_number = currSeg->seg_number;
-	  dist = currSeg->seg_length;	  
+	  seg_number = currSeg.seg_number;
+	  dist = currSeg.seg_length;	  
+	  ROS_INFO("#%i distance: %f", seg_number, dist);
 	  turn(desVelPub,segStatusPub,dist);
-	  delete currSeg;
-	  currSeg = NULL;
+	  currSegExists = false;
 	}
 	else
 	{
-	  delete currSeg;
-	  currSeg = NULL;
+	  currSegExists = false;
 	}
       }
       else
       {
+	/*velocity_profiler::SegStatus status;
+	status.seg_number = seg_number;
+	status.segComplete = true;
+	
+	segStatusPub.publish(status);*/
+
+	currSegExists = false;
 	geometry_msgs::Twist vel_object;
 	vel_object.linear.x = 0.0;
 	vel_object.angular.z = 0.0;
