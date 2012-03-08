@@ -9,27 +9,29 @@
 
 #define _USE_MATH_DEFINES
 
-using namespace std;
+using namespace std; 
 
 const uint cPings = 181;
 const double cBoxHeight = 1.0; //distance in front of the robot
 const double cBoxWidth = 0.5; // distance from x axis to side of box (double this is width of box) 
-const string cLaserTopic = "base_scan"; 
+const string cSimLaserTopic = "base_scan"; //topic to subscribe to if running code on simulator
+const string cRoboLaserTopic = "base_laser1_scan"; //topic to subscribe to if running on Jinx
 
-double curLaserData [cPings]; //current path lidar info
+double curLaserData [cPings]; //lidar data
 
 int angleSwitch; // stores the angle used to switch between distance formulas
 
-//Summary: Receive scan for the current path which is 1m and the next path which is the second meter and place them into accessible arrays
+//Summary: Receive Laser Scan Data and place it into a global array
 //Parameters: Laser Scan Data
 //Return: Nothing
-//Todo: Determine if scan ranges are appropriate
 void laserCallback(const sensor_msgs::LaserScan::ConstPtr& laserScan)
 {
   {
+    //curLaserData is an array created from each i element of the laserScan array
+    //i == 0 .. i == the index of the final element of the laserScan array
     for(uint i = 0; i < laserScan->ranges.size(); i++)
       {
-	curLaserData[i] = laserScan->ranges[i];
+	curLaserData[i] = laserScan->ranges[i];  
       }
   }
 }
@@ -37,8 +39,6 @@ void laserCallback(const sensor_msgs::LaserScan::ConstPtr& laserScan)
 //Summary: Publishes information regarding whether or not there is an obstalce within the current path segement
 //Parameters: The Obstacle Publisher
 //Return: Nothing
-//Todo: Implement SegStatus msg type
-
 void curPath(ros::Publisher &obsPub)
 {
   ros::Time time = ros::Time::now();
@@ -49,25 +49,24 @@ void curPath(ros::Publisher &obsPub)
   
   for (uint i = 0; i < cPings;  i++)
   {
-    //    cout << "ping: " << i << endl;
-      if(i < 90-angleSwitch || i > 90+angleSwitch)
+    if(i < 90-angleSwitch || i > 90+angleSwitch)
       {
-	//	cout << "\ti<90-" << angleSwitch << " || i>90+" << angleSwitch << endl;
+	
 	if(curLaserData[i] < cBoxWidth/cos((180.0-(double)i)*M_PI/180.0))
-	{
-	  //cout << "\t\tcurLaserData[" << i << "]: " << curLaserData[i] << " < " << cBoxWidth/cos((180.0-(double)i)*M_PI/180.0) << endl;
-	  if(curLaserData[i] < closestObs)
 	  {
-	    closestObs = curLaserData[i];
+	    
+	    if(curLaserData[i] < closestObs)
+	      {
+		closestObs = curLaserData[i];
+	      }
 	  }
-	}
       }
-      else if(i > 90-angleSwitch && i < 90+angleSwitch)
+    else if(i > 90-angleSwitch && i < 90+angleSwitch)
       {
-	//cout << "\ti>90-" << angleSwitch << " && i < 90+" << angleSwitch << endl;
+	
 	if(curLaserData[i] < cBoxHeight/cos(((double)i-90.0)*M_PI/180.0))
 	{
-	  // cout << "\t\tcurLaserData[" << i << "]: " << curLaserData[i] << " < " << cBoxHeight/cos(((double)i-90.0)*M_PI/180.0) << endl;
+	
 	  if(curLaserData[i] < closestObs)
 	  {
 	    closestObs = curLaserData[i];
@@ -78,38 +77,40 @@ void curPath(ros::Publisher &obsPub)
   
   if(closestObs < 90.0)
   {
-    obsData.exists = true;
-    obsData.distance = closestObs;
+    obsData.exists = true; //there is an obstacle
+    obsData.distance = closestObs; //how far is the obstacle along the path
   }
   else  
   {
     obsData.exists = false; // nothing is in the way
     obsData.distance = 0.0;
   }
-  obsPub.publish(obsData); // publish the data
+  obsPub.publish(obsData); // publish the data, must publish constantly or else other nodes may shutdown
 }
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "laser_listener");
+  ros::init(argc, argv, "laser_listener"); //the name of this node is laser_listener
 
   ros::NodeHandle n;
     
-  ros::Subscriber laserSub = n.subscribe(cLaserTopic,1,laserCallback);
-  ros::Publisher obsPub = n.advertise<velocity_profiler::Obstacles>("obstacles",1);
+  ros::Subscriber laserSub = n.subscribe(cSimLaserTopic,1,laserCallback); //laser data comes from base_scan or base_laser1_scan, at a buffer of 1
+  ros::Publisher obsPub = n.advertise<velocity_profiler::Obstacles>("obstacles",1); //obstacles is the topic to which Obstacles publishes to
 
-  while(!ros::Time::isValid()) {}
+  while(!ros::Time::isValid()) {} //helps simulation initialization
 
   angleSwitch = atan(cBoxWidth)*180/M_PI;
 
-  ros::Rate naptime(100);  
+  ros::Rate naptime(100);  //sleeps at rate of 100Hz
+
+
   while(ros::ok())
   {
-      curPath(obsPub);
-
-      ros::spinOnce();
-
-      naptime.sleep();
+    curPath(obsPub);  //function that checks for obstacles
+    
+    ros::spinOnce();  //launches callbacks
+    
+    naptime.sleep();  //sleep for the rate of 100Hz
   }
 
   return 0;
