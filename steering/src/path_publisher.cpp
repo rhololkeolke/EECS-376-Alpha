@@ -55,7 +55,7 @@ int main(int argc, char **argv)
 	currSeg.seg_length = 4.2;
 	currSeg.ref_point.x = 8.27;
 	currSeg.ref_point.y = 14.74;
-	currSeg.init_tan_angle = tf::createQuaternionMsgFromYaw(-137.16*PI/180.0);
+	currSeg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
 	
 	break;
       case 2:
@@ -74,7 +74,7 @@ int main(int argc, char **argv)
 	currSeg.seg_length = 12.34;
 	currSeg.ref_point.x = 5.45;
 	currSeg.ref_point.y = 11.92;
-	currSeg.init_tan_angle = tf::createQuaternionMsgFromYaw(129.0*PI/180.0);
+	currSeg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
     break;
       case 4:
 	ROS_INFO("Sending out path %i",seg_number);
