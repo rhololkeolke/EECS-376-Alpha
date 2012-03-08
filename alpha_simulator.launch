@@ -11,7 +11,7 @@
 <node name="estopPublisher" pkg="velocity_profiler" type="estopPublisher" respawn="true" />
 <node name="laser_listener" pkg="velocity_profiler" type="look_ahead" respawn="true" /> 
 <node name="velocity_profiler" pkg="velocity_profiler" type="velocity_profiler" respawn="true"/>
-<!--<node name="steering" pkg="steering" type="steering_example" respawn="true" />-->
+<<node name="steering" pkg="alpha_steering" type="steering_example" respawn="true" />
 
 
 </launch>
