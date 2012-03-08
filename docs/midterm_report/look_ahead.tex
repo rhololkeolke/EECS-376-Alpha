@@ -1,0 +1,32 @@
+\section{Look Ahead}
+
+The look ahead node is responsible for obstacle detection. The node uses subscribes to lidar data to and uses trigonometric functions create a configuration space that resembles a bounded box. The node constantly publishes to a custom message type called ``obstacles.'' If an obstacle is found within the configuration space then the look ahead node publishes true (an obstacle exists) and the obstacle's distance along the current path, otherwise the node publishes false for the obstacles existence and 0 for its distance. At the moment the code will not suffice for dectection obstacles along arc paths, but we will soon make the necessary enhancements.
+
+While the code for creating the node was simple, it was complicated by a scoping issue that brought out interesting things that ROS does with message data. If the loop rate of a given node is not set in the proper scope it will take that node between fifteen minutes and an hour to actually begin publishing (assuming that the clock topic is properly publishing). Because the node eventually publishes instead of doing nothing one may assume that there is an error in there message creation or implementation rather than the node's loop rate. Since the message was not properly publishing and the custom message type ``obstacles'' was producing a duplicate  name exception I assumed the issue was with my message code and not my obstacle detection function.
+
+I tried to replicate the twist message type's use of the same variable names for different uses. For instance it uses the variable name 'x' for both linear and angular velocity. My attempt to use the variables ``exists'' and ``distance'' for both the current and next paths did not work like geometry's twist message. Upon reading the twist message file I noticed that it referenced another message file called vector and seemed to instantiate an angular vector message and a linear vector object like so:
+
+geometry\_msgs/Vector3 linear\\
+  float64 x\\
+  float64 y\\
+  float64 z\\
+geometry\_msgs/Vector3 angular\\
+  float64 x\\
+  float64 y\\
+  float64 z\\
+
+I tried to replicate the above by making another message type called path and instantiating it within the obstacle message.
+
+path current\\
+ bool exists\\
+ float64 distance\\
+
+path next\\
+ bool exists\\
+ float64 distance\\
+
+To my surprise the code compiled perfectly, but in run time it publishes nothing. I learned that messages within messages compile, but will not work.
+
+ROS seems to have a tendency to be very strict about most things to ensure proper coding, but unfortunately its not as strict as most would think. If one were to add a path to an source code file in CMakelists ROS and the name of the file is incorrect the compiler will state  ``CMake Error in CMakeLists.txt:
+    Cannot find source file ``blah\_blah\_wrong\_file\_name.cpp.'' That is perfectly fine, if I spell the name of a source code file incorrectly it should not compile, but ROS will allow one to incorrectly spell the directory name of a file and compile. For example: rosbuild\_add\_executable(wrong\_wrong src/look\_ahead.cpp)
+It will not rosrun, because no binaries have been created. It would however, be much nicer if the compiler were to state that the directory is invalid.
