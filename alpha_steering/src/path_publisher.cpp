@@ -4,7 +4,7 @@
 #include <alpha_steering/PathSegment.h>
 #include <alpha_steering/SegStatus.h>
 #include <iostream>
-#include <fstream.h>
+#include <fstream>
 #include <tf/transform_datatypes.h>
 
 const double PI=3.14159;
