@@ -1,0 +1,40 @@
+\documentclass[10pt,letterpaper,draft]{report}
+\usepackage[utf8]{inputenc} \usepackage{amsmath} \usepackage{amsfonts}
+\usepackage{hyperref}
+\usepackage{amssymb} \usepackage{ifdraft} \ifdraft {
+  \usepackage[paperwidth=275.9mm, paperheight=279.4mm]{geometry}
+  \setlength{\evensidemargin}{95mm}
+  \usepackage[colorinlistoftodos,obeyDraft]{todonotes} } {
+  \usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm,paperwidth=275.9mm,
+  paperheight=279.4mm]{geometry} \usepackage[obeyDraft]{todonotes} }
+
+\author{Devin Schwab\\
+  Mark Schultz\\
+  David Jannotta\\
+  Eddie Massey}
+\title{EECS 376/476 Mobile Robotics\\
+  Team Alpha Midterm Report} \date{March 9, 2012}
+\begin{document}
+\bibliographystyle{IEEEtran}
+\listoftodos
+\maketitle
+
+\tableofcontents
+\newpage
+
+% \todo[inline]{Change the numbering of the sections. Or make it so parts don't make new pages.}
+
+\input{overview}
+
+\input{software_architecture}
+
+\input{node_details}
+
+\input{demo_code}
+
+\bibliography{IEEEabrv,bibliography}
+\end{document}
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 

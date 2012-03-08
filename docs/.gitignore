@@ -1,0 +1,14 @@
+*.aux
+*.synctex.gz
+*.bbl
+*.blg
+*.log
+*.pdf
+*.tdo
+*.toc
+*.DS_Store
+*.Trashes
+thumbs.db
+*.dvi
+#*#
+*~
