@@ -1,0 +1,18 @@
+<launch>
+
+<!--When launching on Jinx over ssh we may have to uncomment the line below
+<machine name="jinx" address="192.168.0.150" default="true" />
+-->
+
+<!--Include necessary premade launch files-->
+<include file="$(find cwru_nav)/start_amcl_2ndfloor.launch" />
+<include file="home/jinx/ROSCode/cwru-ros-pkg/cwru_semi_stable/cwru_bringup_no_tele.launch" />
+
+<!--Launch Team Alpha Nodes-->
+<node name="estopPublisher" pkg="velocity_profiler" type="estopPublisher" respawn="true" />
+<node name="laser_listener" pkg="velocity_profiler" type="look_ahead" respawn="true" /> 
+<node name="velocity_profiler" pkg="velocity_profiler" type="velocity_profiler" respawn="true"/>
+<node name="steering" pkg="alpha-steering" type="steering_example" respawn="true" />
+
+
+</launch>
