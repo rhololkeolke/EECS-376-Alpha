@@ -2,6 +2,8 @@
 \begin{document}
 \section{Look Ahead}
 
+\subsection{Theory of Operation}
+
 The look ahead node is responsible for obstacle detection. The node subscribes to lidar data to and uses trigonometric functions create a configuration space that resembles a bounded box. The configuration space is determined by creating a box of lidar pings slightly larger than the perimeter of the robot (1m by 0.5m). The C-Space is directly in front of the robot. 
 
 Below is a list of Constants used in the look_ahead.cpp\\
@@ -12,4 +14,18 @@ const double cBoxWidth = 0.5; \\ This value corresponds to the width of the c-sp
 The node constantly publishes to a custom message type called ``obstacles.'' If an obstacle is found within the configuration space then the look ahead node publishes true (an obstacle exists) and the obstacle's distance along the current path, otherwise the node publishes false for the obstacles existence and 0 for its distance. 
 
 One problem inital problem with the look ahead code was the lidars 80m range. In order to make sure that lidar data was not misinterpreted beyond the bounds of the box we created a value of closestObs and set it to 90(m). Since the lidars range is 80 there shoudld definetley not be any object detected beyond the length of closestObs.
+
+
+
+
+
+
+
+\subsection{Observations}
+Lidar detection obstacle detection is not good while turning. There seems to be a blind spot right next to the lidar scanner.
+
+\subsection{Coding Procedure}
+
+\subsection{Future Plans}
+Implementation of obstacle detection on arcs.
 
