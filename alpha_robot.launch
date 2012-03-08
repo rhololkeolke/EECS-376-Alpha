@@ -5,13 +5,8 @@
 -->
 
 <!--Initialization of basic nodes, remember ROS does NOT guarantee the order in which nodes will be published -->
-<!--<include file="$(find cwru_nav)/start_amcl_2ndfloor.launch" />-->
-<!--<include file="home/jinx/ROSCode/cwru-ros-pkg/cwru_semi_stable/cwru_bringup_no_tele.launch" />-->
-<!--<include file="/home/alpha/code/dev_stacks/cwru-ros-pkg/cwru_semi_stable/cwru_bringup_no_tele.launch" />-->
-<include file="home/alpha/code/dev_stacks/cwru-ros-pkg/cwru_semi_stable/harlie_amcl_2ndfloor.launch" />
-
-
-
+<include file="$(find cwru_nav)/start_amcl_2ndfloor.launch" />
+<include file="home/jinx/ROSCode/cwru-ros-pkg/cwru_semi_stable/cwru_bringup_no_tele.launch" />
 
 <node name="estopPublisher" pkg="velocity_profiler" type="estopPublisher" respawn="true" />
 <node name="laser_listener" pkg="velocity_profiler" type="look_ahead" respawn="true" /> 
