@@ -7,6 +7,9 @@ such that the robot does not stray from its desired path.
 
 \subsection{Theory of Operation}
 
+describe what we want the steering node to do in more exact detail. say
+how they interconnect and how we use the messages
+
 \subsubsection{Steering Algorithm}
 
 We will use the linear steering algorithm. This algorithm takes a number
@@ -32,7 +35,16 @@ the final corrected heading $-K_d*offset+K_{\theta}*d_\theta$.
 
 \subsection{Observations}
 
+problems we ran into operating observations
+
 \subsection{Coding Procedure}
 
 The \texttt{steering\_example.cpp} sample code was tweaked to include a
 file reader to allow us to easily modify constants $K_d$ and $K_\theta$.
+
+\subsection{Future Plans}
+
+\begin{itemize}
+\item
+  non linear steering
+\end{itemize}
