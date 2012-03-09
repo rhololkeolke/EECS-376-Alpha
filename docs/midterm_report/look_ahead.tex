@@ -1,32 +1,57 @@
+\documentclass{article}
+\usepackage{graphicx}
+\begin{document}
+
 \section{Look Ahead}
+\subsection{Theory of Operation}
+The look ahead node is responsible for obstacle detection. The node subscribes
+to lidar data to and uses trigonometric functions create a configuration space
+that resembles a bounded box. The configuration space is determined by creat-
+ing a box of lidar pings slightly larger than the perimeter of the robot (1m by
+0.5m). The C-Space is directly in front of the robot. Below is a list of Constants
+used in the look ahead source file:\\
+const uint cPings = 181; The data from the laser comes from the topic sensor$\textunderscore$msgs$\backslash$LaserScan
+and is passed into an array large enough to hold 181 values (one for each ping)\\
+const double cBoxHeight = 1.0; This value corresponds to the height of the\\
+c-space bounded box
+const double cBoxWidth = 0.5; This value corresponds to the width of the
+c-space bounded box
+The node constantly publishes to a custom message type called “obstacles.”
+If an obstacle is found within the configuration space then the look ahead node
+publishes true (an obstacle exists) and the obstacle’s distance along the current
+path, otherwise the node publishes false for the obstacles existence and 0 for its
+distance. Obstacle detection is mathematically derived. If a lidar ping returns
+and it is less than the height or width of the c-space divided by cos$\theta$ where $\theta$ is
+in radians then an obstacle exists.\\\\
 
-The look ahead node is responsible for obstacle detection. The node uses subscribes to lidar data to and uses trigonometric functions create a configuration space that resembles a bounded box. The node constantly publishes to a custom message type called ``obstacles.'' If an obstacle is found within the configuration space then the look ahead node publishes true (an obstacle exists) and the obstacle's distance along the current path, otherwise the node publishes false for the obstacles existence and 0 for its distance. At the moment the code will not suffice for dectection obstacles along arc paths, but we will soon make the necessary enhancements.
+$\includegraphics[scale = 0.5]{look_ahead.jpg}$ \\
+Figure 1 - Represented by lines 56 - 77
 
-While the code for creating the node was simple, it was complicated by a scoping issue that brought out interesting things that ROS does with message data. If the loop rate of a given node is not set in the proper scope it will take that node between fifteen minutes and an hour to actually begin publishing (assuming that the clock topic is properly publishing). Because the node eventually publishes instead of doing nothing one may assume that there is an error in there message creation or implementation rather than the node's loop rate. Since the message was not properly publishing and the custom message type ``obstacles'' was producing a duplicate  name exception I assumed the issue was with my message code and not my obstacle detection function.
+Figure 1 is reproduced in our code through this example:\\\\
+\indent if(curLaserData[i] $<$ cBoxWidth/cos((180.0-(double)i)*M PI/180.0))\\
+\indent \indent$\{$\\
+\indent \indent \indent if(curLaserData[i] $<$ closestObs)\\
+\indent \indent \indent$\{$\\
+\indent \indent closestObs = curLaserData[i];\\
+\indent \indent \indent$\}$\\
+\indent \indent$\}$\\
+The above code snippet means that if the lidar ping is less than the width of the bounded box divided by cos$\theta$ an obstacle exists and its distance is the distance the lidar ping returns.\\
 
-I tried to replicate the twist message type's use of the same variable names for different uses. For instance it uses the variable name 'x' for both linear and angular velocity. My attempt to use the variables ``exists'' and ``distance'' for both the current and next paths did not work like geometry's twist message. Upon reading the twist message file I noticed that it referenced another message file called vector and seemed to instantiate an angular vector message and a linear vector object like so:
+After the algorithim was properly developed one inital problem with the look ahead code was the lidars 80m
+range. In order to make sure that lidar data was not misinterpreted beyond
+the bounds of the box we created a value of closestObs and set it to 90(m).
+Since the lidars range is 80 there shoudld definetley not be any object detected
+beyond the length of closestObs.
 
-geometry\_msgs/Vector3 linear\\
-  float64 x\\
-  float64 y\\
-  float64 z\\
-geometry\_msgs/Vector3 angular\\
-  float64 x\\
-  float64 y\\
-  float64 z\\
+\subsection{Observations}
+Lidar detection obstacle detection is not good while turning. There seems to be
+a blind spot right next to the lidar scanner.
 
-I tried to replicate the above by making another message type called path and instantiating it within the obstacle message.
+\subsection{Future Plans}
+Presently our c-space configuration algorithim will not suffice for arced paths. We plan on doing some modifications to the look ahead source code to ensure the robots ability to detect obstacles at any given instance. The node will aslo need to receive segment status messages to determine if there is an obstacle path on the type of path the robot is considering moving along.
 
-path current\\
- bool exists\\
- float64 distance\\
+\end{document}
 
-path next\\
- bool exists\\
- float64 distance\\
 
-To my surprise the code compiled perfectly, but in run time it publishes nothing. I learned that messages within messages compile, but will not work.
 
-ROS seems to have a tendency to be very strict about most things to ensure proper coding, but unfortunately its not as strict as most would think. If one were to add a path to an source code file in CMakelists ROS and the name of the file is incorrect the compiler will state  ``CMake Error in CMakeLists.txt:
-    Cannot find source file ``blah\_blah\_wrong\_file\_name.cpp.'' That is perfectly fine, if I spell the name of a source code file incorrectly it should not compile, but ROS will allow one to incorrectly spell the directory name of a file and compile. For example: rosbuild\_add\_executable(wrong\_wrong src/look\_ahead.cpp)
-It will not rosrun, because no binaries have been created. It would however, be much nicer if the compiler were to state that the directory is invalid.
+
