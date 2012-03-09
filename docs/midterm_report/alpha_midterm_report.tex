@@ -1,13 +1,17 @@
-\documentclass[10pt,letterpaper,draft]{report}
+\documentclass[10pt,letterpaper,final]{report}
 \usepackage[utf8]{inputenc} \usepackage{amsmath} \usepackage{amsfonts}
 \usepackage{hyperref}
 \usepackage{ctable}
+\usepackage{graphicx}
 \usepackage{amssymb} \usepackage{ifdraft} \ifdraft {
   \usepackage[paperwidth=275.9mm, paperheight=279.4mm]{geometry}
   \setlength{\evensidemargin}{95mm}
   \usepackage[colorinlistoftodos,obeyDraft]{todonotes} } {
-  \usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm,paperwidth=275.9mm,
+  \usepackage[left=1in,right=1in,top=1in,bottom=1in,paperwidth=275.9mm,
   paperheight=279.4mm]{geometry} \usepackage[obeyDraft]{todonotes} }
+
+\usepackage[section]{placeins}
+%\usepackage{minted}
 
 \author{Devin Schwab\\
   Mark Schultz\\
