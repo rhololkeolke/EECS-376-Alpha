@@ -62,3 +62,28 @@ Below is a picture of the graph of our git repository.
 
 \subsection{ROS Launch}
 
+\input{ros_launch}
+
+\subsection{GTest}
+
+GTest is Google's C++ Unit testing
+framework.\cite{http://code.google.com/p/googletest/} ROS recommends
+its use for unit testing needs.  We are currently using it to test
+helper classes, but would like to expand its use to other parts of our
+code, including the main nodes.
+
+The use of unit testing help solidify development by forcing us to
+think about the interfaces of our classes before we start coding.
+This in theory leads to cleaner, better designed code.  In addition
+when adding new features or fixing bugs it is possible to break
+previously implemented features.  Running the unit test suite after
+each build will alert us of any regressions.
+
+We would like to be able to write automated test suites for our code
+that actually simulate the outcome in Stage. However, so far this is
+just an idea.  If implemented it would allow us to systematically test
+our code in the simulator and potentially automatically collect data.
+For example when picking the steering constants had we had a way to
+automate the simulator we could have written a short program to
+autotune the robot.  Granted, it would still have to tweaked when it
+ran on the real bot due to differences between simulation and the real world.
