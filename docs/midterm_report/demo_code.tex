@@ -1,12 +1,26 @@
 \part{Demo Code}
 
 \section{Demo 1}
-\todo[inline]{Provide info about Demo 1, its code, and what our final
-  solutions were}
+For demo 1 our robot had to navigate the hall using only dead
+reckoning.  The code for demo 1 is attached in the src/demo1
+directory.
+
+Our code has 2 functions to help main.  We separated the code for turn
+in place and the code for straight segments into two functions to make
+it easier to schedule a path and update the code. The direction of the
+turn and straight is determined by the sign of the input. A positive
+will move the robot forward or counter clockwise and negative will
+move the robot backwards or clockwise.
+
+In the spatial velocity profiler there is also a State class which
+keeps track of ideal state based on the integration of velocity commands
 
 \section{Demo 2}
-\todo[inline]{Provide info about Demo 2, its code, and what our final
-  solutions were}
+To start we programmed a simple E-Stop publisher for the simulator.
+This allowed us to test our E-Stop resume code in the simulator
+first.  However, it didn't transfer perfectly as we found out there is
+a short delay between disabling E-Stop and the motors responding to commands.
+
 
 \section{Demo 3}
 \todo[inline]{Provide info about Demo 3, its code, and what our final
