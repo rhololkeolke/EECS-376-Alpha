@@ -9,19 +9,16 @@ This section will describe the decisions we made and what we have
 planned.
 
 \section{Node Architecture}
-\todo[inline]{Show and describe the data from the software
-  architecture diagram.  The visio file David made will probably need
-  to be updated. We'll also want to show the end goal and what we
-  currently have implemented}
 
 The main document we are basing our software architecture off of is
 the following:
 
+\FloatBarrier
 \begin{figure}[h]
   \includegraphics[width=8.0in]{software_architecture_diagram}
   \caption{Planned Software Architecture}
 \end{figure}
-\missingfigure{Add the image of the communications diagram}
+\FloatBarrier
 
 This figure clearly shows the different nodes we have planned, the
 communication message types being passed between them, and areas of
@@ -31,12 +28,25 @@ The specifications for the nodes in the diagram and the messages being
 used will be found in the rest of this section.
 
 \section{Packaging and Stacks}
-\todo[inline]{Information about how we split the nodes into different
-  packages}
-\todo[inline,color=green]{Mark should take care of this}
+We have split some of our nodes into different ROS packages.  These
+are all under the single stack of eecs\_376\_alpha.
+
+We have decided to investigate the use of python for future
+development.  Mixing the python code with our existing C++ code
+requires that the python code be in a separate package.  For this
+reason we have started splitting all of nodes into separate packages.
+
+Splitting the nodes into separate packages also keeps the code better
+organized.  If we want to look at the velocity\_profiler node and all
+of the associated messages and helper classes they will all be in a
+single package.  There won't be the possibility for mixing up files
+between different nodes and editing the wrong one.
+
+Another benefit is that rosmake will build packages that don't depend
+on one another in parallel.  This decreases the build time by a small
+amount, which is especially useful when making small changes during testing.
 
 \section{Node Specifications}
-\todo[inline]{Formal spec for each node that is planned}
 
 To help guide us while writing our nodes we wrote a small
 specification for each class seen in the software architecture diagram.
@@ -73,18 +83,63 @@ constraints specified by the path segment.  Path segments must be
   disabled
   \end{enumerate}
       
-\subsection{Look Ahead}
+  \subsection{Look Ahead}
+  This node enables obstacle detection. As the name implies it is
+  responsible for ``looking'' ahead for obstacles along the path.
+  Currently it uses the LIDAR but other sensors such as the Kinect
+  could be used to either augment or replace the LIDAR sensor data.
 
-\subsection{Steering}
+  \subsubsection{Requirements}
+  \begin{enumerate}
+  \item Look Ahead will parse the data from the LIDAR
+  \item Look Ahead will detect objects within a minimum of 1 m
+    \item Look Ahead will exclude obstacle detection of all objects
+      outside of the planned path
+      \end{enumerate}
 
-\subsection{Path Planning}
+  \subsection{Steering}
+  This node is responsible for correcting the small differences
+  between desired and actual heading.
+  
+  \subsubsection{Requirements}
 
-\subsection{Video}
+  \begin{enumerate}
+  \item Steering will accept paths from Path Planner
+    \item Steering will correct the desired velocities from Velocity
+      Profiler
+    \item Steering will use a non-linear steering algorithm
+      \item Steering will stop correcting the path when an obstacle is
+detected
+\item Steering will stop correcting the path when the E-Stop is pressed.
+    \end{enumerate}
+
+  \subsection{Path Planner}
+  This node is responsible for using the robot sensors to detect the
+  environment and plan a path between the robots starting position and
+  the goal
+
+  \subsubsection{Requirements}
+
+  \begin{enumerate}
+\item Path Planner will use the pre-loaded map to calculate a possible
+  path
+\item Path Planner will send out the calculated path in segments
+\item Path Planner will respond to requests for new paths
+  \item Path Planner will respond to sensory input to plan new
+    segments in unknown environments
+    \item Path Planner will auto-update planned paths based on
+      unexpected obstacles
+    \end{enumerate}
+  
+  \subsection{Video}
+  This has not yet been defined and won't be until more information is
+  provided. However, Possible features are human detectition, color detection, and terrain detection.
 
 \subsection{Sensors}
-\todo[inline]{Talk about the other sensors, e.g. GPS. This will
-  probably be rolled into the other nodes as the cRIO should take care
-  of most of this}
+We have yet to define anymore sensor nodes.  One possible addition to
+our sensor nodes is GPS and compas nodes for navigation outside.
+However, until more information is provided a spec for these will not
+be written.
 
 \section{Custom Message Specifications}
 \todo[inline]{Formal spec for each message that is planned. This will
@@ -92,17 +147,54 @@ constraints specified by the path segment.  Path segments must be
 
 \subsection{segStatus}
 
+Responsible for holding information about the status of a path
+segment.  The message format is as follows:
+
+\noindent {\bf bool segComplete}\\
+\indent True if segment has been completed\\
+\indent False if segment is still being executed\\
+\\
+{\bf uint64 seg\_number}\\
+\indent Stores the number identifying the segment the message is
+pertaining to.\\
+\\
+{\bf float64 distance}\\
+\indent Stores the distance remaining on a segment.\\
+
 \subsection{obstacles}
+
+Responsible for holding information about obstacles in the path
+segments.  The message format is as follows:
+
+\noindent {\bf bool exists}\\
+\indent True when 1 or more obstacles detected in path\\
+\indent False when 0 obstacles are detected in path\\
+\\
+{\bf float64 distance}\\
+\indent The distance to the closest obstacle
 
 \section{Topics}
 \todo[inline]{Short description of what each topic is publishing and why}
 
 \subsection{des\_vel}
+Velocity Profiler publishes the desired velocity based on the robot's
+current point in space the current and next path segments.  This
+velocity is then corrected by steering.
 
 \subsection{cmd\_vel}
+Steering publishes the final velocity to the robot's motors.  The
+final velocity is a corrected version of the velocity in the des\_vel topic.
 
 \subsection{base\_laser1\_scan and base\_scan}
+base\_laser1\_scan is used on the robot\\
+base\_scan is used in the simulator\\
+
+\noindent Used to send out LIDAR data from the cRIO.
 
 \subsection{seg\_status}
+Velocity profiler publishes the status of its current segment on this
+topic.  Nodes such as steering subscribe to it.
 
 \subsection{path\_seg}
+Path Publisher publishes the planned path segments to this topic.  The
+published segments are used by steering, velocity\_profiler and other nodes.
