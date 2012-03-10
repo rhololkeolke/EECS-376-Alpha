@@ -16,16 +16,56 @@ In the spatial velocity profiler there is also a State class which
 keeps track of ideal state based on the integration of velocity commands
 
 \section{Demo 2}
+The source code for demo 2 is included in src/demo2.
 To start we programmed a simple E-Stop publisher for the simulator.
 This allowed us to test our E-Stop resume code in the simulator
 first.  However, it didn't transfer perfectly as we found out there is
-a short delay between disabling E-Stop and the motors responding to commands.
+a short delay between disabling E-Stop and the motors responding to
+commands.
+
+To make this work we simply added a trap statement at the top of each
+of our function's main loop.  Essentially it said that if the estop
+was enabled sleep for a bit and then restart the loop and try again.
+This froze velocity profiler's internal values until the E-Stop was disabled.
 
 
 \section{Demo 3}
-\todo[inline]{Provide info about Demo 3, its code, and what our final
-  solutions were}
+The source code for demo 3 is included in src/demo3. Demo 3 functions
+almost identically to Demo 2 except an obstacles trap is added after
+the estop trap.  So that the order of trap preference is E-Stops then
+obstacles.
+
+The first time and obstacle is detected the robots current position,
+current velocity and the object distance are used to calculate a
+constant deceleration rate.  This rate is then used in the second part
+of the trap until the obstacle is removed or the robot is at a
+complete halt.
 
 \section{Demo 4}
-\todo[inline]{Provide info about Demo 4, its code and what our final
-  solutions were}
+The source code for demo 4 is included in src/demo4.  This is the most
+major rewrite yet.
+
+Velocity profiler now takes in path segments from Path Publisher.  It
+uses the path segments to calculate the desired distances and angles
+and then executes normally. It uses the velocity commands issued by
+steering to integrate in the State class.
+
+Also the work to split State into a separate class has started.  This
+new class will only integrate contributions along the path and will be
+separate from velocity profiler making it easier to upgrade.  State
+will also be upgrade to integrate only along the path, which will
+eliminate the error of integrating the steering corrections and ending
+segments early.
+
+Steering currently uses a linear steering algorithm although an
+upgrade to the non-linear algorithm is planned.  It currently
+saturates its corrections about velocity profiler's desired
+velocities.  The way we are currently implementing it this adds a
+little bit of a deadzone close to zero.  This will be smoothed out in
+the future.
+
+Path Publisher has 5 hard coded segments.  It continously sends the
+latest segment until velocity profiler signals that it is done by
+setting segComplete in segStatus to true.  At that point Path
+Publisher switches to the next segment and the cycle continues until
+all 5 paths have been completed.
