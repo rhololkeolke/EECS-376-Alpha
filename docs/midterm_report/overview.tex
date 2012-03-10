@@ -13,6 +13,15 @@ David Jannotta - Path Planning
 
 Eddie Massey - Sensors
 
+Each team member was given a specific node to work on.  This allows us
+to work in parallel as the interfaces to our nodes are defined in the
+software architecture. Along with the main tasks various other tasks
+have been assigned.
+
+For instance Eddie has been tasked with creating a ROS Launch file
+(see Tools section) and Mark has been tasked with creating our package
+structure (see Packaging and Stacks section).
+
 
 \section{Project Goals}
 \todo[inline]{What we would like our robot to do at the end of the
@@ -35,8 +44,21 @@ added to the robot.  These capabilities include:
 \todo[color=green,inline]{Fill out more information about each subtask}
 
 \section{Schedule and Milestones}
-\todo[inline]{Not sure if this is necessary. But will include when
-  things were accomplished and when things are planned to be accomplished}
+
+\begin{longtable}{|l|l|}
+  \hline {\bf Week} & {\bf Goal} \\ \hline
+Weeks 1-3 & Familiarization with ROS \\ \hline
+Week 4 & Dead Reckoning Demo \\ \hline
+Week 5 & Velocity Profiling Demo \\ \hline
+Week 6 & Estop Demo \\ \hline
+Week 7 & Obstacle Detection Demo \\ \hline
+Week 8 & Steering Demo \\ \hline
+Week 9 & Spring Break - Code Refactoring \\ \hline
+Week 10 & Obstacle Navigation \\ \hline
+\end{longtable}
+
+Over spring break we are planning on refactoring our code.  We will
+also be investigating the use of python.
 
 \section{Tools}
 \todo[inline]{E.g. Git and roslaunch files}
@@ -60,3 +82,30 @@ demo is merged into master and tagged for future reference.
 Below is a picture of the graph of our git repository.
 \missingfigure{Add an image of the repository graph}
 
+\subsection{ROS Launch}
+
+\input{ros_launch}
+
+\subsection{GTest}
+
+GTest is Google's C++ Unit testing
+framework.\cite{google_googletest} ROS recommends
+its use for unit testing needs.  We are currently using it to test
+helper classes, but would like to expand its use to other parts of our
+code, including the main nodes.
+
+The use of unit testing help solidify development by forcing us to
+think about the interfaces of our classes before we start coding.
+This in theory leads to cleaner, better designed code.  In addition
+when adding new features or fixing bugs it is possible to break
+previously implemented features.  Running the unit test suite after
+each build will alert us of any regressions.
+
+We would like to be able to write automated test suites for our code
+that actually simulate the outcome in Stage. However, so far this is
+just an idea.  If implemented it would allow us to systematically test
+our code in the simulator and potentially automatically collect data.
+For example when picking the steering constants had we had a way to
+automate the simulator we could have written a short program to
+autotune the robot.  Granted, it would still have to tweaked when it
+ran on the real bot due to differences between simulation and the real world.
