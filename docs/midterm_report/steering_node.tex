@@ -7,18 +7,18 @@ such that the robot does not stray from its desired path.
 
 \subsection{Theory of Operation}
 
-We use a number of messages to control the steering node.
+The velocity profiler's job is to decide what velocity the robot
+should be moving at for each point along the path.  The steering
+node's job is to take the desired velocities and add correction
+factors to them.
 
-\begin{itemize}
-\item
-  Path segment: the path segment node passes in the current path segment
-  we would like the steering node to follow.
-\item
-  vel\_des: this message gives us the desired velocity as determined by
-  the velocity\_profiler.
-\item
-  TODO: others?
-\end{itemize}
+To do so steering subscribes to the des\_vel topic published by
+Velocity Profiler.  In turn Velocity Profiler subscribes to the
+velocity command actually sent to the robot. Velocity Profiler uses
+this information to correct its internal state so that it is inline
+with the robot's actual state.  The process runs continously forming a
+cycle.
+
 \subsubsection{Steering Algorithm}
 
 We will use the linear steering algorithm. This algorithm takes a number
@@ -42,6 +42,13 @@ and dot these with the vectors from the start point to the current point
 $xrs*nx+yrs*ny$. We take this product and add it to $d_\theta$ to get
 the final corrected heading $-K_d*offset+K_{\theta}*d_\theta$.
 
+\subsection{Implementation}
+
+The \texttt{steering\_example.cpp} sample code was tweaked to include a
+file reader to allow us to easily modify constants $K_d$ and $K_\theta$.
+We also ended up coding a rudimentary path planner that has hard coded
+path segments.
+
 \subsection{Observations}
 
 We ran into several problems when trying to perfect our steering code.
@@ -50,15 +57,15 @@ integrated and functioning. We had to integrate several dummy messages
 and structures to glue together everything until all the nodes can be
 completed.
 
--TODO: describe bug where the robot would get too close to the door on
-the first turn
+\subsection{Observations}
 
-\subsection{Coding Procedure}
+Our tests for the demo showed that the linear steering algorithm works
+just fine for the relatively small imperfections in path encountered
+during normal operation. However, for very large offests we did not
+always get the desired results.
 
-The \texttt{steering\_example.cpp} sample code was tweaked to include a
-file reader to allow us to easily modify constants $K_d$ and $K_\theta$.
-We also ended up coding a rudimentary path planner that has hard coded
-path segments.
+We found that the values of $K_d=0.5$ and $K_\theta = 1.0$ worked well
+for the robot.
 
 \subsection{Future Plans}
 
