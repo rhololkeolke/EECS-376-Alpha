@@ -5,8 +5,14 @@ position to determine correction factors to the velocity command such that the
 robot does not stray from its desired path.
 
 ## Theory of Operation ##
-describe what we want the steering node to do in more exact detail. say how 
+describe what we want the steering node to do in more exact detail. Say how 
 they interconnect and how we use the messages
+We use a number of messages to control the steering node.
+* Path segment: the path segment node passes in the current path segment we 
+  would like the steering node to follow.
+* vel_des: this message gives us the desired velocity as determined by the 
+  velocity_profiler.
+* TODO: others?
 
 ### Steering Algorithm ###
 We will use the linear steering algorithm. This algorithm takes a number of 
@@ -27,12 +33,25 @@ $d_\theta$ to get the final corrected heading
 $-K_d*offset+K_{\theta}*d_\theta$.
 
 ## Observations ##
-problems we ran into
-operating observations
+We ran into several problems when trying to perfect our steering code. The 
+hardest part of this demo was getting all of the previous nodes integrated and 
+functioning. We had to integrate several dummy messages and structures to glue 
+together everything until all the nodes can be completed.
+
+-todo: describe bug where the robot would get too close to the door on the 
+first turn
 
 ## Coding Procedure ##
 The `steering_example.cpp` sample code was tweaked to include a file
-reader to allow us to easily modify constants $K_d$ and $K_\theta$.
+reader to allow us to easily modify constants $K_d$ and $K_\theta$. We also 
+ended up coding a rudimentary path planner that has hard coded path segments. 
 
 ## Future Plans ##
-* non linear steering
+* Non-linear steering:
+  We plan on replacing the linear steering algorithm with the non-linear one
+* Arc path steering:
+  We plan on generating arch path segments and allowing the steering node to 
+  maintain control over these segments.
+* Python source code:
+  We plan on porting all of our existing code to python. We would like to 
+  utilize rospy for ease of programming and to get rid of compile time.
