@@ -2,8 +2,74 @@
 
 \subsection{Theory of Operation}
 
+Velocity Profiler is responsible for generating a spatially based
+trajectory from the path segments provided by Path Planner.  It
+provides the desired velocity to steering which then adds correction
+factors before it is finally sent to the robot's motors.  Velocity
+profiler takes in the command sent to the robot by steering to update
+its own internal state.
+
+There were two methods of generating the trajectory, time based and
+spatial based.  We chose to implement the spatially based method
+because it made it easier to stop and resume the robot due to E-Stops
+and obstacles in the path.
+
 \subsubsection{Velocity Profiling Algorithm}
+
+The current version of velocity profiler takes in segments published
+by Path Planner and simply calculates the desired distances and angle
+for each segment and then runs the original velocity profiling code
+with those numbers, however, for the next demo major upgrades will be
+taking place.
+
+In the new verison Velocity Profiler will take in bounds on the max accelerations, distance
+of the segment, segment type, previous velocity command from steering,
+obstacles from look ahead, estop from motors enabled, and starting
+point.
+
+Each time a new path segment is received velocity profiler enters its
+main loop.  In the main loop velocity profiler starts out by
+calculating the boundary conditions of the segment.  To calculate the
+boundary conditions the next segment is used.  If the next segment is
+empty the robot is assumed to stop at the end of its segment.  Also if
+the type is a spin in place the robot stops at the end of the
+segment.  However, if the next segment is an arc or a straight segment
+velocity profiler will look at the next segment and pick an ending
+velocity that matches the maximum velocity of the next segment.
+
+\subsubsection{State Class}
+Velocity Profiler uses an internal class called State.  This class is
+responsible for figuring out how far along the path the robot has
+traveled.  This is used to determine when a segment is completed and
+the next one should be loaded.
+
+The first version simply integrated the velocity commands over time to
+keep an internal belief state of where it is at.  The latest version
+does the same, but integrates with the velocity command from
+steering.  However, this does not take into account when the robot is
+correcting itself to get back on path.  Corrections add more length to
+the segment and so if there are too many corrections State class will
+say a segment is finished before it really is.
+
+To fix this in the next version the State class will still integrate,
+however, it will integrate the dot product of the latest step with the
+path tangent at that point. This way only contributions along the path
+get added so heading corrections won't get added.  In addition if the
+robot goes in reverse for some reason the distance will be subtracted
+from the total.
 
 \subsection{Observations}
 
-\subsection{Coding Procedure}
+We are using an AsyncSpinner to service our callbacks.  Using the
+AsyncSpinner means we do not have to call spin or spinOnce, however,
+it complicates the callbacks because now they are running on separate,
+non-blocking threads.
+
+During our testing we noticed that the information from single packets
+would be lost.  We were testing Velocity Profiler with a dummy path
+publisher node that published at a significantly slower rate than
+velocity profiler's main loop.  Yet, the individual packets would
+sometimes get skipped by velocity profiler's callback function.
+
+We are still investigating the cause of this, but think it may have to
+do with the use of AsynSpinner to service the callbacks.

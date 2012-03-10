@@ -27,24 +27,7 @@ possible future expansion.
 The specifications for the nodes in the diagram and the messages being
 used will be found in the rest of this section.
 
-\section{Packaging and Stacks}
-We have split some of our nodes into different ROS packages.  These
-are all under the single stack of eecs\_376\_alpha.
-
-We have decided to investigate the use of python for future
-development.  Mixing the python code with our existing C++ code
-requires that the python code be in a separate package.  For this
-reason we have started splitting all of nodes into separate packages.
-
-Splitting the nodes into separate packages also keeps the code better
-organized.  If we want to look at the velocity\_profiler node and all
-of the associated messages and helper classes they will all be in a
-single package.  There won't be the possibility for mixing up files
-between different nodes and editing the wrong one.
-
-Another benefit is that rosmake will build packages that don't depend
-on one another in parallel.  This decreases the build time by a small
-amount, which is especially useful when making small changes during testing.
+\input{stacks_packages}
 
 \section{Node Specifications}
 

@@ -1,13 +1,17 @@
-\section{ROS Stack Management}
+\section{ROS Packaging and Stacks}
 
 We have been utilizing ROS stacks to manage our individual ROS packages.
 We will try to use a single package per node. This will encourage
 appropriate message passing between nodes and make sure they are not too
 tightly coupled.
 
+Another benefit is that rosmake will build packages that don't depend
+on one another in parallel.  This decreases the build time by a small
+amount, which is especially useful when making small changes during testing.
+
 Stacks utilize a \texttt{stack.xml} file which contains dependencies to
 be included for every package. The ROS stack will automatically build
 all packages within it's root directory.
 
-Complete documentation can be found at the
-\href{http://www.ros.org/wiki/Stacks}{ROSWiki}.
+Complete documentation can be found at 
+\url{http://www.ros.org/wiki/Stacks}
