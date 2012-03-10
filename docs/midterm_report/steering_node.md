@@ -5,9 +5,8 @@ position to determine correction factors to the velocity command such that the
 robot does not stray from its desired path.
 
 ## Theory of Operation ##
-describe what we want the steering node to do in more exact detail. Say how 
-they interconnect and how we use the messages
 We use a number of messages to control the steering node.
+
 * Path segment: the path segment node passes in the current path segment we 
   would like the steering node to follow.
 * vel_des: this message gives us the desired velocity as determined by the 
@@ -38,7 +37,7 @@ hardest part of this demo was getting all of the previous nodes integrated and
 functioning. We had to integrate several dummy messages and structures to glue 
 together everything until all the nodes can be completed.
 
--todo: describe bug where the robot would get too close to the door on the 
+-TODO: describe bug where the robot would get too close to the door on the 
 first turn
 
 ## Coding Procedure ##
