@@ -1,0 +1,11 @@
+<stack>
+  <description brief="eecs_376_alpha">eecs_376_alpha</description>
+  <author>Maintained by mark</author>
+  <license>BSD</license>  
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/eecs_376_alpha</url>
+  <depend stack="cwru_semi_stable" /> <!-- cwru_sim_stage -->
+  <depend stack="ros" />
+  <depend stack="ros_comm" /> <!-- rospy, roscpp -->
+
+</stack>

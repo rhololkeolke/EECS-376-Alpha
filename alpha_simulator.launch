@@ -1,0 +1,17 @@
+<launch>
+
+<!--When launching on Jinx over ssh we may have to uncomment the line below
+<machine name="jinx" address="192.168.0.150" default="true" />
+-->
+
+<!--Include the simulator-->
+<include file="/home/alpha/code/dev_stacks/cwru-ros-pkg/cwru_semi_stable/cwru_sim_stage/harlie_amcl_2ndfloor.launch" />
+
+<!--Launch our nodes-->
+<node name="estopPublisher" pkg="velocity_profiler" type="estopPublisher" respawn="true" />
+<node name="laser_listener" pkg="velocity_profiler" type="look_ahead" respawn="true" /> 
+<node name="velocity_profiler" pkg="velocity_profiler" type="velocity_profiler" respawn="true"/>
+<node name="steering" pkg="alpha_steering" type="steering_example" respawn="true" />
+
+
+</launch>
