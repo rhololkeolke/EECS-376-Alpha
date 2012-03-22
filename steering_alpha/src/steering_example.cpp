@@ -8,9 +8,9 @@
 #include<cmath>
 #include <iostream>
 #include <fstream>
-#include <steering/SegStatus.h>
-#include <steering/PathSegment.h>
-#include <steering/Obstacles.h>
+#include <steering_alpha/SegStatus.h>
+#include <steering_alpha/PathSegment.h>
+#include <steering_alpha/Obstacles.h>
 #include "lockedQueue.h"
 
 using namespace std;
@@ -21,7 +21,7 @@ geometry_msgs::PoseStamped last_map_pose;
 geometry_msgs::Twist des_vel;
 tf::TransformListener *tfl;
 
-//lockedQueue<steering::PathSegment*> segments;
+//lockedQueue<steering_alpha::PathSegment*> segments;
 
 int seg_number = 0;
 bool segComplete = false;
@@ -33,10 +33,10 @@ double obs_dist = 0.0;
 // the current segment and the next segment
 bool nextSegExists = false;
 bool currSegExists = false;
-steering::PathSegment nextSeg;
-steering::PathSegment currSeg;
+steering_alpha::PathSegment nextSeg;
+steering_alpha::PathSegment currSeg;
 
-void obstaclesCallback(const steering::Obstacles::ConstPtr& obsData)
+void obstaclesCallback(const steering_alpha::Obstacles::ConstPtr& obsData)
 {
   obs = obsData->exists;
   obs_dist = obsData->distance;
@@ -62,7 +62,7 @@ void velCallback(const geometry_msgs::Twist::ConstPtr& vel) {
   des_vel.angular.z = vel->angular.z;
 }
 
-void pathSegCallback(const steering::PathSegment::ConstPtr& seg)
+void pathSegCallback(const steering_alpha::PathSegment::ConstPtr& seg)
 {
   if(seg->seg_number != nextSeg.seg_number)
   {
@@ -79,7 +79,7 @@ void pathSegCallback(const steering::PathSegment::ConstPtr& seg)
   nextSeg.decel_limit = seg->decel_limit;
 }
 
-void segStatusCallback(const steering::SegStatus::ConstPtr& status)
+void segStatusCallback(const steering_alpha::SegStatus::ConstPtr& status)
 {
   seg_number = status->seg_number;
   if(!segComplete)
@@ -92,15 +92,15 @@ void segStatusCallback(const steering::SegStatus::ConstPtr& status)
 int main(int argc,char **argv)
 {
 
-	ros::init(argc,argv,"steering_example");//name of this node
+	ros::init(argc,argv,"steering_alpha_example");//name of this node
 	ros::NodeHandle n;
         tfl = new tf::TransformListener();
 	ros::Publisher pub = n.advertise<geometry_msgs::Twist>("cmd_vel",1);
 	ros::Subscriber desVelSub = n.subscribe<geometry_msgs::Twist>("des_vel",1, velCallback);
         ros::Subscriber sub = n.subscribe<nav_msgs::Odometry>("odom", 1, odomCallback); 
-	ros::Subscriber path = n.subscribe<steering::PathSegment>("path_seg", 10, pathSegCallback);
-	ros::Subscriber seg_status = n.subscribe<steering::SegStatus>("seg_status",10,segStatusCallback);
-	ros::Subscriber obsSub = n.subscribe<steering::Obstacles>("obstacles",1,obstaclesCallback);
+	ros::Subscriber path = n.subscribe<steering_alpha::PathSegment>("path_seg", 10, pathSegCallback);
+	ros::Subscriber seg_status = n.subscribe<steering_alpha::SegStatus>("seg_status",10,segStatusCallback);
+	ros::Subscriber obsSub = n.subscribe<steering_alpha::Obstacles>("obstacles",1,obstaclesCallback);
 	//"cmd_vel" is the topic name to publish velocity commands
 	//"1" is the buffer size (could use buffer>1 in case network bogs down)
 
@@ -129,7 +129,7 @@ int main(int argc,char **argv)
 	double x_current=0.0,y_current=0.0; // current x,y position of robot in map coords
 	double tx,ty,nx,ny;  //path tangent and normal vector components
 	double xrs,yrs; // x and y coords of robot relative to start (xs,ys)
-	// tune these values, Kd and Ktheta, for steering
+	// tune these values, Kd and Ktheta, for steering_alpha
 	double Kd =0.5;
 	double Ktheta = 1.0;
 	
@@ -137,12 +137,12 @@ int main(int argc,char **argv)
 	//cout << argv[0] << endl;
 	string base = argv[0];
 	int path_loc = base.find("bin/");
-	string new_part = "config/steering_constants.txt";
+	string new_part = "config/steering_alpha_constants.txt";
 	base.replace(path_loc,29,new_part);
 	//cout << "base: " << base << endl;
 	
 	std::ifstream infile(base.c_str());
-	//infile.open("../config/steering_constants.txt");
+	//infile.open("../config/steering_alpha_constants.txt");
 	if(infile.good()){
 		infile >> Kd;
 		infile >> Ktheta;
@@ -208,10 +208,10 @@ int main(int argc,char **argv)
 	  ROS_INFO("segComplete %i",segComplete);
 	  ROS_INFO("nextSegExists %i",nextSegExists);
 	  ROS_INFO("currSegExists %i", currSegExists);
-	  if(!segComplete) // make sure we are steering to the same line
+	  if(!segComplete) // make sure we are steering_alpha to the same line
 	  {
 	    ROS_INFO("line 213");
-	    if(currSeg.seg_type == 1) // straight lines, so far enable steering only for straights
+	    if(currSeg.seg_type == 1) // straight lines, so far enable steering_alpha only for straights
 	    {
 	      ROS_INFO("line 216");
 	      if(obs && !lastobs)
@@ -298,7 +298,7 @@ int main(int argc,char **argv)
 		offset = xrs*nx+yrs*ny;
 		
 		ROS_INFO("line 300");
-		// steering control law
+		// steering_alpha control law
 		cmd_vel.angular.z = -Kd*offset +Ktheta*dtheta; // simple, linear controller; can do better
 		cmd_vel.linear.x=0.5; //command constant fwd vel
 		
