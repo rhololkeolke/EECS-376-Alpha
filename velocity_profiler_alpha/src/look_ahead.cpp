@@ -1,7 +1,7 @@
 #include <ros/ros.h>
 #include <cwru_base/Pose.h>
 #include <sensor_msgs/LaserScan.h>
-#include <velocity_profiler/Obstacles.h>
+#include <msg_alpha/Obstacles.h>
 #include <iostream> 
 #include <math.h>
 #include <string>
@@ -43,15 +43,17 @@ void curPath(ros::Publisher &obsPub)
 {
   ros::Time time = ros::Time::now();
 
-  velocity_profiler::Obstacles obsData;  //create an instance of the obstacle msg
+  msg_alpha::Obstacles obsData;  //create an instance of the obstacle msg
   
   double closestObs = 90.0; // laser range is up to 80 so nothing should be worse than this
-  
+
+  //An obstacle is present if the value at the index of the iterator i is within the range of the configuaration space box
+  //The iterator is always within bounds of the index of the array of laser data(cPings)
   for (uint i = 0; i < cPings;  i++)
   {
     if(i < 90-angleSwitch || i > 90+angleSwitch)
       {
-	
+
 	if(curLaserData[i] < cBoxWidth/cos((180.0-(double)i)*M_PI/180.0))
 	  {
 	    
@@ -94,8 +96,8 @@ int main(int argc, char **argv)
 
   ros::NodeHandle n;
     
-  ros::Subscriber laserSub = n.subscribe(cSimLaserTopic,1,laserCallback); //laser data comes from base_scan or base_laser1_scan, at a buffer of 1
-  ros::Publisher obsPub = n.advertise<velocity_profiler::Obstacles>("obstacles",1); //obstacles is the topic to which Obstacles publishes to
+  ros::Subscriber laserSub = n.subscribe(cSimLaserTopic,1,laserCallback);
+  ros::Publisher obsPub = n.advertise<msg_alpha::Obstacles>("obstacles",1);
 
   while(!ros::Time::isValid()) {} //helps simulation initialization
 

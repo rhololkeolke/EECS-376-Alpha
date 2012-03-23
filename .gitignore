@@ -1,4 +1,5 @@
-#*#
+\#*#
+.#*
 *~
 .DS_Store
 .Trashes
@@ -12,3 +13,8 @@ msg_gen/
 .cproject
 .pydevproject
 cmake_install.cmake
+msg_alpha/src/msg_alpha/
+velocity_profiler_alpha/src/velocity_profiler/
+velocity_profiler_alpha/src/velocity_profiler_alpha/
+steering_alpha/src/steering_alpha/
+steering_alpha/src/steering/
