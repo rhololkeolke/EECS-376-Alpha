@@ -3,9 +3,9 @@
 #include <math.h>
 #include <std_msgs/Bool.h>
 #include <cwru_base/cRIOSensors.h>
-#include <velocity_profiler/PathSegment.h>
-#include <velocity_profiler/SegStatus.h>
-#include <velocity_profiler/Obstacles.h>
+#include <velocity_profiler_alpha/PathSegment.h>
+#include <velocity_profiler_alpha/SegStatus.h>
+#include <velocity_profiler_alpha/Obstacles.h>
 #include <iostream>
 #include <tf/transform_datatypes.h>
 #include "lockedQueue.h"
@@ -26,13 +26,13 @@ double lastOCmd = 0;
 
 int seg_number = 0;
 
-//lockedQueue<velocity_profiler::PathSegment*> segments;
+//lockedQueue<velocity_profiler_alpha::PathSegment*> segments;
 
 // true when currSeg and nextSeg have actual values we want to follow
 bool currSegExists = false;
 bool nextSegExists = false;
-velocity_profiler::PathSegment nextSeg;
-velocity_profiler::PathSegment currSeg;
+velocity_profiler_alpha::PathSegment nextSeg;
+velocity_profiler_alpha::PathSegment currSeg;
 
 class State
 {
@@ -116,13 +116,13 @@ void estopCallback(const std_msgs::Bool::ConstPtr& estop)
   stopped = !(estop->data);
 }
 
-void obstaclesCallback(const velocity_profiler::Obstacles::ConstPtr& obsData)
+void obstaclesCallback(const velocity_profiler_alpha::Obstacles::ConstPtr& obsData)
 {
   obs = obsData->exists;
   obs_dist = obsData->distance;
 }
 
-void pathSegCallback(const velocity_profiler::PathSegment::ConstPtr& seg)
+void pathSegCallback(const velocity_profiler_alpha::PathSegment::ConstPtr& seg)
 {
   //ROS_INFO("SegCallback: Started callback");
   if(seg->seg_number != nextSeg.seg_number)
@@ -209,7 +209,7 @@ void straight(ros::Publisher& pub, ros::Publisher& segStatusPub, double distance
       omega_cmd = 0;
       currentState.stop(); // set the internal state to no velocity
 
-      velocity_profiler::SegStatus status;
+      velocity_profiler_alpha::SegStatus status;
       status.segComplete = false;
       status.seg_number = seg_number;
       status.progress_made = currentState.getDistDone();
@@ -258,7 +258,7 @@ void straight(ros::Publisher& pub, ros::Publisher& segStatusPub, double distance
 	currentState.stop();
       }
 
-      velocity_profiler::SegStatus status;
+      velocity_profiler_alpha::SegStatus status;
       status.segComplete = false;
       status.seg_number = seg_number;
       status.progress_made = currentState.getDistDone();
@@ -321,7 +321,7 @@ void straight(ros::Publisher& pub, ros::Publisher& segStatusPub, double distance
       }
     }
 
-    velocity_profiler::SegStatus status;
+    velocity_profiler_alpha::SegStatus status;
     status.segComplete = false;
     status.seg_number = seg_number;
     status.progress_made = currentState.getDistDone();
@@ -336,7 +336,7 @@ void straight(ros::Publisher& pub, ros::Publisher& segStatusPub, double distance
   }
   currSegExists = false;
 
-  velocity_profiler::SegStatus status;
+  velocity_profiler_alpha::SegStatus status;
   status.segComplete = true;
   status.seg_number = seg_number;
   status.progress_made = currentState.getDistDone();
@@ -411,7 +411,7 @@ void turn(ros::Publisher& pub, ros::Publisher& segStatusPub, double angle)
       vel_object.linear.x = 0.0;
       vel_object.angular.z = 0.0;
 
-  velocity_profiler::SegStatus status;
+  velocity_profiler_alpha::SegStatus status;
   status.segComplete = false;
   status.seg_number = seg_number;
   status.progress_made = currentState.getDistDone();
@@ -479,7 +479,7 @@ void turn(ros::Publisher& pub, ros::Publisher& segStatusPub, double angle)
       }
     }
 
-  velocity_profiler::SegStatus status;
+  velocity_profiler_alpha::SegStatus status;
   status.segComplete = false;
   status.seg_number = seg_number;
   status.progress_made = currentState.getDistDone();
@@ -494,7 +494,7 @@ void turn(ros::Publisher& pub, ros::Publisher& segStatusPub, double angle)
   }
   currSegExists = false;
 
-  velocity_profiler::SegStatus status;
+  velocity_profiler_alpha::SegStatus status;
   status.segComplete = true;
   status.seg_number = seg_number;
   status.progress_made = currentState.getDistDone();
@@ -509,11 +509,11 @@ void turn(ros::Publisher& pub, ros::Publisher& segStatusPub, double angle)
 
 int main(int argc, char **argv)
 {
-  ros::init(argc,argv,"velocity_profiler"); // name of this node
+  ros::init(argc,argv,"velocity_profiler_alpha"); // name of this node
   ros::NodeHandle n;
 
   ros::Publisher desVelPub = n.advertise<geometry_msgs::Twist>("des_vel",1);
-  ros::Publisher segStatusPub = n.advertise<velocity_profiler::SegStatus>("seg_status",1);
+  ros::Publisher segStatusPub = n.advertise<velocity_profiler_alpha::SegStatus>("seg_status",1);
   ros::Subscriber estopSub = n.subscribe("motors_enabled",1,estopCallback); // listen for estop values
   ros::Subscriber obsSub = n.subscribe("obstacles",1,obstaclesCallback);
   ros::Subscriber velSub = n.subscribe("cmd_vel",1,velCallback);
@@ -570,7 +570,7 @@ int main(int argc, char **argv)
       }
       else
       {
-	/*velocity_profiler::SegStatus status;
+	/*velocity_profiler_alpha::SegStatus status;
 	status.seg_number = seg_number;
 	status.segComplete = true;
 	
