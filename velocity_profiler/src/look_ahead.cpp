@@ -12,12 +12,16 @@
 using namespace std; 
 
 const uint cPings = 181;
+const uint cRadius = 0.5;
 const double cBoxHeight = 1.0; //distance in front of the robot
 const double cBoxWidth = 0.5; // distance from x axis to side of box (double this is width of box) 
-const string cSimLaserTopic = "base_scan"; //topic to subscribe to if running code on simulator
+const string cSimLaserTopic = "base_scan"; //topic to subscribe to if running on Jinx
 const string cRoboLaserTopic = "base_laser1_scan"; //topic to subscribe to if running on Jinx
 
-double curLaserData [cPings]; //lidar data
+
+
+int seg_type;
+double scanData [cPings]; //lidar data
 
 int angleSwitch; // stores the angle used to switch between distance formulas
 
@@ -27,19 +31,39 @@ int angleSwitch; // stores the angle used to switch between distance formulas
 void laserCallback(const sensor_msgs::LaserScan::ConstPtr& laserScan)
 {
   {
-    //curLaserData is an array created from each i element of the laserScan array
+    //scanData is an array created from each i element of the laserScan array
     //i == 0 .. i == the index of the final element of the laserScan array
     for(uint i = 0; i < laserScan->ranges.size(); i++)
       {
-	curLaserData[i] = laserScan->ranges[i];  
+	scanData[i] = laserScan->ranges[i];  
       }
   }
 }
 
+
+void pathSegCb(const velocity_profiler::PathSegment::ConstPtr& seg)
+{
+  
+  seg_number = seg->seg_number;
+  seg_type = seg->seg_type;
+  curvature = seg->curvature;
+  seg_length = seg->seg_length;
+  ref_point = seg->ref_point;
+  init_tan_angle = seg->init_tan_angle;
+}
+
+
+
+
+
+
+
+
+
 //Summary: Publishes information regarding whether or not there is an obstalce within the current path segement
 //Parameters: The Obstacle Publisher
 //Return: Nothing
-void curPath(ros::Publisher &obsPub)
+void straight(ros::Publisher &obsPub)
 {
   ros::Time time = ros::Time::now();
 
@@ -54,24 +78,24 @@ void curPath(ros::Publisher &obsPub)
     if(i < 90-angleSwitch || i > 90+angleSwitch)
       {
 
-	if(curLaserData[i] < cBoxWidth/cos((180.0-(double)i)*M_PI/180.0))
+	if(scanData[i] < cBoxWidth/cos((180.0-(double)i)*M_PI/180.0))
 	  {
 	    
-	    if(curLaserData[i] < closestObs)
+	    if(scanData[i] < closestObs)
 	      {
-		closestObs = curLaserData[i];
+		closestObs = scanData[i];
 	      }
 	  }
       }
     else if(i > 90-angleSwitch && i < 90+angleSwitch)
       {
 	
-	if(curLaserData[i] < cBoxHeight/cos(((double)i-90.0)*M_PI/180.0))
+	if(scanData[i] < cBoxHeight/cos(((double)i-90.0)*M_PI/180.0))
 	{
 	
-	  if(curLaserData[i] < closestObs)
+	  if(scanData[i] < closestObs)
 	  {
-	    closestObs = curLaserData[i];
+	    closestObs = scanData[i];
 	  }
 	}
       }
@@ -89,6 +113,26 @@ void curPath(ros::Publisher &obsPub)
   }
   obsPub.publish(obsData); // publish the data, must publish constantly or else other nodes may shutdown
 }
+
+void arc(ros::Publisher &obsPub)
+{
+
+
+  //Enlarge each lidar ping. Create a circle around each ping point with constant radius. If the point along the arced path is equal to a point on the circle then an obstacle exists
+  for(uint i = 0; i < cPings; i++)
+    {
+      //make a radius from each ping
+      endPoint = scanData[i] + cRadius;
+      
+    }
+}
+
+
+void spin(ros::Publisher &obsPub)
+{
+
+}
+
 
 int main(int argc, char **argv)
 {
@@ -108,12 +152,29 @@ int main(int argc, char **argv)
 
   while(ros::ok())
   {
-    curPath(obsPub);  //function that checks for obstacles
-    
-    ros::spinOnce();  //launches callbacks
-    
-    naptime.sleep();  //sleep for the rate of 100Hz
+
+    //if the segment is a straight path check for obstacles along the straight path
+    if(seg_type == 1)
+      {
+	straight(obsPub);  
+      }
+
+    //if the segement is an arcd path check for obstacles along the arc path
+    if(seg_type == 2)
+      {
+	arc(obsPub);
+      }
+
+    //if the segement is a spin in place check for obstacles alongs the path
+    if(seg_type == 3)
+      {
+	spin(obsPub);
+      }
   }
+   
+  ros::spinOnce();  //launches callbacks
+  
+  naptime.sleep();  //sleep for the rate of 100Hz
 
   return 0;
 }
