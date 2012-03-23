@@ -9,6 +9,7 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/eecs_376_alpha</url>
   <depend package="roscpp"/>
+  <depend package="rospy"/>
   <depend package="cwru_sim_stage"/>
   <depend package="tf"/>
 
