@@ -1,8 +1,8 @@
 #include <ros/ros.h>
 #include <geometry_msgs/Twist.h>
 #include <math.h>
-#include <steering_alpha/PathSegment.h>
-#include <steering_alpha/SegStatus.h>
+#include <msg_alpha/PathSegment.h>
+#include <msg_alpha/SegStatus.h>
 #include <iostream>
 #include <tf/transform_datatypes.h>
 
@@ -15,7 +15,7 @@ int seg_number = 0;
 
 int numSegs = 5;
 
-void segStatusCallback(const steering_alpha::SegStatus::ConstPtr& status)
+void segStatusCallback(const msg_alpha::SegStatus::ConstPtr& status)
 {
   //seg_number = status->seg_number;
   // segComplete is only true once and we only care about when segComplete transitions to true
@@ -29,14 +29,14 @@ int main(int argc, char **argv)
   ros::init(argc,argv,"path_publisher");
   ros::NodeHandle n;
   
-  ros::Publisher pathPub = n.advertise<steering_alpha::PathSegment>("path_seg",1);
-  ros::Subscriber segSub = n.subscribe<steering_alpha::SegStatus>("seg_status",1,segStatusCallback);
+  ros::Publisher pathPub = n.advertise<msg_alpha::PathSegment>("path_seg",1);
+  ros::Subscriber segSub = n.subscribe<msg_alpha::SegStatus>("seg_status",1,segStatusCallback);
 
   ros::Rate naptime(10);
 
   while(!ros::Time::isValid()) {}
 
-  steering_alpha::PathSegment currSeg;
+  msg_alpha::PathSegment currSeg;
   
   while(ros::ok() && seg_number < numSegs)
   {

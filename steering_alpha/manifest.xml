@@ -9,6 +9,8 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/steering</url>
   <depend package="roscpp"/>
+  <depend package="rospy"/>
+  <depend package="msg_alpha"/>
   <depend package="cwru_sim_stage"/>
 
 </package>
