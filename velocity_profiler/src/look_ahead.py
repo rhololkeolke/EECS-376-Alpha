@@ -24,6 +24,7 @@ def straight():
     obsPub = rospy.Publisher('obstacles', Obstacles)
     obsData = Obstacles()
     closestObs = 90
+    int ping_angle
 
     for x in range(len(scanData)):
         
@@ -34,7 +35,8 @@ def straight():
                 if(scanData[x] < closestObs):
 
                     closestObs = scanData[x]
-
+                    ping_angle = x
+                    
         elif(x > 90 - angleSwitch and x < 90 + angleSwitch):
 
             if(scanData[x] < BOX_HEIGHT/math.cos((x-90) * math.pi/180)):
@@ -42,10 +44,12 @@ def straight():
                 if(scanData[x] < closestObs):
 
                     closestObs = scanData[x]
+                    ping_angle = x
 
     if(closestObs < 90):
         obsData.exists = True
         obsData.distance = closestObs
+        obsData.ping_angle = ping_angle
     else:
         obsData.exists = False
         obsData.distance = 0.0
