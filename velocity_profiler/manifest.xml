@@ -4,12 +4,13 @@
      eecs_376_alpha
 
   </description>
-  <author>alpha</author>
+  <author>mark</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/eecs_376_alpha</url>
   <depend package="roscpp"/>
   <depend package="cwru_sim_stage"/>
+  <depend package="tf"/>
 
 </package>
 

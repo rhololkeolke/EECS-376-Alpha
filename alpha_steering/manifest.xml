@@ -1,0 +1,16 @@
+<package>
+  <description brief="steering">
+
+    alpha_steering
+
+  </description>
+  <author>mark</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/steering</url>
+  <depend package="roscpp"/>
+  <depend package="cwru_sim_stage"/>
+
+</package>
+
+
