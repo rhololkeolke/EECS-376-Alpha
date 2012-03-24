@@ -18,3 +18,4 @@ velocity_profiler_alpha/src/velocity_profiler/
 velocity_profiler_alpha/src/velocity_profiler_alpha/
 steering_alpha/src/steering_alpha/
 steering_alpha/src/steering/
+*.pyc
