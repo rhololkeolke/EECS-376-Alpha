@@ -5,6 +5,7 @@
 #include <msg_alpha/SegStatus.h>
 #include <iostream>
 #include <tf/transform_datatypes.h>
+#include <stack>
 
 const double PI=3.14159;
 
@@ -15,6 +16,10 @@ int seg_number = 0;
 
 int numSegs = 5;
 
+
+//Stack is created
+stack <msg_alpha::PathSegment> pathStack;
+
 void segStatusCallback(const msg_alpha::SegStatus::ConstPtr& status)
 {
   //seg_number = status->seg_number;
@@ -24,84 +29,111 @@ void segStatusCallback(const msg_alpha::SegStatus::ConstPtr& status)
     segComplete = status->segComplete;
 }
 
+void initStack(){
+	
+	msg_alpha::PathSegment Seg;		
+
+	Seg.seg_number = 5;
+	Seg.seg_type = 1;
+	Seg.seg_length = 1;
+	Seg.ref_point.x = -3.28;
+	Seg.ref_point.y = 20.8;
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(45.22*PI/180.0);
+	pathStack.push(Seg);
+
+	Seg.seg_number = 5;
+	Seg.seg_type = 1;
+	Seg.seg_length = 1;
+	Seg.ref_point.x = -3.28;
+	Seg.ref_point.y = 20.8;
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(45.22*PI/180.0);
+	pathStack.push(Seg);
+
+	Seg.seg_number = 4;
+	Seg.seg_type = 3;
+	Seg.seg_length = -PI/2;
+	Seg.ref_point.x = 14.84;
+	Seg.ref_point.y = 3.91;
+	pathStack.push(Seg);
+
+	ROS_INFO("Sending out path %i",seg_number);
+	Seg.seg_number = 3;
+	Seg.seg_type = 1;
+	Seg.seg_length = 12.34;
+	Seg.ref_point.x = 5.45;
+	Seg.ref_point.y = 11.92;
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
+	pathStack.push(Seg);
+
+	ROS_INFO("Sending out path %i",seg_number);
+	Seg.seg_number = 2;
+	Seg.seg_type = 3;
+	Seg.seg_length = -PI/2;
+	Seg.ref_point.x = 5.23;
+	Seg.ref_point.y = 11.92;		
+	pathStack.push(Seg);
+
+	ROS_INFO("Sending out path %i",seg_number);
+	Seg.seg_number = 1;
+	Seg.seg_type = 1;
+	Seg.seg_length = 4.2;
+	Seg.ref_point.x = 8.27;
+	Seg.ref_point.y = 14.74;
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
+	pathStack.push(Seg);
+}
+
+void detour()
+{
+
+	//this method assumes that the lidar node will wait three seconds
+	//before publishing a segStatus of !OK
+
+	ros::Subscriber 
+
+
+}
+ 
 int main(int argc, char **argv)
 {
-  ros::init(argc,argv,"path_publisher");
-  ros::NodeHandle n;
+  	ros::init(argc,argv,"path_publisher");
+  	ros::NodeHandle n;
+
+	ros::Subscriber 
+	msg_alpha::PathSegment Seg;
+
+
+
+ 	ros::Publisher pathPub = n.advertise<msg_alpha::PathSegment>("path_seg",1);
+  	ros::Subscriber segSub = n.subscribe<msg_alpha::SegStatus>("seg_status",1,segStatusCallback);
+	//ros::Subscriber obstacles 
+
+  	ros::Rate naptime(10);
+
+  	while(!ros::Time::isValid()) {}	
   
-  ros::Publisher pathPub = n.advertise<msg_alpha::PathSegment>("path_seg",1);
-  ros::Subscriber segSub = n.subscribe<msg_alpha::SegStatus>("seg_status",1,segStatusCallback);
-  ros::Subscriber 
-
-  ros::Rate naptime(10);
-
-  while(!ros::Time::isValid()) {}
-
-  msg_alpha::PathSegment currSeg;
-  
-  while(ros::ok() && seg_number < numSegs)
-  {
-  	while()
-    ros::spinOnce();
-    if(segComplete == true)
-    {
-      seg_number++;
-      segComplete = false;
-
-      switch(seg_number)
-      {
-      case 1:
-	ROS_INFO("Sending out path %i",seg_number);
-	currSeg.seg_number = 1;
-	currSeg.seg_type = 1;
-	currSeg.seg_length = 4.2;
-	currSeg.ref_point.x = 8.27;
-	currSeg.ref_point.y = 14.74;
-	currSeg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
+  	while(ros::ok() && !pathStack.empty())
+  	{
+  		//While seg status is ok.
+		if(SEG STATUS == OK)
+		{
+	    	ros::spinOnce();
+			if(segComplete == true)
+		    {
+		    	currSeg = pathStack.top();
+		    	pathStack.pop();
+		    	segComplete = false;
+				ROS_INFO("I published another node! Be proud...");
+		    }  
 	
-	break;
-      case 2:
-	ROS_INFO("Sending out path %i",seg_number);
-	currSeg.seg_number = 2;
-	currSeg.seg_type = 3;
-	currSeg.seg_length = -PI/2;
-	currSeg.ref_point.x = 5.23;
-	currSeg.ref_point.y = 11.92;
-	
-	break;
-      case 3:
-	ROS_INFO("Sending out path %i",seg_number);
-	currSeg.seg_number = 3;
-	currSeg.seg_type = 1;
-	currSeg.seg_length = 12.34;
-	currSeg.ref_point.x = 5.45;
-	currSeg.ref_point.y = 11.92;
-	currSeg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
-    break;
-      case 4:
-	ROS_INFO("Sending out path %i",seg_number);
-	currSeg.seg_number = 4;
-	currSeg.seg_type = 3;
-	currSeg.seg_length = -PI/2;
-	currSeg.ref_point.x = 14.84;
-	currSeg.ref_point.y = 3.91;
-	break;
-      case 5:
-	ROS_INFO("Sending out path %i",seg_number);
-	currSeg.seg_number = 5;
-	currSeg.seg_type = 1;
-	currSeg.seg_length = 2;
-	currSeg.ref_point.x = -3.28;
-	currSeg.ref_point.y = 20.8;
-	currSeg.init_tan_angle = tf::createQuaternionMsgFromYaw(45.22*PI/180.0);
-	break;
-      default:
-	ROS_INFO("I don't know what to publish, seg_number=%i",seg_number);
-      }  
-    }
-    //ROS_INFO("Publishing!");
-    pathPub.publish(currSeg);
-    naptime.sleep();
-  }
+		}else(SEG STATUS == !OK){
+			detour();
+		}
+
+
+		//ROS_INFO("Publishing!");
+		pathPub.publish(currSeg);
+		naptime.sleep();
+	}
   return 0;
 }
