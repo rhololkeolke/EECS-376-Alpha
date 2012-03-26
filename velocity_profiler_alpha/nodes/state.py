@@ -8,9 +8,11 @@ Created on Mar 23, 2012
 from msg_alpha.msg._PathSegment import PathSegment as PathSegmentMsg
 from geometry_msgs.msg._Twist import Twist as TwistMsg
 from geometry_msgs.msg._Point import Point as PointMsg
+from geometry_msgs.msg._Quaternion import Quaternion as QuaternionMsg
+from geometry_msgs.msg._Vector3 import Vector3 as Vector3Msg
 
 from tf.transformations import quaternion_from_euler,euler_from_quaternion # used to convert between the two representations
-
+from math import cos,sin,tan,sqrt,pow,abs,pi
 
 class State:
     """
@@ -25,7 +27,7 @@ class State:
     shouldn't have a major effect on where velocity profiler thinks it is along a path.
     """
         
-    def __init__(self, pathSeg=None, point = None, dt=1/20.0):
+    def __init__(self, pathSeg=None, point = None, psi=None, dt=1/20.0):
         """
         Responsible for initializing the State class
         
@@ -42,15 +44,26 @@ class State:
                 self.point = point # so set the point to that point
             else: # no starting point was given
                 self.point = pathSeg.ref_point # set assume the robot is starting from the path segments beginning
+            if(psi is not None): # a starting heading was given
+                self.psi = psi
+            else:
+                self.psi = State.getYaw(pathSeg.init_tan_angle) # assume the robot is aligned with the path
+            
+            self.v = pathSeg.min_speeds.linear.x
+            self.o = pathSeg.min_speeds.angular.z
         else:
+            self.psi = psi # doesn't matter if psi is None or defined
             self.point = point # doesn't matter if point is None or defined
             self.pathPoint = None # there is no point along the path because there is no path
+            self.v = 0.0
+            self.o = 0.0
             
         self.segDistDone = 0.0 # by default the distance done must be zero
         self.dt = dt # set the timestep
+        self.segDone = False
         
     
-    def newPathSegment(self, pathSeg = None, point = None):
+    def newPathSegment(self, pathSeg = None, point = None, psi = None):
         """
         Updates the internal path segment that State is integrating against
         
@@ -68,13 +81,18 @@ class State:
         else: # no point was originally specified
             if(pathSeg is not None): # the new path segment exists
                 self.point = pathSeg.ref_point # so assume that the point is at the start of the path segment
+        if(psi is not None):
+            self.psi = psi
+        else:
+            if(pathSeg is not None):
+                self.psi = State.getYaw(pathSeg.init_tan_angle)
         self.pathSeg = pathSeg # this will be None when
         if(pathSeg is not None): # as long as a path is specified
             self.pathPoint=pathSeg.ref_point # a pathPoint can be assumed
         self.segDistDone = 0.0 # new segment so completion is 0 
         
     
-    def updateState(self, vel_cmd, point):
+    def updateState(self, vel_cmd):
         """
         Integrates along the desired path vector and projects the actual path 
         vector onto the desired vector
@@ -89,12 +107,89 @@ class State:
         True if everything went okay
         False if an error occurred
         """
-        if(self.point is None or self.pathSeg is None):
-            return # can't integrate if no initial value and/or no path is given
         
-        
+        # calculate the actual path vector using the code from the first assignment
+        v_avg = (self.v + vel_cmd.linear.x)/2.0
+        o_avg = (self.o + vel_cmd.angular.z)/2.0
+        psi_avg = (self.psi + o_avg*self.dt)/2.0
             
-    
+        x = self.point.x + v_avg*self.dt*cos(psi_avg)
+        y = self.point.y + v_avg*self.dt*sin(psi_avg)
+        psi = self.psi + o_avg*self.dt
+        
+        # use segDistDone to calculate starting point on path
+        if(self.pathSeg.seg_type == PathSegmentMsg.LINE):
+            # calculate current position on path
+            yaw = State.getYaw(self.pathSeg.init_tan_angle)
+            x0 = self.pathSeg.x + self.segDistDone*cos(yaw)
+            y0 = self.pathSeg.y + self.segDistDone*sin(yaw)
+            
+            # calculate maximum distance moved along path
+            dDist = self.pathSeg.max_speeds.linear.x*self.dt
+            
+            # calculate ideal path position after next time step
+            x1 = self.pathSeg.x + (self.segDistDone+dDist)*cos(yaw)
+            y1 = self.pathSeg.x + (self.segDistDone+dDist)*sin(yaw)
+            
+            # calculate the ideal path vector
+            idealVec = State.createVector([x0,y0,0.0], [x1,y1,0.0])
+            
+            # calculate the actual path vector
+            actVec = State.createVector([self.point.x,self.point.y,self.point.z],[x,y,0.0])
+            
+            # create a unit vector in the same direction as the ideal path vector
+            idealUnitVec = State.getUnitVector(idealVec)
+            
+            # calculate how far along the path the robot actually moved and add it to segDistDone
+            self.segDistDone += State.dotProduct(actVec, idealUnitVec)
+
+        elif(self.pathSeg.seg_type == PathSegmentMsg.ARC):
+            rhoDes = self.pathSeg.curvature
+            r = 1/abs(rhoDes) # turn radius is inverse of curvature
+            yaw = State.getYaw(self.pathSeg.init_tan_angle)
+            if(rhoDes >= 0):
+                arcAngStart = yaw - pi/2.0
+            else:
+                arcAngStart = yaw + pi/2.0
+
+            # calculate current position on path
+            dAng = self.segDistDone*rhoDes
+            arcAng0 = arcAngStart+dAng
+            x0 = self.point.x + r*cos(arcAng0)
+            y0 = self.point.y + r*sin(arcAng0)
+            
+            # calculate maximum distance moved along path
+            arcAng1 = arcAng0 + self.pathSeg.max_speeds.angular.z*self.dt
+            x1 = self.point.x + r*cos(arcAng1)
+            y1 = self.point.y + r*sin(arcAng1)
+            
+            # calculate ideal path vector
+            idealVec = State.createVector([x0,y0,0.0],[x1,y1,0.0])
+            
+            # calculate the actual path vector
+            actVec = State.createVector([self.point.x,self.point.y,self.point.z], [x,y,0.0])
+            
+            # calculate the unit vector in ideal path vector direction
+            idealUnitVec = State.getUnitVector(idealVec)
+            
+            # calculate how far along the path the robot actually moved and add it to segDistDone
+            self.segDistDone += State.dotProduct(actVec, idealUnitVec)
+            
+        elif(self.pathSeg.seg_type == PathSegmentMsg.SPIN_IN_PLACE):
+            yaw = State.getYaw(self.pathSeg.init_tan_angle)
+            self.segDistDone = psi - yaw # distance done is the current heading minus the starting heading
+        else:
+            pass # should probably thrown an unknown segment type error
+        
+        # update the current velocity
+        self.v = vel_cmd.linear.x
+        self.o = vel_cmd.angular.z
+        
+        # update the current point and heading
+        self.point.x = x
+        self.point.y = y
+        self.psi = psi
+
     def stop(self):
         """
         Called when Estop is activated.  Instantly sets the last velocities to 0
@@ -107,7 +202,47 @@ class State:
         -------
         Nothing
         """
-        pass
+        self.v = 0.0
+        self.o = 0.0
+    
+    @staticmethod
+    def getYaw(quat):
+        return euler_from_quaternion([quat.x,quat.y,quat.z, quat.w])
+    
+    @staticmethod
+    def createQuat(x,y,z):
+        quatList = quaternion_from_euler(x,y,z)
+        quat = QuaternionMsg()
+        quat.x = quatList[0]
+        quat.y = quatList[1]
+        quat.z = quatList[2]
+        quat.w = quatList[3]
+        return quat
+    
+    @staticmethod
+    def createVector(p0,p1):
+        vector = Vector3Msg()
+        vector.x = p1[0] - p0[0]
+        vector.y = p1[1] - p0[1]
+        vector.z = p1[2] - p0[2]
+        return vector
+    
+    @staticmethod
+    def getUnitVector(vector):
+        e = Vector3Msg()
+        magnitude = sqrt(pow(vector.x,2) + pow(vector.y,2) + pow(vector.z,2))
+        e.x = vector.x/magnitude
+        e.y = vector.y/magnitude
+        e.z = vector.z/magnitude
+        return e
+    
+    @staticmethod
+    def dotProduct(vec1, vec2):
+        result = 0.0
+        result += vec1.x*vec2.x
+        result += vec1.y*vec2.y
+        result += vec1.z*vec2.z
+        return result
     
     
         
