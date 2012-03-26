@@ -110,7 +110,7 @@ def straight(desVelPub,segStatusPub,distance):
     #tConstV = rospy.Duration(distConstV/abs(v_max))
     #tSegmentTot = tAccel + tDecel + tConstV
     
-    currState = State()
+    currState = State(pathSeg=currSeg)
     
     v_cmd = lastVCmd
     omega_cmd = lastOCmd
@@ -293,7 +293,7 @@ def turn(desVelPub, segStatusPub, angle):
     #tConstV = rospy.Duration(radConstO/abs(o_max))
     #tSegmentTot = tAccel + tDecel + tConstV
     
-    currState = State()
+    currState = State(pathSeg=currSeg)
     
     v_cmd = 0.0
     o_cmd = 0.0
