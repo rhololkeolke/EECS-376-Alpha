@@ -252,6 +252,27 @@ void initStack()
 	pathStack.push(Seg);
 }
 
+void publishSeg() 
+{
+	if (pathStack.empty())
+		return;
+	//update currseg,pop,then pub. all in ros::ok loop
+	int temp = currSeg.seg_number;
+	currSeg = pathStack.top();
+	currSeg.seg_number = temp + 1;
+	do {
+		ros::spinOnce();
+		if (segComplete == true)
+		{
+			pathStack.pop();
+			pathPub.publish(currSeg);
+			segComplete = false;
+			ROS_INFO("I published another node! Be proud...");
+		}
+	} while(!segComplete);
+}
+
+
 int calculateNewX(int initX, int distanceTraveled, int angle)
 {
 
@@ -363,25 +384,6 @@ void calcHalfSeg()
 
 }
 
-void publishSeg() 
-{
-	if (pathStack.empty())
-		return;
-	//update currseg,pop,then pub. all in ros::ok loop
-	int temp = currSeg.seg_number;
-	currSeg = pathStack.top();
-	currSeg.seg_number = temp + 1;
-	do {
-		ros::spinOnce();
-		if (segComplete == true)
-		{
-			pathStack.pop();
-			pathPub.publish(currSeg);
-			segComplete = false;
-			ROS_INFO("I published another node! Be proud...");
-		}
-	} while(!segComplete);
-}
 
 void goStraight()
 {
