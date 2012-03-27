@@ -194,6 +194,10 @@ int main(int argc,char **argv)
 		  xf = xs + currSeg.seg_length*cos(desired_heading); // get the final point
 		  yf = ys + currSeg.seg_length*sin(desired_heading);
 	      }
+	      if(currSeg.seg_type == 2)
+		  {
+			desired_heading = PSIDES;
+		  }
 	    }
 	    /*else
 	    {
