@@ -304,32 +304,34 @@ bool checkSide(int arcAngle, int dist)
 }
 
 //Summary: Place a new segment on the stack after obstacle avoidance
-//
+
 void calcHalfSeg()
 {
-	double radius;
-	double tangentAngStart;
-	double arcAngStart;
-	double dAng;
-	double arcAng;
-	double rho;
-	double tanAngle = tf::getYaw(temp_pose_out_.pose.orientation);
+  
+  double radius; //turn radius is inverse of curvature
+  
+  double tangentAngStart; //inital head of current segment
+  double arcAngStart; //
+  double dAng; //
+  double arcAng; //
+  double rho; //curvature
+  double tanAngle = tf::getYaw(temp_pose_out_.pose.orientation);
+	
+  finalSeg = pathStack.top();
 
-	finalSeg = pathStack.top();
-
-	rho = finalSeg.curvature;
-	radius = 1.0/fabs(rho);
+  rho = finalSeg.curvature;  // curvature is +/- 1/radius of arc; + for CCW trajectory    
+  radius = 1.0/fabs(rho); 
 
 	if(rho >= 0.0) {
-		arcAngStart = tangentAngStart - M_PI / 2.0;  
+		arcAngStart = tangentAngStart - M_PI / 2.0;  //path in polar coords
 	} else {
-		arcAngStart = tangentAngStart + M_PI / 2.0;
+		arcAngStart = tangentAngStart + M_PI / 2.0; //path in polar coords
 	}
 
-	dAng = progressMade * rho;
-	arcAng = arcAngStart + dAng;
-	double xDes = finalSeg.ref_point.x;
-	double yDes = finalSeg.ref_point.y;
+	dAng = progressMade * rho; //radius*delta_angle = delta_arc_distance   
+	arcAng = arcAngStart + dAng; 
+	double xDes = finalSeg.ref_point.x; //update desired x pos
+	double yDes = finalSeg.ref_point.y; //update desired y pos
 	double psiDes = tangentAngStart + dAng;
 /*
 	msg_alpha::PathSegment seg;
