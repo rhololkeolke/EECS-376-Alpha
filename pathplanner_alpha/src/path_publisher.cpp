@@ -123,8 +123,56 @@ bool checkSide(int arcAngle, int dist)
 	}
 }
 
+//Summary: Place a new segment on the stack after obstacle avoidance
+//
 void calcHalfSeg()
 {
+  double radius, tangentAngStart, arcAngStart, dAng, arcAng, rho;
+  double tanAngle = tf::getYaw(temp_pose_out_.pose.orientation);
+
+  //Find the distance between the end of the previous arc segment and the beginning of the new straight path segment
+  lastSeg = pathStack.top();
+  rho =  lastSeg.curvature;
+  radius = 1.0/fabs(rho);
+
+  tanAngleStart = tanAngle;
+  arcAngStart = 0.0;
+  
+  if(rho >= 0.0) {
+    arcAngStart = tangentAngStart - M_PI / 2.0;  
+  } else {
+    arcAngStart = tangentAngStart + M_PI / 2.0;
+
+    double seg_length_done = lastSeg.length - lastSeg.ref_point.x
+    dAng = seg_length_done * rho;
+    arcAng = arcAngStart + dAng;
+
+  }
+
+    int xNewStart = 
+     
+
+    lastSeg.pop(); //take the latest path segment off of the stack
+    prevSeg = pathSeg.top(); //view the previous segment
+    
+    pathStack.push(lastSeg); //push the last segment back to the path segment stack
+
+    //calculate the eucledian distance between the old segment and new desired segment
+    distance = sqrt(pow((lastSeg.ref_point.x - prevSeg.ref_point.x),2.0) + pow((lastSeg.ref_point.y - prevSeg.ref_point.y),2.0));
+    return distance;
+
+}
+    
+      
+      
+     
+
+    
+  
+    
+ 
+    
+
 
 }
 void detour()
