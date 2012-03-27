@@ -297,16 +297,19 @@ void publishSeg()
 {
 	if (pathStack.empty()) return;
 	//update currseg,pop,then pub. all in ros::ok loop
+	int temp = currSeg.seg_number;
 	currSeg = pathStack.top();
-	while(ros::ok()){
+	currSeg.seg_number = temp + 1;
+	do {
 		ros::spinOnce();
 		if (segComplete == true)
 		{
 			pathStack.pop();
 			pathPub.publish(currSeg);
 			segComplete = false;
+			ROS_INFO("I published another node! Be proud...");
 		}
-	}
+	} while(!segComplete)
 }
 
 void detour()
@@ -365,21 +368,11 @@ int main(int argc, char **argv)
 		//While seg status is ok.
 		if(!abort)
 		{
-			ros::spinOnce();
-			if(segComplete == true)
-			{
-				currSeg = pathStack.top();
-				pathStack.pop();
-				segComplete = false;
-				ROS_INFO("I published another node! Be proud...");
+			publishSeg();
 			}
 		} else {
 			detour();
 		}
-
-
-		//ROS_INFO("Publishing!");
-		pathPub.publish(currSeg);
 		naptime.sleep();
 	}
 	return 0;
