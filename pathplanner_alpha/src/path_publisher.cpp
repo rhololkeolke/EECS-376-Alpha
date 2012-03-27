@@ -65,8 +65,8 @@ void initStack()
 	Seg.seg_number = 5;
 	Seg.seg_type = 1;
 	Seg.seg_length = 1;
-	Seg.ref_point.x = -3.28;
-	Seg.ref_point.y = 20.8;
+	Seg.ref_point.x = calculateNewX(-3.28,1,45.22);
+	Seg.ref_point.y = calculateNewY(20.8,1,45.22);
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(45.22*PI/180.0);
 	pathStack.push(Seg);
 
@@ -216,7 +216,7 @@ void initStack()
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
 	pathStack.push(Seg);
 
-	Seg.seg_number = 1;
+	Seg.seg_number = 4;
 	Seg.seg_type = 1;
 	Seg.seg_length = 1;
 	Seg.ref_point.x = calculateNewX(8.27,3,-135.7);
@@ -224,7 +224,7 @@ void initStack()
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
 	pathStack.push(Seg);
 
-	Seg.seg_number = 1;
+	Seg.seg_number = 3;
 	Seg.seg_type = 1;
 	Seg.seg_length = 1;
 	Seg.ref_point.x = calculateNewX(8.27,2,-135.7);
@@ -232,7 +232,7 @@ void initStack()
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
 	pathStack.push(Seg);
 
-	Seg.seg_number = 1;
+	Seg.seg_number = 2;
 	Seg.seg_type = 1;
 	Seg.seg_length = 1;
 	Seg.ref_point.x = calculateNewX(8.27,1,-135.7);
@@ -307,57 +307,55 @@ bool checkSide(int arcAngle, int dist)
 //
 void calcHalfSeg()
 {
-  double radius, tangentAngStart, arcAngStart, dAng, arcAng, rho;
-  double tanAngle = tf::getYaw(temp_pose_out_.pose.orientation);
-  
-  finalSeg = pathStack.top();
+	double radius;
+	double tangentAngStart;
+	double arcAngStart;
+	double dAng;
+	double arcAng;
+	double rho;
+	double tanAngle = tf::getYaw(temp_pose_out_.pose.orientation);
 
-  rho = finalSeg.curvature;
-  radius = 1.0/fabs(rho);
+	finalSeg = pathStack.top();
 
-  if(rho >= 0.0) {
-    arcAngStart = tangentAngStart - M_PI / 2.0;  
-  } else {
-    arcAngStart = tangentAngStart + M_PI / 2.0;
-  }
+	rho = finalSeg.curvature;
+	radius = 1.0/fabs(rho);
 
-  dAng = progressMade * rho ;
-  arcAng = arcAngStart + dAng;
-  double xDes = finalSeg.ref_point.x;
-  double yDes = finalSeg.ref_point.y;
-  double psiDes = tangentAngStart + dAng;
-  
-  msg_alpha::PathSegment seg;
-  seg.seg_number = ?;//need to increment from before obs                                                                                                 
-  seg.seg_type = 1; //straight                                                                                                                           
-  seg.seg_length = ?;
-  seg.ref_point.x = xDes ;
-  seg.ref_point.y = yDes;
-  seg.init_tan_angle = tf::createQuaternionMsgFromYaw(psiDes);
-  pathStack.push(seg);
+	if(rho >= 0.0) {
+		arcAngStart = tangentAngStart - M_PI / 2.0;  
+	} else {
+		arcAngStart = tangentAngStart + M_PI / 2.0;
+	}
 
-  newFinalSeg = pathStack.top();
-  
+	dAng = progressMade * rho;
+	arcAng = arcAngStart + dAng;
+	double xDes = finalSeg.ref_point.x;
+	double yDes = finalSeg.ref_point.y;
+	double psiDes = tangentAngStart + dAng;
+/*
+	msg_alpha::PathSegment seg;
+	seg.seg_number = 2;//need to increment from before obs                                                                                                 
+	seg.seg_type = 1; //straight                                                                                                                           
+	seg.seg_length = ?;
+	seg.ref_point.x = xDes;
+	seg.ref_point.y = yDes;
+	seg.init_tan_angle = tf::createQuaternionMsgFromYaw(psiDes);
+	pathStack.push(seg);
+*/
+	newFinalSeg = pathStack.top();
 
-  double distance = sqrt(pow((newFinalSeg.ref_point.x - finalSeg.ref_point.x),2.0) + pow((newFinalSeg.ref_point.y - finalSeg.ref_point.y),2.0));   
 
-  msg_alpha::PathSegment newSeg;
-  seg.seg_number = 1;
-  seg.seg_type = 1; 
-  seg.seg_length = distance;
-  seg.ref_point.x = xDes ;
-  seg.ref_point.y = yDes;
-  seg.init_tan_angle = tf::createQuaternionMsgFromYaw(psiDes);
-  pathStack.push(newSeg);
+	double distance = sqrt(pow((newFinalSeg.ref_point.x - finalSeg.ref_point.x),2.0) + pow((newFinalSeg.ref_point.y - finalSeg.ref_point.y),2.0));   
 
-   
-  
-  
-  pathStack.push(newFinalSeg); 
+	msg_alpha::PathSegment newSeg;
+	seg.seg_number = 1;
+	seg.seg_type = 1; 
+	seg.seg_length = distance;
+	seg.ref_point.x = xDes;
+	seg.ref_point.y = yDes;
+	seg.init_tan_angle = tf::createQuaternionMsgFromYaw(psiDes);
+	pathStack.push(newSeg);
 
-    //calculate the eucledian distance between the old segment and new desired segment
-
-//push the last segment back to the path segment stack
+	pathStack.push(newFinalSeg); 
 
 }
 
