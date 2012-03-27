@@ -149,17 +149,29 @@ def arc(scanData):
         #??? Must figure out mathematically how to exclude the path segment circle form these calculations
         while(theta < 2 * math.pi):
             
-            #Do not turn lidar pings within the path segment circle or along the path segment into circles
-            for j in ranges(scanData):
-                if(j == xEndt and scanData(j) == yEndPt or j == xStartPt and scanData(j) == yStartPt):
-                   
-
-        theta += 0.1
             
-        xCenter = i * radius * math.sin(theta) #create the x-coord for the center of the circle
-        yCenter = scanData(i) * radius * math.cos(theta) # create the y-coord for the center of the circle
-        circle = [xCenter,yCenter] #a list of circle information contains ifs centerpoint and location along lidar ping
-        circles.append(circle)  # place each circle in a list of circles
+            #Do not turn lidar pings within the path segment circle or along the path segment into circles
+            #works under the premise that all points are within the radius of the circle and therefore
+            #dx = xCenter - x;
+            #dy = yCenter - y;
+            #dx*dx + dy+dy < radius * radius
+            #j is always within range of the lidar pings
+            for j in ranges(scanData):
+                insideCircle = False
+
+                dx = xPathCent - j ;
+                dy = yPathCent- scanData(j);
+                
+                if(dx * dx + dy * dy < pathRadius * pathRadius):
+                
+                
+                else:
+                    
+                theta += 0.1
+                xCenter = i * radius * math.sin(theta) #create the x-coord for the center of the circle
+                yCenter = scanData(i) * radius * math.cos(theta) # create the y-coord for the center of the circle
+                circle = [xCenter,yCenter] #a list of circle information contains ifs centerpoint and location along lidar ping
+                circles.append(circle)  # place each circle in a list of circles
 
         #if the euclidean distance between a circle and the radii of the path segment circle is less than the sum of the radii then an obstacle exists else it does not
         for c in ranges(circles):
