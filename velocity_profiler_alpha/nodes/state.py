@@ -12,7 +12,7 @@ from geometry_msgs.msg._Quaternion import Quaternion as QuaternionMsg
 from geometry_msgs.msg._Vector3 import Vector3 as Vector3Msg
 
 from tf.transformations import quaternion_from_euler,euler_from_quaternion # used to convert between the two representations
-from math import cos,sin,tan,sqrt,pi
+from math import cos,sin,tan,sqrt,pi,acos,asin
 
 class State:
     """
@@ -76,6 +76,7 @@ class State:
         -------
         Nothing
         """
+
         if(point is not None): # if a new point is specified
             self.point = point # then set the state with that point, otherwise leave the point alone
         else: # no point was originally specified
@@ -91,8 +92,12 @@ class State:
             self.pathPoint=pathSeg.ref_point # a pathPoint can be assumed
         self.segDistDone = 0.0 # new segment so completion is 0 
         
+        print "self.pathSeg: " + str(self.pathSeg)
+        print "self.point: " + str(self.point)
+        print "self.psi: " + str(self.psi)
+        
     
-    def updateState(self, vel_cmd):
+    def updateState(self, vel_cmd, point, psi):
         """
         Integrates along the desired path vector and projects the actual path 
         vector onto the desired vector
@@ -108,90 +113,142 @@ class State:
         False if an error occurred
         """
         
-        # calculate the actual path vector using the code from the first assignment
-        v_avg = (self.v + vel_cmd.linear.x)/2.0
-        o_avg = (self.o + vel_cmd.angular.z)/2.0
-        psi_avg = (self.psi + o_avg*self.dt)/2.0
-            
-        x = self.point.x + v_avg*self.dt*cos(psi_avg)
-        y = self.point.y + v_avg*self.dt*sin(psi_avg)
-        psi = self.psi + o_avg*self.dt
-        
-        # use segDistDone to calculate starting point on path
         if(self.pathSeg.seg_type == PathSegmentMsg.LINE):
-            # calculate current position on path
-            yaw = State.getYaw(self.pathSeg.init_tan_angle)
-            x0 = self.pathSeg.ref_point.x + self.segDistDone*cos(yaw)
-            y0 = self.pathSeg.ref_point.y + self.segDistDone*sin(yaw)
+            # find the normal vector to the line segment
+            angle = State.getYaw(self.pathSeg.init_tan_angle)
+            normVec = Vector3Msg()
+            normVec.x = cos(angle+pi/2.0)
+            normVec.y = sin(angle+pi/2.0)
+            
+            tanVec = Vector3Msg()
+            tanVec.x = cos(angle)
+            tanVec.y = sin(angle)
+            
+            # using the point and the normal vector find the intersection of the line through the point and the line
+            p0 = self.pathSeg.ref_point
+            
+            if(normVec.y != 0.0):
+                normRatio = normVec.x/normVec.y
+                numerator = p0.x - point.y - normRatio*p0.y + normRatio*point.y
+                denominator = normRatio*tanVec.y - tanVec.x
+                s = numerator/denominator
+            else:
+                normRatio = normVec.y/normVec.x
+                numerator = p0.y - point.y + normRatio*point.x - normRatio*p0.x
+                denominator = normRatio*tanVec.x - tanVec.y
+                s = numerator/denominator
+            
+            self.pathPoint = PointMsg()
+            self.pathPoint.x = p0.x + tanVec.x*s
+            self.pathPoint.y = p0.y + tanVec.y*s
+            self.pathPoint.z = 0.0
+            
+            # using the intersection find the segDistDone
+            if(angle % pi != pi/2 or angle % pi != 0.0):
+                d1 = (self.pathPoint.x - p0.x)/cos(angle)
+                d2 = (self.pathPoint.y - p0.y)/sin(angle)
+            elif(angle % pi != pi/2):
+                d2 = (self.pathPoint.y - p0.y)/sin(angle)
+                d1 = d2
+            else:
+                d1 = (self.pathPoint.x - p0.x)/cos(angle)
+                d2 = d1
 
-#            print "yaw: %f, x0: %f, y0: %f" % (yaw,x0,y0)
-
-            # calculate maximum distance moved along path
-            dDist = self.pathSeg.max_speeds.linear.x*self.dt
-            
-            # calculate ideal path position after next time step
-            x1 = self.pathSeg.ref_point.x + (self.segDistDone+dDist)*cos(yaw)
-            y1 = self.pathSeg.ref_point.y + (self.segDistDone+dDist)*sin(yaw)
-            
-            # calculate the ideal path vector
-            idealVec = State.createVector([x0,y0,0.0], [x1,y1,0.0])
-            
-            # calculate the actual path vector
-            actVec = State.createVector([self.point.x,self.point.y,self.point.z],[x,y,0.0])
-            
-            # create a unit vector in the same direction as the ideal path vector
-            idealUnitVec = State.getUnitVector(idealVec)
-            
-            # calculate how far along the path the robot actually moved and add it to segDistDone
-            self.segDistDone += State.dotProduct(actVec, idealUnitVec)
-
+            d = (d1+d2)/2.0
+                        
+            self.segDistDone = d/self.pathSeg.seg_length
+       
+        # need to redo these
         elif(self.pathSeg.seg_type == PathSegmentMsg.ARC):
+            p = point
             rhoDes = self.pathSeg.curvature
             r = 1/abs(rhoDes) # turn radius is inverse of curvature
-            yaw = State.getYaw(self.pathSeg.init_tan_angle)
+            angle = State.getYaw(self.pathSeg.init_tan_angle)
+            center = PointMsg()
             if(rhoDes >= 0):
-                arcAngStart = yaw - pi/2.0
+                if(angle > 0.0 and angle <= pi/2.0):
+                    center.x = -r*cos(angle) + self.pathSeg.ref_point.x
+                    center.y = -r*sin(angle) + self.pathSeg.ref_point.y
+                elif(angle > pi/2.0 and angle <= pi):
+                    center.x = r*cos(angle) + self.pathSeg.ref_point.x
+                    center.y = -r*sin(angle) + self.pathSeg.ref_point.y
+                elif(angle > pi and angle <= 3.0*pi/2.0):
+                    center.x = r*cos(angle) + self.pathSeg.ref_point.x
+                    center.y = r*sin(angle) + self.pathSeg.ref_point.y
+                else:
+                    center.x = -r*cos(angle) + self.pathSeg.ref_point.x
+                    center.y = r*sin(angle) + self.pathSeg.ref_point.y
             else:
-                arcAngStart = yaw + pi/2.0
-
-            # calculate current position on path
-            dAng = self.segDistDone*rhoDes
-            arcAng0 = arcAngStart+dAng
-            x0 = self.point.x + r*cos(arcAng0)
-            y0 = self.point.y + r*sin(arcAng0)
+                if(angle > 0.0 and angle <= pi/2.0):
+                    center.x = r*cos(angle) + self.pathSeg.ref_point.x
+                    center.y = r*sin(angle) + self.pathSeg.ref_point.y
+                elif(angle > pi/2.0 and angle <= pi):
+                    center.x = -r*cos(angle) + self.pathSeg.ref_point.x
+                    center.y = r*sin(angle) + self.pathSeg.ref_point.y
+                elif(angle > pi and angle <= 3.0*pi/2.0):
+                    center.x = -r*cos(angle) + self.pathSeg.ref_point.x
+                    center.y = -r*sin(angle) + self.pathSeg.ref_point.y
+                else:
+                    center.x = -r*cos(angle) + self.pathSeg.ref_point.x
+                    center.y = r*sin(angle) + self.pathSeg.ref_point.y
+                
+            # calculate the terms of the quadratic
+            a = pow(center.x,2) - 2.0*center.x*p.x + pow(p.x,2) + pow(center.y,2) - 2.0*center.y*p.y + pow(p.y,2)
+            b = 2.0*pow(center.x,2) - 4.0*center.x*p.x + 2.0*pow(p.x,2) + 2.0*pow(center.y,2) - 4.0*center.y*p.y + 2.0*pow(p.y,2)
+            c = pow(center.x,2) - 2.0*center.x*p.x + pow(p.x,2) + pow(center.y,2) - 2.0*center.y*p.y + pow(p.y,2) - pow(r,2)
             
-            # calculate maximum distance moved along path
-            arcAng1 = arcAng0 + self.pathSeg.max_speeds.angular.z*self.dt
-            x1 = self.point.x + r*cos(arcAng1)
-            y1 = self.point.y + r*sin(arcAng1)
+            # get the two solutions using the quadratic formula
+            s1 = (-b + sqrt(pow(b,2) - 4*a*c))/(2*a)
+            s2 = (-b - sqrt(pow(b,2) - 4*a*c))/(2*a)
             
-            # calculate ideal path vector
-            idealVec = State.createVector([x0,y0,0.0],[x1,y1,0.0])
+            # calculate the point using s1
+            p1 = PointMsg()
+            p1.x = (p.x - center.x)*s1 + p.x
+            p1.y = (p.y - center.y)*s1 + p.y
             
-            # calculate the actual path vector
-            actVec = State.createVector([self.point.x,self.point.y,self.point.z], [x,y,0.0])
+            # calculate the point using s2
+            p2 = PointMsg()
+            p2.x = (p.x - center.x)*s2 + p.x
+            p2.y = (p.y - center.y)*s2 + p.y
             
-            # calculate the unit vector in ideal path vector direction
-            idealUnitVec = State.getUnitVector(idealVec)
+            # calculate the distance from the point on the circle to the robot position
+            s1Dist = sqrt(pow(p1.x-p.x,2) + pow(p1.y-p.y,2))
+            s2Dist = sqrt(pow(p2.x-p.x,2) + pow(p2.y-p.y,2))
             
-            # calculate how far along the path the robot actually moved and add it to segDistDone
-            self.segDistDone += State.dotProduct(actVec, idealUnitVec)
+            # set the parameter to the one that minimizes the distance between the circle and the robot position
+            if(s1Dist < s2Dist):
+                s = s1
+                p = p1
+            else:
+                s = s2
+                p = p2
+                
+            if(rhoDes >= 0):
+                arcAngStart = angle-pi/2
+            else:
+                arcAngStart = angle+pi/2
+                
+            d1 = (acos((p.x - self.pathSeg.ref_point.x)/r) - arcAngStart)/rhoDes
+            d2 = (asin((p.y - self.pathSeg.ref_point.y)/r) - arcAngStart)/rhoDes
+            
+            d = (d1+d2)/2.0
+            
+            self.segDistDone = d/self.pathSeg.seg_length
             
         elif(self.pathSeg.seg_type == PathSegmentMsg.SPIN_IN_PLACE):
             yaw = State.getYaw(self.pathSeg.init_tan_angle)
             self.segDistDone = psi - yaw # distance done is the current heading minus the starting heading
         else:
-            pass # should probably thrown an unknown segment type error
+            pass # should probably throw an unknown segment type error
         
         # update the current velocity
         self.v = vel_cmd.linear.x
         self.o = vel_cmd.angular.z
         
         # update the current point and heading
-        self.point.x = x
-        self.point.y = y
+        self.point= point
         self.psi = psi
-
+        
     def stop(self):
         """
         Called when Estop is activated.  Instantly sets the last velocities to 0
@@ -209,7 +266,10 @@ class State:
     
     @staticmethod
     def getYaw(quat):
-        return euler_from_quaternion([quat.x,quat.y,quat.z, quat.w])[2]
+        try:
+            return euler_from_quaternion([quat.x,quat.y,quat.z, quat.w])[2]
+        except AttributeError:
+            return euler_from_quaternion(quat)[2]
     
     @staticmethod
     def createQuat(x,y,z):
