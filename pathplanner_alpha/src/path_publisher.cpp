@@ -1,11 +1,15 @@
 #include <ros/ros.h>
-#include <geometry_msgs/Twist.h>
+#include <geometry_msgs/Twist.h> //data type for velocities
+#include <geometry_msgs/PoseStamped.h> //data type for Pose combined with frame and timestamp
+#include <nav_msgs/Odometry.h> //data type for odometry information (see available fields with 'rosmsg show nav_msgs/Odometry')
+#include <tf/transform_datatypes.h> // for tf::getYaw
+#include <tf/transform_listener.h> // for the TransformListener class that abstracts away a lot of tf
 #include <math.h>
+#include <cmath>
 #include <msg_alpha/PathSegment.h>
 #include <msg_alpha/SegStatus.h>
 #include <msg_alpha/Obstacles.h>
 #include <iostream>
-#include <tf/transform_datatypes.h>
 #include <stack>
 
 const double PI=3.14159;
@@ -23,8 +27,6 @@ stack <msg_alpha::PathSegment> pathStack;
 
 ros::Publisher pathPub;
 double progressMade;
-
-
 
 
 void segStatusCallback(const msg_alpha::SegStatus::ConstPtr& status)
