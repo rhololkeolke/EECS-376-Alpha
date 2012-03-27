@@ -14,6 +14,8 @@ using namespace std;
 bool segComplete = true;
 int seg_number = 0;
 
+int ping_angle = 0;
+
 int numSegs = 5;
 
 
@@ -27,6 +29,18 @@ void segStatusCallback(const msg_alpha::SegStatus::ConstPtr& status)
   // so only update if the segment is currently not completed
   if(!segComplete)
     segComplete = status->segComplete;
+}
+
+void obstaclesCallback(const msg_alpha::Obstacles::ConstPtr& exists)
+{
+
+	if(Obstacles.exists)
+	{
+
+		ping_angle = Obstacles -> ping_angle;
+
+	}
+
 }
 
 void initStack(){
@@ -83,13 +97,64 @@ void initStack(){
 	pathStack.push(Seg);
 }
 
+void arcRight()
+{
+
+	Seg.seg_number = 1;
+	Seg.seg_type = 1;
+	Seg.seg_length = 4.2;
+	Seg.ref_point.x = 8.27;
+	Seg.ref_point.y = 14.74;
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
+	pathStack.push(Seg);
+
+}
+
+void checkRight()
+{
+
+
+
+}
+
+void checkLeft()
+{
+
+
+
+}
+
+void arcLeft()
+{
+
+
+
+}
+
+void check
+
 void detour()
 {
 
 	//this method assumes that the lidar node will wait three seconds
 	//before publishing a segStatus of !OK
 
-	ros::Subscriber 
+	//First thing we need to do is 
+
+	int obst_angle;
+
+	ros::Subscriber obst_angle =n.subscribe<msg_alpha::Obstacles>("ping_angle",1,obstaclesCallback);
+
+	//Assuming that it goes CCW
+	if(obst_angle>90)
+	{
+
+		arcRight();
+
+
+	}
+
+
 
 
 }
