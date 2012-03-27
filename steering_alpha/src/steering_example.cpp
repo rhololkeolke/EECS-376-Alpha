@@ -198,7 +198,7 @@ int main(int argc,char **argv)
 		  {
 
 		    double radius, tangentAngStart, arcAngStart, dAng, arcAng, rho;
-		    double tanAngle = tf::getYaw(temp_pose_out_.pose.orientation);
+		  //  double tanAngle = tf::getYaw(temp_pose_out_.pose.orientation);
 		    
 		    rho = currSeg.curvature;
 		    radius = 1.0/fabs(rho);
@@ -215,8 +215,8 @@ int main(int argc,char **argv)
 		    double yDes = currSeg.ref_point.y;
 		    double psiDes = tangentAngStart + dAng;
 
-		    seg.ref_point.y = yDes;
-		    seg.init_tan_angle = tf::createQuaternionMsgFromYaw(psiDes);
+		    currSeg.ref_point.y = yDes;
+		    currSeg.init_tan_angle = tf::createQuaternionMsgFromYaw(psiDes);
 		    
 		    desired_heading = psiDes;
 		  }
