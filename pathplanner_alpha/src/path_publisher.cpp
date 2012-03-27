@@ -3,6 +3,7 @@
 #include <math.h>
 #include <msg_alpha/PathSegment.h>
 #include <msg_alpha/SegStatus.h>
+#include <msg_alpha/Obstacles.h>
 #include <iostream>
 #include <tf/transform_datatypes.h>
 #include <stack>
@@ -13,12 +14,8 @@ using namespace std;
 
 bool segComplete = true;
 int seg_number = 0;
-
-int ping_angle = 0;
-
+msg_alpha::Obstacles lastObs;
 int numSegs = 5;
-
-
 //Stack is created
 stack <msg_alpha::PathSegment> pathStack;
 
@@ -31,19 +28,16 @@ void segStatusCallback(const msg_alpha::SegStatus::ConstPtr& status)
     segComplete = status->segComplete;
 }
 
-void obstaclesCallback(const msg_alpha::Obstacles::ConstPtr& exists)
+void obstaclesCallback(const msg_alpha::Obstacles::ConstPtr& obstacles)
 {
-
-	if(Obstacles.exists)
+	if(obstacles.exists)
 	{
-
-		ping_angle = Obstacles -> ping_angle;
-
+		lastObs = obstacles;
 	}
-
 }
 
-void initStack(){
+void initStack()
+{
 	
 	msg_alpha::PathSegment Seg;		
 
@@ -131,7 +125,11 @@ void arcLeft()
 
 }
 
-void check
+void check()
+{
+
+
+}
 
 void detour()
 {
@@ -140,7 +138,7 @@ void detour()
 	//before publishing a segStatus of !OK
 
 	//First thing we need to do is 
-
+	int arcAngle;
 	int obst_angle;
 
 	ros::Subscriber obst_angle =n.subscribe<msg_alpha::Obstacles>("ping_angle",1,obstaclesCallback);
