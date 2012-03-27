@@ -12,7 +12,7 @@ from geometry_msgs.msg._Quaternion import Quaternion as QuaternionMsg
 from geometry_msgs.msg._Vector3 import Vector3 as Vector3Msg
 
 from tf.transformations import quaternion_from_euler,euler_from_quaternion # used to convert between the two representations
-from math import cos,sin,tan,sqrt,pow,abs,pi
+from math import cos,sin,tan,sqrt,pi
 
 class State:
     """
@@ -121,15 +121,17 @@ class State:
         if(self.pathSeg.seg_type == PathSegmentMsg.LINE):
             # calculate current position on path
             yaw = State.getYaw(self.pathSeg.init_tan_angle)
-            x0 = self.pathSeg.x + self.segDistDone*cos(yaw)
-            y0 = self.pathSeg.y + self.segDistDone*sin(yaw)
-            
+            x0 = self.pathSeg.ref_point.x + self.segDistDone*cos(yaw)
+            y0 = self.pathSeg.ref_point.y + self.segDistDone*sin(yaw)
+
+#            print "yaw: %f, x0: %f, y0: %f" % (yaw,x0,y0)
+
             # calculate maximum distance moved along path
             dDist = self.pathSeg.max_speeds.linear.x*self.dt
             
             # calculate ideal path position after next time step
-            x1 = self.pathSeg.x + (self.segDistDone+dDist)*cos(yaw)
-            y1 = self.pathSeg.x + (self.segDistDone+dDist)*sin(yaw)
+            x1 = self.pathSeg.ref_point.x + (self.segDistDone+dDist)*cos(yaw)
+            y1 = self.pathSeg.ref_point.y + (self.segDistDone+dDist)*sin(yaw)
             
             # calculate the ideal path vector
             idealVec = State.createVector([x0,y0,0.0], [x1,y1,0.0])
@@ -207,7 +209,7 @@ class State:
     
     @staticmethod
     def getYaw(quat):
-        return euler_from_quaternion([quat.x,quat.y,quat.z, quat.w])
+        return euler_from_quaternion([quat.x,quat.y,quat.z, quat.w])[2]
     
     @staticmethod
     def createQuat(x,y,z):
@@ -231,9 +233,14 @@ class State:
     def getUnitVector(vector):
         e = Vector3Msg()
         magnitude = sqrt(pow(vector.x,2) + pow(vector.y,2) + pow(vector.z,2))
-        e.x = vector.x/magnitude
-        e.y = vector.y/magnitude
-        e.z = vector.z/magnitude
+        try:
+            e.x = vector.x/magnitude
+            e.y = vector.y/magnitude
+            e.z = vector.z/magnitude
+        except ZeroDivisionError:
+            e.x = 0.0
+            e.y = 0.0
+            e.z = 0.0
         return e
     
     @staticmethod
