@@ -22,7 +22,7 @@ msg_alpha::PathSegment currSeg;
 stack <msg_alpha::PathSegment> pathStack;
 
 ros::Publisher pathPub;
-
+double progressMade;
 
 
 
