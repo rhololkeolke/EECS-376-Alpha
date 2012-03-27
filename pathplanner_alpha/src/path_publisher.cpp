@@ -146,6 +146,22 @@ void calcHalfSeg()
     double seg_length_done = lastSeg.length - lastSeg.ref_point.x
     dAng = seg_length_done * rho;
     arcAng = arcAngStart + dAng;
+    xDes = ;
+    yDes = ;
+    psiDes = ;
+
+    msg_alpha::PathSegment seg;
+    seg.seg_number = ?;//need to increment from before obs                                                                                                 
+    seg.seg_type = 1; //straight                                                                                                                           
+    seg.seg_length = ;
+    seg.ref_point.x = ;//need to recalculate every time                                                                                                
+    seg.ref_point.y = ;//same                                                                                                                         
+    seg.init_tan_angle = tf::createQuaternionMsgFromYaw(???);
+    pathStack.push(seg);
+
+    
+    
+      
 
   }
 
@@ -159,7 +175,7 @@ void calcHalfSeg()
 
     //calculate the eucledian distance between the old segment and new desired segment
     distance = sqrt(pow((lastSeg.ref_point.x - prevSeg.ref_point.x),2.0) + pow((lastSeg.ref_point.y - prevSeg.ref_point.y),2.0));
-    return distance;
+
 
 }
     
