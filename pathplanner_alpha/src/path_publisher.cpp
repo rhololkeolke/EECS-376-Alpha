@@ -16,6 +16,7 @@ bool segComplete = true;
 int seg_number = 0;
 msg_alpha::Obstacles lastObs;
 int numSegs = 5;
+msg_alpha::PathSegment currSeg;
 //Stack is created
 stack <msg_alpha::PathSegment> pathStack;
 
@@ -91,43 +92,41 @@ void initStack()
 
 void arcRight()
 {
-
-	Seg.seg_number = 1;
+	//fix me
+	Seg.seg_number = currSeg.seg_number+1;
 	Seg.seg_type = 1;
 	Seg.seg_length = 4.2;
 	Seg.ref_point.x = 8.27;
 	Seg.ref_point.y = 14.74;
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
 	pathStack.push(Seg);
-
-}
-
-bool checkRight()
-{
-	
-}
-
-bool checkLeft()
-{
-
-
-
 }
 
 void arcLeft()
 {
-
-
-
+	//fix me
+	Seg.seg_number = currSeg.seg_number+1;
+	Seg.seg_type = 1;
+	Seg.seg_length = 4.2;
+	Seg.ref_point.x = 8.27;
+	Seg.ref_point.y = 14.74;
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
+	pathStack.push(Seg);
 }
 
-// do we need this?
-// void check()
-// {
-// 
-// 
-// }
+bool checkSide(int arcAngle, int dist)
+{
+	if (dist > arcAngle) {
+		return true;
+	} else {
+		return false;
+	}
+}
 
+void calcHalfSeg()
+{
+
+}
 void detour()
 {
 	//this method assumes that the lidar node will wait three seconds
@@ -145,69 +144,68 @@ void detour()
 	straightSeg.ref_point.y = 14.74;//same
 	straightSeg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);//should be constant and same as pre obs angle
 	pathStack.push(straightSeg);
+	if (lastObs->rt_dist > arcAngle) {
 
-	ros::Subscriber obst_angle = n.subscribe<msg_alpha::Obstacles>("obstacles",1,obstaclesCallback);
-	
-	//figure out which way to turn
-	if (lastObs->left_dist == 0) { //only called on abort so one should be zero and one should be distance
-		obst_side = 2; //right
-		arcAngle = lastObs->wall_dist_rt/2;
-		arcLeft();
-		arcRight();
-		while(!checkRight()){
-			goStraight();
-		}
-	} else {
-		obst_side = 1; //left
-		arcAngle = lastObs->wall_dist_lt/2;
-		arcRight();
-		arcLeft();
-		while(!checkLeft()){
-			goStraight();
+		ros::Subscriber obst_angle = n.subscribe<msg_alpha::Obstacles>("obstacles",1,obstaclesCallback);
+
+		//figure out which way to turn
+		if (lastObs->left_dist == 0) { //only called on abort so one should be zero and one should be distance
+			obst_side = 2; //right
+			arcAngle = lastObs->wall_dist_rt/2;
+			arcLeft();
+			arcRight();
+			while(!checkRight()){
+				goStraight();
+			}
+		} else {
+			obst_side = 1; //left
+			arcAngle = lastObs->wall_dist_lt/2;
+			arcRight();
+			arcLeft();
+			while(!checkLeft()){
+				goStraight();
+			}
 		}
 	}
 }
 
 int main(int argc, char **argv)
-{
-	ros::init(argc,argv,"path_publisher");
-	ros::NodeHandle n;
+	{
+		ros::init(argc,argv,"path_publisher");
+		ros::NodeHandle n;
 
-	ros::Subscriber 
+		ros::Subscriber 
 		msg_alpha::PathSegment Seg;
 
+		ros::Publisher pathPub = n.advertise<msg_alpha::PathSegment>("path_seg",1);
+		ros::Subscriber segSub = n.subscribe<msg_alpha::SegStatus>("seg_status",1,segStatusCallback);
+		//ros::Subscriber obstacles 
 
+		ros::Rate naptime(10);
 
-	ros::Publisher pathPub = n.advertise<msg_alpha::PathSegment>("path_seg",1);
-	ros::Subscriber segSub = n.subscribe<msg_alpha::SegStatus>("seg_status",1,segStatusCallback);
-	//ros::Subscriber obstacles 
+		while(!ros::Time::isValid()) {}	
 
-	ros::Rate naptime(10);
-
-	while(!ros::Time::isValid()) {}	
-
-	while(ros::ok() && !pathStack.empty())
-	{
-		//While seg status is ok.
-		if(SEG STATUS == OK)
+		while(ros::ok() && !pathStack.empty())
 		{
-			ros::spinOnce();
-			if(segComplete == true)
+			//While seg status is ok.
+			if(SEG STATUS == OK)
 			{
-				currSeg = pathStack.top();
-				pathStack.pop();
-				segComplete = false;
-				ROS_INFO("I published another node! Be proud...");
-			}  
+				ros::spinOnce();
+				if(segComplete == true)
+				{
+					currSeg = pathStack.top();
+					pathStack.pop();
+					segComplete = false;
+					ROS_INFO("I published another node! Be proud...");
+				}
+			} else (SEG STATUS == !OK){
+				detour();
+			}
 
-		}else(SEG STATUS == !OK){
-			detour();
+
+			//ROS_INFO("Publishing!");
+			pathPub.publish(currSeg);
+			naptime.sleep();
 		}
-
-
-		//ROS_INFO("Publishing!");
-		pathPub.publish(currSeg);
-		naptime.sleep();
+		return 0;
 	}
-	return 0;
-}
