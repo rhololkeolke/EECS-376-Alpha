@@ -20,7 +20,12 @@ int numSegs = 5;
 msg_alpha::PathSegment currSeg;
 //Stack is created
 stack <msg_alpha::PathSegment> pathStack;
+
 ros::Publisher pathPub;
+
+
+
+
 
 void segStatusCallback(const msg_alpha::SegStatus::ConstPtr& status)
 {
@@ -28,10 +33,19 @@ void segStatusCallback(const msg_alpha::SegStatus::ConstPtr& status)
 	// segComplete is only true once and we only care about when segComplete transitions to true
 	// so only update if the segment is currently not completed
 	if(!segComplete)
+<<<<<<< Updated upstream
 	{
 		segComplete = status->segComplete;
 	}
 	abort = status->abort;
+=======
+	  {
+		segComplete = status->segComplete;
+		progressMade = status-> progressMade;
+		
+	  }
+	
+>>>>>>> Stashed changes
 }
 
 void obstaclesCallback(const msg_alpha::Obstacles::ConstPtr& obstacles)
@@ -295,53 +309,57 @@ void calcHalfSeg()
 {
   double radius, tangentAngStart, arcAngStart, dAng, arcAng, rho;
   double tanAngle = tf::getYaw(temp_pose_out_.pose.orientation);
+  
+  finalSeg = pathStack.top();
 
-  //Find the distance between the end of the previous arc segment and the beginning of the new straight path segment
-  lastSeg = pathStack.top();
-  rho =  lastSeg.curvature;
+  rho = finalSeg.curvature;
   radius = 1.0/fabs(rho);
 
-  tanAngleStart = tanAngle;
-  arcAngStart = 0.0;
-  
   if(rho >= 0.0) {
     arcAngStart = tangentAngStart - M_PI / 2.0;  
   } else {
     arcAngStart = tangentAngStart + M_PI / 2.0;
-
-    double seg_length_done = lastSeg.length - lastSeg.ref_point.x
-    dAng = seg_length_done * rho;
-    arcAng = arcAngStart + dAng;
-    xDes = ;
-    yDes = ;
-    psiDes = ;
-
-    msg_alpha::PathSegment seg;
-    seg.seg_number = ?;//need to increment from before obs                                                                                                 
-    seg.seg_type = 1; //straight                                                                                                                           
-    seg.seg_length = ;
-    seg.ref_point.x = ;//need to recalculate every time                                                                                                
-    seg.ref_point.y = ;//same                                                                                                                         
-    seg.init_tan_angle = tf::createQuaternionMsgFromYaw(???);
-    pathStack.push(seg);
-
-    
-    
-      
-
   }
 
-    int xNewStart = 
-     
+  dAng = progressMade * rho ;
+  arcAng = arcAngStart + dAng;
+  double xDes = finalSeg.ref_point.x;
+  double yDes = finalSeg.ref_point.y;
+  double psiDes = tangentAngStart + dAng;
+  
+  msg_alpha::PathSegment seg;
+  seg.seg_number = ?;//need to increment from before obs                                                                                                 
+  seg.seg_type = 1; //straight                                                                                                                           
+  seg.seg_length = ?;
+  seg.ref_point.x = xDes ;
+  seg.ref_point.y = yDes;
+  seg.init_tan_angle = tf::createQuaternionMsgFromYaw(psiDes);
+  pathStack.push(seg);
 
-    lastSeg.pop(); //take the latest path segment off of the stack
-    prevSeg = pathSeg.top(); //view the previous segment
-    
-    pathStack.push(lastSeg); //push the last segment back to the path segment stack
+  newFinalSeg = pathStack.top();
+
+  
+  
+  
+  double distance = sqrt(pow((finalSeg.ref_point.x - prevSeg.ref_point.x),2.0) + pow((finalSeg.ref_point.y - prevSeg.ref_point.y),2.0));   
+
+  msg_alpha::PathSegment newSeg;
+  seg.seg_number = ?;//need to increment from before obs                                                                                                               
+  seg.seg_type = 1; //straight                                                                                                                                         
+  seg.seg_length = ?;
+  seg.ref_point.x = xDes ;
+  seg.ref_point.y = yDes;
+  seg.init_tan_angle = tf::createQuaternionMsgFromYaw(psiDes);
+  pathStack.push(newSeg);
+
+   
+  
+  
+  pathStack.push(newFinalSeg); 
 
     //calculate the eucledian distance between the old segment and new desired segment
-    distance = sqrt(pow((lastSeg.ref_point.x - prevSeg.ref_point.x),2.0) + pow((lastSeg.ref_point.y - prevSeg.ref_point.y),2.0));
 
+//push the last segment back to the path segment stack
 
 }
 
