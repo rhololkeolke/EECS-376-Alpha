@@ -35,7 +35,7 @@ bool nextSegExists = false;
 bool currSegExists = false;
 msg_alpha::PathSegment nextSeg;
 msg_alpha::PathSegment currSeg;
-double progressMade
+double progressMade;
 
 void obstaclesCallback(const msg_alpha::Obstacles::ConstPtr& obsData)
 {
@@ -200,11 +200,11 @@ int main(int argc,char **argv)
 		  {
 
 		    double radius, tangentAngStart, arcAngStart, dAng, arcAng, rho;
-<<<<<<< HEAD
+
 		    //		    double tanAngle = tf::getYaw(temp_pose_out_.pose.orientation);
-=======
+
 		  //  double tanAngle = tf::getYaw(temp_pose_out_.pose.orientation);
->>>>>>> e2a5aef3cd127a35576eaf1de815bd669626cb1e
+
 		    
 		    rho = currSeg.curvature;
 		    radius = 1.0/fabs(rho);
