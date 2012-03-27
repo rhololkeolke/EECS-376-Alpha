@@ -289,7 +289,7 @@ int calculateNewY(int initY, int distanceTraveled, int angle)
 
 }
 
-void arcRight()
+void arcRight(int angle)
 {
 	//fix me
 	Seg.seg_number = currSeg.seg_number+1;
@@ -297,13 +297,14 @@ void arcRight()
 	Seg.seg_length = 4.2;
 	Seg.ref_point.x = 8.27;
 	Seg.ref_point.y = 14.74;
-	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
+	//This needs attention
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(angle);
 	pathStack.push(Seg);
 	publishSeg();
 
 }
 
-void arcLeft()
+void arcLeft(int angle)
 {
 	//fix me
 	Seg.seg_number = currSeg.seg_number+1;
@@ -311,7 +312,8 @@ void arcLeft()
 	Seg.seg_length = 4.2;
 	Seg.ref_point.x = 8.27;
 	Seg.ref_point.y = 14.74;
-	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
+	//this needs attention
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(angle);
 	pathStack.push(Seg);
 	publishSeg();
 }
@@ -338,7 +340,8 @@ void calcHalfSeg()
   double rho; //curvature
   //double tanAngle = tf::getYaw(temp_pose_out_.pose.orientation);
 	
-  alpha_msg::PathSegment finalSeg = pathStack.top();
+  alpha_msg::PathSegment finalSeg;
+  finalSeg = pathStack.top();
 
   rho = finalSeg.curvature;  // curvature is +/- 1/radius of arc; + for CCW trajectory    
   radius = 1.0/fabs(rho); 
@@ -364,7 +367,8 @@ void calcHalfSeg()
 	seg.init_tan_angle = tf::createQuaternionMsgFromYaw(psiDes);
 	pathStack.push(seg);
 */
-	alpha_msg::PathSegment newFinalSeg = pathStack.top();
+	alpha_msg::PathSegment newFinalSeg;
+	newFinalSeg = pathStack.top();
 
 
 	double distance = sqrt(pow((newFinalSeg.ref_point.x - finalSeg.ref_point.x),2.0) + pow((newFinalSeg.ref_point.y - finalSeg.ref_point.y),2.0));   
