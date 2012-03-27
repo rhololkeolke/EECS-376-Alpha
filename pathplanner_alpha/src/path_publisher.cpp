@@ -455,9 +455,9 @@ int main(int argc, char **argv)
 		if(!abort)
 		{
 			publishSeg();
-			}
-		} else {
-			detour();
+		}
+		else {
+		  detour();
 		}
 		naptime.sleep();
 	}
