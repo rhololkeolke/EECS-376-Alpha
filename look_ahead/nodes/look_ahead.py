@@ -109,8 +109,6 @@ def arc(scanData,pathSegCallback(segData))):
     obsPub = rospy.Publisher('obstacles', Obstacles)     #Data should be published to the obstacles topics using the Obstacles message type
     obsData = Obstacles() #initalize an Obstacle message
 
-
-
     #    seg = pathSegCallback(segInfo) #call the path seg callback 
 
     #globals here temporarily for testing
@@ -131,69 +129,62 @@ def arc(scanData,pathSegCallback(segData))):
         
         #scan the path segment
 
-        pathRadius = 1/math.fabs(curvature)
-        
-        if(curvature >= 0.0):
-            arcAngStart = initTanAngle - math.pi/2.0
-        elif 
-           arcAngStart = initTanAngle + math.pi/2.0
+    #pathRadius = 1/math.fabs(curvature)
+    
+    #    if(curvature >= 0.0):
+     #       arcAngStart = initTanAngle - math.pi/2.0
+      #  elif 
+       #    arcAngStart = initTanAngle + math.pi/2.0
            
-        dAng = segLength * curvature 
-        arcAng = arcAngStart + dAng
+        #dAng = segLength * curvature 
+        #arcAng = arcAngStart + dAng
         
         #Cart. Coords for start points of the arc
-        xStartPt = i * pathRadius * math.cos(arcAng) #assuming the robot is given one path segment at a time the start point for the arc is i.
-        yStartPt = scanData(i) * pathRadius * math.sin(arcAng) #assuming the robot is given one path segment at a time the start point for the arc is i.
+        #xStartPt = i * pathRadius * math.cos(arcAng) #assuming the robot is given one path segment at a time the start point for the arc is i.
+        #yStartPt = scanData(i) * pathRadius * math.sin(arcAng) #assuming the robot is given one path segment at a time the start point for the arc is i.
 
         #Cart. Coords for end point of the arc
-        xEndPt = 
-        yEndPt =    pathRadius * math.sin(arcAng)
+        #xEndPt = 
+        #yEndPt =    pathRadius * math.sin(arcAng)
         
         
 
+         #Determine the radius of the path circle from the start and end points of the path segment
         
+       # pointDist = math.sqrt(math.pow(xEndPt - xStartPt),2.0) + math.pow(yEndPt - yStartPt,2.0)) #find the distance between the start point and end point
+        #xhalfPt = (xStartPt + xEndPt)/2                                    #find the halfway point between the two points
+        #yhalfPt = (yStartPt + yEndPt)/2
 
+        #xPathCenter = 
+        #yPathCenter = 
 
-        #Determine the radius of the path circle from the start and end points of the path segment
-        
-        pointDist = math.sqrt(math.pow(xEndPt - xStartPt),2.0) + math.pow(yEndPt - yStartPt,2.0)) #find the distance between the start point and end point
-        xhalfPt = (xStartPt + xEndPt)/2                                    #find the halfway point between the two points
-        yhalfPt = (yStartPt + yEndPt)/2
-
-        xPathCenter = 
-        yPathCenter = 
-
-        pathCircle = [xPathCenter,yPathCenter,i]
-        
-        
-            
-
+        #pathCircle = [xPathCenter,yPathCenter,i]
         
         #place a circle around the segment
         
 
         #create an circle around each lidar ping with the ping as the center
         #??? Must figure out mathematically how to exclude the path segment circle form these calculations
-        while(theta < 2 * math.pi):
-            theta += 0.1
+        #while(theta < 2 * math.pi):
+         #   theta += 0.1
             
-            xCenter = i * radius * math.sin(theta) #create the x-coord for the center of the circle
-            yCenter = scanData(i) * radius * math.cos(theta) # create the y-coord for the center of the circle
-            circle = [xCenter,yCenter,i] #a list of circle information contains ifs centerpoint and location along lidar ping
-            circles.append(circle)  # place each circle in a list
+          #  xCenter = i * radius * math.sin(theta) #create the x-coord for the center of the circle
+           # yCenter = scanData(i) * radius * math.cos(theta) # create the y-coord for the center of the circle
+            #circle = [xCenter,yCenter,i] #a list of circle information contains ifs centerpoint and location along lidar ping
+#            circles.append(circle)  # place each circle in a list
 
         #if the distance between a circle and the radii of the path segment circle is less than the sum of the radius then an obstacle exists else it does not
-        for c in ranges(circles):
-            if(math.sqrt(math.pow(circles[i][0] - pathCircle[i][1],2.0) + math.pow(circles[i][1] - pathCircle[1],2.0)))) -   < 2 * radius))
+ #       for c in ranges(circles):
+  #          if(math.sqrt(math.pow(circles[i][0] - pathCircle[i][1],2.0) + math.pow(circles[i][1] - pathCircle[1],2.0)))) -   < 2 * radius))
             
-                obsData.exists = True   #an obstacle exists
-                obsData.ping_angle = i
-                break 
+   #             obsData.exists = True   #an obstacle exists
+    #            obsData.ping_angle = i
+     #           break 
             
-            elif:
-                obsData.exists = False  #an obstacle does not exists
+      #      elif:
+       #         obsData.exists = False  #an obstacle does not exists
                 
-        obsPub.publish(obsData)  #publish the obstacle information
+        #obsPub.publish(obsData)  #publish the obstacle information
         
 
         
