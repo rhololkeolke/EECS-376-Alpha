@@ -312,13 +312,12 @@ void calcHalfSeg()
 {
   
   double radius; //turn radius is inverse of curvature
-  
   double tangentAngStart; //inital head of current segment
   double arcAngStart; //
   double dAng; //
   double arcAng; //
   double rho; //curvature
-  double tanAngle = tf::getYaw(temp_pose_out_.pose.orientation);
+  //double tanAngle = tf::getYaw(temp_pose_out_.pose.orientation);
 	
   finalSeg = pathStack.top();
 
@@ -366,7 +365,8 @@ void calcHalfSeg()
 
 void publishSeg() 
 {
-	if (pathStack.empty()) return;
+	if (pathStack.empty())
+		return;
 	//update currseg,pop,then pub. all in ros::ok loop
 	int temp = currSeg.seg_number;
 	currSeg = pathStack.top();
@@ -380,7 +380,7 @@ void publishSeg()
 			segComplete = false;
 			ROS_INFO("I published another node! Be proud...");
 		}
-	} while(!segComplete)
+	} while(!segComplete);
 }
 
 void goStraight()
