@@ -56,14 +56,14 @@ void obstaclesCallback(const msg_alpha::Obstacles::ConstPtr& obstacles)
 {
 	if(obstacles->exists)
 	{
-		lastObs = obstacles.distance;
+		lastObs = obstacles->distance;
 	}
 }
 
 int calculateNewX(int initX, int distanceTraveled, int angle)
 {
 
-  int newX = (cos(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled;
+  int newX = (cos(double((tf::createQuaternionMsgFromYaw(angle*PI/180.0))))))))*distanceTraveled; //compiler complained about no being dbl idk if my change is right
   return newX;
 
 }
@@ -71,7 +71,7 @@ int calculateNewX(int initX, int distanceTraveled, int angle)
 int calculateNewY(int initY, int distanceTraveled, int angle)
 {
 
-  int newY = (sin(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled;
+  int newY = (sin(double(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))))))*distanceTraveled;
   return newY;
 
 }
@@ -423,7 +423,7 @@ void detour()
 		arcAngle = lastObs.wall_dist_rt/2;
 		arcLeft(arcAngle);
 		arcRight(arcAngle);
-		while(!checkSide(.6,lastObs -> rt_dist)){
+		while(!checkSide(0.6,lastObs.rt_dist)){
 			goStraight();
 		}
 		arcRight(arcAngle);
@@ -434,7 +434,7 @@ void detour()
 		arcAngle = lastObs.wall_dist_lt/2;
 		arcRight(arcAngle);
 		arcLeft(arcAngle);
-		while(!checkSide(.6,lastObs->left_dist)){
+		while(!checkSide(.6,lastObs.left_dist)){
 			goStraight();
 		}
 		arcLeft(arcAngle);
