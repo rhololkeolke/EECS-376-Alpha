@@ -60,6 +60,23 @@ void obstaclesCallback(const msg_alpha::Obstacles::ConstPtr& obstacles)
 	}
 }
 
+int calculateNewX(int initX, int distanceTraveled, int angle)
+{
+
+  int newX = (cos(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled;
+  return newX;
+
+}
+
+int calculateNewY(int initY, int distanceTraveled, int angle)
+{
+
+  int newY = (sin(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled;
+  return newY;
+
+}
+
+
 void initStack()
 {
 
@@ -273,22 +290,6 @@ void publishSeg()
 	} while(!segComplete);
 }
 
-
-int calculateNewX(int initX, int distanceTraveled, int angle)
-{
-
-	int newX = (cos(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled;
-	return newX;
-
-}
-
-int calculateNewY(int initY, int distanceTraveled, int angle)
-{
-
-	int newY = (sin(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled;
-	return newY;
-
-}
 
 void arcRight(int angle)
 {
