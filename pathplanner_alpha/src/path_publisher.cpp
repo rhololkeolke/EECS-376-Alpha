@@ -22,6 +22,7 @@ int seg_number = 0;
 msg_alpha::Obstacles lastObs;
 int numSegs = 5;
 msg_alpha::PathSegment currSeg;
+
 //Stack is created
 stack <msg_alpha::PathSegment> pathStack;
 
@@ -363,20 +364,6 @@ void calcHalfSeg()
 
 }
 
-void goStraight()
-{
-
-	msg_alpha::PathSegment smallGoStraight;
-	smallGoStraight.seg_number = 1;//need to increment from before obs
-	smallGoStraight.seg_type = 1; //straight
-	smallGoStraight.seg_length = 0.5;
-	smallGoStraight.ref_point.x = last_map_pose.pose.position.x;//need to recalculate every time
-	smallGoStraight.ref_point.y = last_map_pose.pose.position.y;//same
-	smallGoStraight.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);//should be constant and same as pre obs angle
-	pathStack.push(smallGoStraight);
-	publishSeg();
-}
-
 void publishSeg() 
 {
 	if (pathStack.empty()) return;
@@ -394,6 +381,20 @@ void publishSeg()
 			ROS_INFO("I published another node! Be proud...");
 		}
 	} while(!segComplete)
+}
+
+void goStraight()
+{
+
+	msg_alpha::PathSegment smallGoStraight;
+	smallGoStraight.seg_number = 1;//need to increment from before obs
+	smallGoStraight.seg_type = 1; //straight
+	smallGoStraight.seg_length = 0.5;
+	smallGoStraight.ref_point.x = 0;//need to recalculate every time
+	smallGoStraight.ref_point.y = 0;//same
+	smallGoStraight.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);//should be constant and same as pre obs angle
+	pathStack.push(smallGoStraight);
+	publishSeg();
 }
 
 void detour()
