@@ -11,12 +11,12 @@ import rospy
 
 # message data types
 from geometry_msgs.msg._Twist import Twist as TwistMsg
-from geometry_msgs.msg._PoseStamped import PoseStamped as PoseStampedMsg
+from geometry_msgs.msg._Point import Point as PointMsg
 from std_msgs.msg._Bool import Bool as BoolMsg
 from msg_alpha.msg._PathSegment import PathSegment as PathSegmentMsg 
 from msg_alpha.msg._Obstacles import Obstacles as ObstaclesMsg 
 from msg_alpha.msg._SegStatus import SegStatus as SegStatusMsg
-from nav_msgs.msg._Odometry import Odometry as OdometryMsg
+from geometry_msgs.msg._PoseStamped import PoseStamped as PoseStampedMsg
 
 from math import sqrt,cos,sin
 
@@ -36,8 +36,7 @@ lastOCmd = 0.0
 
 seg_number = 0
 
-last_map_pose = None
-last_odom = OdometryMsg()
+pose = PoseStampedMsg()
 
 # true when currSeg and nextSeg have actual values we want to follow
 currSegExists = False
@@ -81,25 +80,10 @@ def velCmdCallback(vel):
     lastVCmd = vel.linear.x
     lastOCmd = vel.angular.z
 
-def odomCallback(odom):
-    global last_odom
-    global last_map_pose
-    global tfl
-    temp = PoseStampedMsg()
-    temp.pose = last_odom.pose.pose
-    temp.header = last_odom.header
-
-    try:
-        #last_map_pose = tfl.transformPose("map", temp)
-        (trans,rot) = tfl.lookupTransform('/map', '/odom', rospy.Time(0))
-        rospy.loginfo("trans: " + str(trans) + " , rot: " + str(rot))
-        #rospy.loginfo("x: %f, y: %f, heading: %f" % (last_map_pose.pose.position.x, last_map_pose.pose.position.y, 0.0))
-    except tf.LookupException:
-        rospy.loginfo(str("tf.LookupException"))
-    except tf.ConnectivityException:
-        rospy.loginfo(str("tf.ConnectivityException"))
-
-
+def poseCallback(poseData):
+    global pose
+    pose = poseData
+    #rospy.loginfo("x: %f, y: %f, psi: %f" % (pose.pose.position.x,pose.pose.position.y,State.getYaw(pose.pose.orientation)))
     
 def straight(desVelPub,segStatusPub,distance):
     global RATE
@@ -113,7 +97,10 @@ def straight(desVelPub,segStatusPub,distance):
     global currSeg
     global nextSegExists
     global nextSeg
+    global trans
+    global rot
     
+    print "in straight"
     vel_object = TwistMsg()
     
     naptime = rospy.Rate(RATE)
@@ -138,7 +125,7 @@ def straight(desVelPub,segStatusPub,distance):
     #tConstV = rospy.Duration(distConstV/abs(v_max))
     #tSegmentTot = tAccel + tDecel + tConstV
     
-    currState = State(pathSeg=currSeg)
+    currState = State(pathSeg=currSeg,point=pose.pose.position, psi=State.getYaw(pose.pose.orientation))
     
     v_cmd = lastVCmd
     omega_cmd = lastOCmd
@@ -226,6 +213,10 @@ def straight(desVelPub,segStatusPub,distance):
         vel_cmd.linear.x = v_cmd
         vel_cmd.angular.z = omega_cmd
         currState.updateState(vel_cmd)
+        
+        rospy.loginfo("currState.x: %f" % (currState.point.x))
+        rospy.loginfo("currState.y: %f" % (currState.point.y))
+        rospy.loginfo("currState.psi: %f" % (currState.psi))
         
         segDistDone = currState.segDistDone
         v_cmd = currState.v
@@ -478,7 +469,7 @@ def main():
     rospy.Subscriber("obstacles", ObstaclesMsg, obstaclesCallback) # Lets velocity profiler know where along the path there is an obstacle 
     rospy.Subscriber("cmd_vel", TwistMsg, velCmdCallback) # 
     rospy.Subscriber("path_seg", PathSegmentMsg, pathSegmentCallback)
-    rospy.Subscriber("odom", OdometryMsg, odomCallback)
+    rospy.Subscriber("map_pos", PoseStampedMsg, poseCallback)
     
     naptime = rospy.Rate(RATE)
     

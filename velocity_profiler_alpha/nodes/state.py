@@ -76,6 +76,7 @@ class State:
         -------
         Nothing
         """
+
         if(point is not None): # if a new point is specified
             self.point = point # then set the state with that point, otherwise leave the point alone
         else: # no point was originally specified
@@ -91,8 +92,12 @@ class State:
             self.pathPoint=pathSeg.ref_point # a pathPoint can be assumed
         self.segDistDone = 0.0 # new segment so completion is 0 
         
+        print "self.pathSeg: " + str(self.pathSeg)
+        print "self.point: " + str(self.point)
+        print "self.psi: " + str(self.psi)
+        
     
-    def updateState(self, vel_cmd):
+    def updateState(self, vel_cmd, point):
         """
         Integrates along the desired path vector and projects the actual path 
         vector onto the desired vector
@@ -191,6 +196,8 @@ class State:
         self.point.x = x
         self.point.y = y
         self.psi = psi
+        
+        #print "x: %f, y: %f, psi: %f" % (x,y, psi)
 
     def stop(self):
         """
@@ -209,7 +216,10 @@ class State:
     
     @staticmethod
     def getYaw(quat):
-        return euler_from_quaternion([quat.x,quat.y,quat.z, quat.w])[2]
+        try:
+            return euler_from_quaternion([quat.x,quat.y,quat.z, quat.w])[2]
+        except AttributeError:
+            return euler_from_quaternion(quat)[2]
     
     @staticmethod
     def createQuat(x,y,z):
