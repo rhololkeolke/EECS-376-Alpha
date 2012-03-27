@@ -364,7 +364,7 @@ void calcHalfSeg()
 	seg.init_tan_angle = tf::createQuaternionMsgFromYaw(psiDes);
 	pathStack.push(seg);
 */
-	newFinalSeg = pathStack.top();
+	alpha_msg::PathSegment newFinalSeg = pathStack.top();
 
 
 	double distance = sqrt(pow((newFinalSeg.ref_point.x - finalSeg.ref_point.x),2.0) + pow((newFinalSeg.ref_point.y - finalSeg.ref_point.y),2.0));   
