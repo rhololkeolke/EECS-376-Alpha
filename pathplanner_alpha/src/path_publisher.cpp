@@ -56,14 +56,18 @@ void obstaclesCallback(const msg_alpha::Obstacles::ConstPtr& obstacles)
 {
 	if(obstacles->exists)
 	{
-		lastObs = obstacles->distance;
+		lastObs.exists = obstacles->exists;
+		lastObs.distance = obstacles->distance;
+		 
 	}
 }
 
 int calculateNewX(int initX, int distanceTraveled, int angle)
 {
 
-  int newX = (cos(double((tf::createQuaternionMsgFromYaw(angle*PI/180.0))))))))*distanceTraveled; //compiler complained about no being dbl idk if my change is right
+  //  int newX = cos(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled; 
+  int newX = cos(tf::getYaw(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled; 
+
   return newX;
 
 }
@@ -71,7 +75,8 @@ int calculateNewX(int initX, int distanceTraveled, int angle)
 int calculateNewY(int initY, int distanceTraveled, int angle)
 {
 
-  int newY = (sin(double(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))))))*distanceTraveled;
+  //  int newY = (sin(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled;
+  int newY = sin(tf::getYaw(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled; 
   return newY;
 
 }
