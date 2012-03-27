@@ -17,7 +17,7 @@ const double PI=3.14159;
 using namespace std;
 
 bool segComplete = true;
-bool abort = false;
+bool abort ;
 int seg_number = 0;
 msg_alpha::Obstacles lastObs;
 int numSegs = 5;
@@ -38,10 +38,11 @@ void segStatusCallback(const msg_alpha::SegStatus::ConstPtr& status)
 	if(!segComplete)
 
 	{
-		segComplete = status->segComplete;
+	  segComplete = status->segComplete;
 	}
+	
 	abort = status->abort;
-
+	
 	  {
 		segComplete = status->segComplete;
 		progressMade = status-> progressMade;
