@@ -13,12 +13,14 @@ const double PI=3.14159;
 using namespace std;
 
 bool segComplete = true;
+bool abort = false;
 int seg_number = 0;
 msg_alpha::Obstacles lastObs;
 int numSegs = 5;
 msg_alpha::PathSegment currSeg;
 //Stack is created
 stack <msg_alpha::PathSegment> pathStack;
+ros::Publisher pathPub;
 
 void segStatusCallback(const msg_alpha::SegStatus::ConstPtr& status)
 {
@@ -26,7 +28,10 @@ void segStatusCallback(const msg_alpha::SegStatus::ConstPtr& status)
 	// segComplete is only true once and we only care about when segComplete transitions to true
 	// so only update if the segment is currently not completed
 	if(!segComplete)
+	{
 		segComplete = status->segComplete;
+	}
+	abort = status->abort;
 }
 
 void obstaclesCallback(const msg_alpha::Obstacles::ConstPtr& obstacles)
@@ -127,6 +132,23 @@ void calcHalfSeg()
 {
 
 }
+
+void publishSeg() 
+{
+	if (pathStack.empty()) return;
+	//update currseg,pop,then pub. all in ros::ok loop
+	currSeg = pathStack.top();
+	while(ros::ok()){
+		ros::spinOnce();
+		if (segComplete == true)
+		{
+			pathStack.pop();
+			pathPub.publish(currSeg);
+			segComplete = false;
+		}
+	}
+}
+
 void detour()
 {
 	//this method assumes that the lidar node will wait three seconds
@@ -174,12 +196,10 @@ int main(int argc, char **argv)
 		ros::init(argc,argv,"path_publisher");
 		ros::NodeHandle n;
 
-		ros::Subscriber 
 		msg_alpha::PathSegment Seg;
 
-		ros::Publisher pathPub = n.advertise<msg_alpha::PathSegment>("path_seg",1);
+		pathPub = n.advertise<msg_alpha::PathSegment>("path_seg",1);
 		ros::Subscriber segSub = n.subscribe<msg_alpha::SegStatus>("seg_status",1,segStatusCallback);
-		//ros::Subscriber obstacles 
 
 		ros::Rate naptime(10);
 
@@ -188,7 +208,7 @@ int main(int argc, char **argv)
 		while(ros::ok() && !pathStack.empty())
 		{
 			//While seg status is ok.
-			if(SEG STATUS == OK)
+			if(!abort)
 			{
 				ros::spinOnce();
 				if(segComplete == true)
@@ -198,7 +218,7 @@ int main(int argc, char **argv)
 					segComplete = false;
 					ROS_INFO("I published another node! Be proud...");
 				}
-			} else (SEG STATUS == !OK){
+			} else {
 				detour();
 			}
 
