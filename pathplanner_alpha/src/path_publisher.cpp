@@ -404,7 +404,7 @@ void detour()
 	int obst_angle;
 	int obst_side = 0; //left is 1, right is 2. this should be an enum
 
-	ros::Subscriber obst_angle = n.subscribe<msg_alpha::Obstacles>("obstacles",1,obstaclesCallback);
+
 
 	//figure out which way to turn
 	if (lastObs->left_dist == 0) { //only called on abort so one should be zero and one should be distance
@@ -440,6 +440,7 @@ int main(int argc, char **argv)
 
 	pathPub = n.advertise<msg_alpha::PathSegment>("path_seg",1);
 	ros::Subscriber segSub = n.subscribe<msg_alpha::SegStatus>("seg_status",1,segStatusCallback);
+	ros::Subscriber obst_angle = n.subscribe<msg_alpha::Obstacles>("obstacles",1,obstaclesCallback);
 
 	ros::Rate naptime(10);
 
