@@ -277,7 +277,6 @@ int calculateNewX(int initX, int distanceTraveled, int angle)
 {
 
 	int newX = (cos(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled;
-
 	return newX;
 
 }
@@ -286,7 +285,6 @@ int calculateNewY(int initY, int distanceTraveled, int angle)
 {
 
 	int newY = (sin(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled;
-
 	return newY;
 
 }
@@ -340,7 +338,7 @@ void calcHalfSeg()
   double rho; //curvature
   //double tanAngle = tf::getYaw(temp_pose_out_.pose.orientation);
 	
-  finalSeg = pathStack.top();
+  alpha_msg::PathSegment finalSeg = pathStack.top();
 
   rho = finalSeg.curvature;  // curvature is +/- 1/radius of arc; + for CCW trajectory    
   radius = 1.0/fabs(rho); 
