@@ -194,6 +194,32 @@ int main(int argc,char **argv)
 		  xf = xs + currSeg.seg_length*cos(desired_heading); // get the final point
 		  yf = ys + currSeg.seg_length*sin(desired_heading);
 	      }
+	      if(currSeg.seg_type == 2)
+		  {
+
+		    double radius, tangentAngStart, arcAngStart, dAng, arcAng, rho;
+		    double tanAngle = tf::getYaw(temp_pose_out_.pose.orientation);
+		    
+		    rho = currSeg.curvature;
+		    radius = 1.0/fabs(rho);
+		    
+		    if(rho >= 0.0) {
+		      arcAngStart = tangentAngStart - M_PI / 2.0;
+		    } else {
+		      arcAngStart = tangentAngStart + M_PI / 2.0;
+		    }
+
+		    dAng = progressMade * rho ;
+		    arcAng = arcAngStart + dAng;
+		    double xDes = currSeg.ref_point.x;
+		    double yDes = currSeg.ref_point.y;
+		    double psiDes = tangentAngStart + dAng;
+
+		    seg.ref_point.y = yDes;
+		    seg.init_tan_angle = tf::createQuaternionMsgFromYaw(psiDes);
+		    
+		    desired_heading = psiDes;
+		  }
 	    }
 	    /*else
 	    {
