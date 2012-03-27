@@ -2,6 +2,7 @@
 
 #Used to determine whether or not an obstacle exists
 bool exists
+uint64 distance
 
 #Distance to the closest obstacle on the left and on the right
 uint64 left_dist
