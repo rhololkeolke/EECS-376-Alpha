@@ -291,6 +291,7 @@ int calculateNewY(int initY, int distanceTraveled, int angle)
 
 void arcRight(int angle)
 {
+	msg_alpha::PathSegment Seg;
 	//fix me
 	Seg.seg_number = currSeg.seg_number+1;
 	Seg.seg_type = 1;
@@ -306,6 +307,7 @@ void arcRight(int angle)
 
 void arcLeft(int angle)
 {
+	msg_alpha::PathSegment Seg;	
 	//fix me
 	Seg.seg_number = currSeg.seg_number+1;
 	Seg.seg_type = 1;
@@ -340,7 +342,7 @@ void calcHalfSeg()
   double rho; //curvature
   //double tanAngle = tf::getYaw(temp_pose_out_.pose.orientation);
 	
-  alpha_msg::PathSegment finalSeg;
+  msg_alpha::PathSegment finalSeg;
   finalSeg = pathStack.top();
 
   rho = finalSeg.curvature;  // curvature is +/- 1/radius of arc; + for CCW trajectory    
@@ -367,7 +369,7 @@ void calcHalfSeg()
 	seg.init_tan_angle = tf::createQuaternionMsgFromYaw(psiDes);
 	pathStack.push(seg);
 */
-	alpha_msg::PathSegment newFinalSeg;
+	msg_alpha::PathSegment newFinalSeg;
 	newFinalSeg = pathStack.top();
 
 
@@ -414,9 +416,9 @@ void detour()
 
 
 	//figure out which way to turn
-	if (lastObs->left_dist == 0) { //only called on abort so one should be zero and one should be distance
+	if (lastObs.left_dist == 0) { //only called on abort so one should be zero and one should be distance
 		obst_side = 2; //right
-		arcAngle = lastObs->wall_dist_rt/2;
+		arcAngle = lastObs.wall_dist_rt/2;
 		arcLeft(arcAngle);
 		arcRight(arcAngle);
 		while(!checkSide(.6,lastObs -> rt_dist)){
@@ -427,7 +429,7 @@ void detour()
 
 	} else {
 		obst_side = 1; //left
-		arcAngle = lastObs->wall_dist_lt/2;
+		arcAngle = lastObs.wall_dist_lt/2;
 		arcRight(arcAngle);
 		arcLeft(arcAngle);
 		while(!checkSide(.6,lastObs->left_dist)){
