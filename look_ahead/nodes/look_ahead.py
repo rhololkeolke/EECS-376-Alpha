@@ -42,8 +42,13 @@ def pathSegCallback(segData):
 
 #Receives laser data from the base_scan topic and places the data into an array
 def laserCallback(data):
-    #copy each element in the base_scan array to scanData[]
-    #the i is always within the length of the base_scan array
+    obsPub = rospy.Publisher('obstacles', Obstacles)     #Data should be published to the obstacles topics using the Obstacles message type                         
+    obsData = Obstacles() #initalize an Obstacle message                     
+    
+    obsData.wall_dist_left = data[0]
+    obsData.wall_dist_rt = data[181]
+    obsPub.publish(obsData)
+    
     straight(data.ranges)
     arc(data.ranges)
     #print len(scanData)
@@ -61,17 +66,7 @@ def straight(scanData):
     #i is always within the bounds of the scanData array
     for x in range(len(scanData)):
     
-        #If an obstacle is directly to the left check_left is true else it is false
-        if(scanData[0] < 0.75):
-            obsData.check_left = True
-        elif:
-            obsData.check_left = False
-            
-        #If an obstacle is directly to the right check_right is true else it is false
-        if(scanData[181] < 0.75):
-            obsData.check_right = True
-        elif:
-            obsData.check_right = False
+        
     
         if(x < 90-angleSwitch or x > 90+angleSwitch):
 
@@ -146,13 +141,27 @@ def arc(scanData,pathSegCallback(segData))):
         dAng = segLength * curvature 
         arcAng = arcAngStart + dAng
         
-        xStartPoint =   i * pathRadius * math.cos(arcAng) #assuming the robot is given one path segment at a time the start point for the arc is i.
-        yEndPoint =    pathRadius * math.sin(arcAng)
+        #Cart. Coords for start points of the arc
+        xStartPt = i * pathRadius * math.cos(arcAng) #assuming the robot is given one path segment at a time the start point for the arc is i.
+        yStartPt = scanData(i) * pathRadius * math.sin(arcAng) #assuming the robot is given one path segment at a time the start point for the arc is i.
+
+        #Cart. Coords for end point of the arc
+        xEndPt = 
+        yEndPt =    pathRadius * math.sin(arcAng)
+        
         
 
-        #Determine the radius of the path circle
+        
+
+
+        #Determine the radius of the path circle from the start and end points of the path segment
+        
+        pointDist = math.sqrt(math.pow(xEndPt - xStartPt),2.0) + math.pow(yEndPt - yStartPt,2.0)) #find the distance between the start point and end point
+        xhalfPt = (xStartPt + xEndPt)/2                                    #find the halfway point between the two points
+        yhalfPt = (yStartPt + yEndPt)/2
+
         xPathCenter = 
-        yPathCenter
+        yPathCenter = 
 
         pathCircle = [xPathCenter,yPathCenter,i]
         
