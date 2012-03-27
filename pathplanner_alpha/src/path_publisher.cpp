@@ -352,12 +352,12 @@ void calcHalfSeg()
 	double distance = sqrt(pow((newFinalSeg.ref_point.x - finalSeg.ref_point.x),2.0) + pow((newFinalSeg.ref_point.y - finalSeg.ref_point.y),2.0));   
 
 	msg_alpha::PathSegment newSeg;
-	seg.seg_number = 1;
-	seg.seg_type = 1; 
-	seg.seg_length = distance;
-	seg.ref_point.x = xDes;
-	seg.ref_point.y = yDes;
-	seg.init_tan_angle = tf::createQuaternionMsgFromYaw(psiDes);
+	newSeg.seg_number = 1;
+	newSeg.seg_type = 1; 
+	newSeg.seg_length = distance;
+	newSeg.ref_point.x = xDes;
+	newSeg.ref_point.y = yDes;
+	newSeg.init_tan_angle = tf::createQuaternionMsgFromYaw(psiDes);
 	pathStack.push(newSeg);
 
 	pathStack.push(newFinalSeg); 
