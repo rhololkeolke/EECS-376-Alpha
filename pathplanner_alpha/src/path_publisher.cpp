@@ -33,19 +33,19 @@ void segStatusCallback(const msg_alpha::SegStatus::ConstPtr& status)
 	// segComplete is only true once and we only care about when segComplete transitions to true
 	// so only update if the segment is currently not completed
 	if(!segComplete)
-<<<<<<< Updated upstream
+
 	{
 		segComplete = status->segComplete;
 	}
 	abort = status->abort;
-=======
+
 	  {
 		segComplete = status->segComplete;
 		progressMade = status-> progressMade;
 		
 	  }
 	
->>>>>>> Stashed changes
+
 }
 
 void obstaclesCallback(const msg_alpha::Obstacles::ConstPtr& obstacles)
@@ -337,16 +337,14 @@ void calcHalfSeg()
   pathStack.push(seg);
 
   newFinalSeg = pathStack.top();
+  
 
-  
-  
-  
-  double distance = sqrt(pow((finalSeg.ref_point.x - prevSeg.ref_point.x),2.0) + pow((finalSeg.ref_point.y - prevSeg.ref_point.y),2.0));   
+  double distance = sqrt(pow((newFinalSeg.ref_point.x - finalSeg.ref_point.x),2.0) + pow((newFinalSeg.ref_point.y - finalSeg.ref_point.y),2.0));   
 
   msg_alpha::PathSegment newSeg;
-  seg.seg_number = ?;//need to increment from before obs                                                                                                               
-  seg.seg_type = 1; //straight                                                                                                                                         
-  seg.seg_length = ?;
+  seg.seg_number = 1;
+  seg.seg_type = 1; 
+  seg.seg_length = distance;
   seg.ref_point.x = xDes ;
   seg.ref_point.y = yDes;
   seg.init_tan_angle = tf::createQuaternionMsgFromYaw(psiDes);
