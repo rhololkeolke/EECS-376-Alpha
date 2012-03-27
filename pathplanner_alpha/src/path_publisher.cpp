@@ -17,7 +17,7 @@ const double PI=3.14159;
 using namespace std;
 
 bool segComplete = true;
-bool abort ;
+bool bAbort = false ; //was formerly abort
 int seg_number = 0;
 msg_alpha::Obstacles lastObs;
 int numSegs = 5;
@@ -41,11 +41,11 @@ void segStatusCallback(const msg_alpha::SegStatus::ConstPtr& status)
 	  segComplete = status->segComplete;
 	}
 	
-	abort = status->abort;
+	bAbort = status->abort;
 	
 	  {
 		segComplete = status->segComplete;
-		progressMade = status-> progressMade;
+		progressMade = status-> progress_made;
 		
 	  }
 	
@@ -54,9 +54,9 @@ void segStatusCallback(const msg_alpha::SegStatus::ConstPtr& status)
 
 void obstaclesCallback(const msg_alpha::Obstacles::ConstPtr& obstacles)
 {
-	if(obstacles.exists)
+	if(obstacles->exists)
 	{
-		lastObs = obstacles;
+		lastObs = obstacles.distance;
 	}
 }
 
