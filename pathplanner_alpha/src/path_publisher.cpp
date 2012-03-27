@@ -65,8 +65,8 @@ void initStack()
 	Seg.seg_number = 5;
 	Seg.seg_type = 1;
 	Seg.seg_length = 1;
-	Seg.ref_point.x = -3.28;
-	Seg.ref_point.y = 20.8;
+	Seg.ref_point.x = calculateNewX(-3.28,1,45.22);
+	Seg.ref_point.y = calculateNewY(20.8,1,45.22);
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(45.22*PI/180.0);
 	pathStack.push(Seg);
 
@@ -216,7 +216,7 @@ void initStack()
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
 	pathStack.push(Seg);
 
-	Seg.seg_number = 1;
+	Seg.seg_number = 4;
 	Seg.seg_type = 1;
 	Seg.seg_length = 1;
 	Seg.ref_point.x = calculateNewX(8.27,3,-135.7);
@@ -224,7 +224,7 @@ void initStack()
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
 	pathStack.push(Seg);
 
-	Seg.seg_number = 1;
+	Seg.seg_number = 3;
 	Seg.seg_type = 1;
 	Seg.seg_length = 1;
 	Seg.ref_point.x = calculateNewX(8.27,2,-135.7);
@@ -232,7 +232,7 @@ void initStack()
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
 	pathStack.push(Seg);
 
-	Seg.seg_number = 1;
+	Seg.seg_number = 2;
 	Seg.seg_type = 1;
 	Seg.seg_length = 1;
 	Seg.ref_point.x = calculateNewX(8.27,1,-135.7);
