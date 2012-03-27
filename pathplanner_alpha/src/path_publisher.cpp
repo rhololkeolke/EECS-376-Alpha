@@ -47,7 +47,7 @@ void initStack()
 
 	msg_alpha::PathSegment Seg;		
 
-	//Initial segment
+	//To the Coffee Machine
 	Seg.seg_number = 5;
 	Seg.seg_type = 1;
 	Seg.seg_length = 1;
@@ -64,7 +64,7 @@ void initStack()
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(45.22*PI/180.0);
 	pathStack.push(Seg);
 
-	//First turn
+	//Second turn
 	Seg.seg_number = 4;
 	Seg.seg_type = 3;
 	Seg.seg_length = -PI/2;
@@ -76,104 +76,104 @@ void initStack()
 	Seg.seg_number = 3;
 	Seg.seg_type = 1;
 	Seg.seg_length = 1;
-	Seg.ref_point.x = 5.45;
-	Seg.ref_point.y = 11.92;
+	Seg.ref_point.x = calculateNewX(5.45,13,136.0);
+	Seg.ref_point.y = calculateNewY(11.92,13,136.0);
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
 	pathStack.push(Seg);
 
 	Seg.seg_number = 3;
 	Seg.seg_type = 1;
 	Seg.seg_length = 1;
-	Seg.ref_point.x = 5.45;
-	Seg.ref_point.y = 11.92;
+	Seg.ref_point.x = calculateNewX(5.45,12,136.0);
+	Seg.ref_point.y = calculateNewY(11.92,12,136.0);
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
 	pathStack.push(Seg);
 
 	Seg.seg_number = 3;
 	Seg.seg_type = 1;
 	Seg.seg_length = 1;
-	Seg.ref_point.x = 5.45;
-	Seg.ref_point.y = 11.92;
+	Seg.ref_point.x = calculateNewX(5.45,11,136.0);
+	Seg.ref_point.y = calculateNewY(11.92,11,136.0);
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
 	pathStack.push(Seg);
 
 	Seg.seg_number = 3;
 	Seg.seg_type = 1;
 	Seg.seg_length = 1;
-	Seg.ref_point.x = 5.45;
-	Seg.ref_point.y = 11.92;
+	Seg.ref_point.x = calculateNewX(5.45,10,136.0);
+	Seg.ref_point.y = calculateNewY(11.92,10,136.0);
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
 	pathStack.push(Seg);
 
 	Seg.seg_number = 3;
 	Seg.seg_type = 1;
 	Seg.seg_length = 1;
-	Seg.ref_point.x = 5.45;
-	Seg.ref_point.y = 11.92;
+	Seg.ref_point.x = calculateNewX(5.45,9,136.0);
+	Seg.ref_point.y = calculateNewY(11.92,9,136.0);
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
 	pathStack.push(Seg);
 
 	Seg.seg_number = 3;
 	Seg.seg_type = 1;
 	Seg.seg_length = 1;
-	Seg.ref_point.x = 5.45;
-	Seg.ref_point.y = 11.92;
+	Seg.ref_point.x = calculateNewX(5.45,8,136.0);
+	Seg.ref_point.y = calculateNewY(11.92,8,136.0);
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
 	pathStack.push(Seg);
 
 	Seg.seg_number = 3;
 	Seg.seg_type = 1;
 	Seg.seg_length = 1;
-	Seg.ref_point.x = 5.45;
-	Seg.ref_point.y = 11.92;
+	Seg.ref_point.x = calculateNewX(5.45,7,136.0);
+	Seg.ref_point.y = calculateNewY(11.92,7,136.0);
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
 	pathStack.push(Seg);
 
 	Seg.seg_number = 3;
 	Seg.seg_type = 1;
 	Seg.seg_length = 1;
-	Seg.ref_point.x = 5.45;
-	Seg.ref_point.y = 11.92;
+	Seg.ref_point.x = calculateNewX(5.45,6,136.0);
+	Seg.ref_point.y = calculateNewY(11.92,6,136.0);
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
 	pathStack.push(Seg);
 
 	Seg.seg_number = 3;
 	Seg.seg_type = 1;
 	Seg.seg_length = 1;
-	Seg.ref_point.x = 5.45;
-	Seg.ref_point.y = 11.92;
+	Seg.ref_point.x = calculateNewX(5.45, 5,136.0);
+	Seg.ref_point.y = calculateNewY(11.92,5,136.0);
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
 	pathStack.push(Seg);
 
 	Seg.seg_number = 3;
 	Seg.seg_type = 1;
 	Seg.seg_length = 1;
-	Seg.ref_point.x = 5.45;
-	Seg.ref_point.y = 11.92;
+	Seg.ref_point.x = calculateNewX(5.45,4,136.0);
+	Seg.ref_point.y = calculateNewY(11.92,4,136.0);
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
 	pathStack.push(Seg);
 
 	Seg.seg_number = 3;
 	Seg.seg_type = 1;
 	Seg.seg_length = 1;
-	Seg.ref_point.x = 5.45;
-	Seg.ref_point.y = 11.92;
+	Seg.ref_point.x = calculateNewX(5.45,3,136.0);
+	Seg.ref_point.y = calculateNewY(11.92,3,136.0);
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
 	pathStack.push(Seg);
 
 	Seg.seg_number = 3;
 	Seg.seg_type = 1;
 	Seg.seg_length = 1;
-	Seg.ref_point.x = 5.45;
-	Seg.ref_point.y = 11.92;
+	Seg.ref_point.x = calculateNewX(5.45,2,136.0);
+	Seg.ref_point.y = calculateNewY(11.92,2,136.0);
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
 	pathStack.push(Seg);
 
 	Seg.seg_number = 3;
 	Seg.seg_type = 1;
 	Seg.seg_length = 1;
-	Seg.ref_point.x = 5.45;
-	Seg.ref_point.y = 11.92;
+	Seg.ref_point.x = calculateNewX(5.45,1,136.0);
+	Seg.ref_point.y = calculateNewY(11.92,1,136.0);
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
 	pathStack.push(Seg);
 
@@ -185,7 +185,7 @@ void initStack()
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
 	pathStack.push(Seg);
 
-	//Turn toward the coffee machines
+	//Initial Turn
 	Seg.seg_number = 2;
 	Seg.seg_type = 3;
 	Seg.seg_length = -PI/2;
@@ -193,14 +193,64 @@ void initStack()
 	Seg.ref_point.y = 11.92;		
 	pathStack.push(Seg);
 
-	//Straight to the coffee machines
+	//Initial Straight, toward lab
 	Seg.seg_number = 1;
 	Seg.seg_type = 1;
-	Seg.seg_length = 4.2;
+	Seg.seg_length = 1;
+	Seg.ref_point.x = calculateNewX(8.27,4,-135.7);
+	Seg.ref_point.y = calculateNewY(14.74,4,-135.7);
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
+	pathStack.push(Seg);
+
+	Seg.seg_number = 1;
+	Seg.seg_type = 1;
+	Seg.seg_length = 1;
+	Seg.ref_point.x = calculateNewX(8.27,3,-135.7);
+	Seg.ref_point.y = calculateNewY(14.74,3,-135.7);
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
+	pathStack.push(Seg);
+
+	Seg.seg_number = 1;
+	Seg.seg_type = 1;
+	Seg.seg_length = 1;
+	Seg.ref_point.x = calculateNewX(8.27,2,-135.7);
+	Seg.ref_point.y = calculateNewY(14.74,2,-135.7);
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
+	pathStack.push(Seg);
+
+	Seg.seg_number = 1;
+	Seg.seg_type = 1;
+	Seg.seg_length = 1;
+	Seg.ref_point.x = calculateNewX(8.27,1,-135.7);
+	Seg.ref_point.y = calculateNewY(14.74,1,-135.7);
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
+	pathStack.push(Seg);
+
+	Seg.seg_number = 1;
+	Seg.seg_type = 1;
+	Seg.seg_length = .2;
 	Seg.ref_point.x = 8.27;
 	Seg.ref_point.y = 14.74;
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
 	pathStack.push(Seg);
+}
+
+int calculateNewX(int initX, int distanceTraveled, int angle)
+{
+
+	int newX = (cos(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled;
+
+	return newX;
+
+}
+
+int calculateNewY(int initY, int distanceTraveled, int angle)
+{
+
+	int newY = (sin(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled;
+
+	return newY;
+
 }
 
 void arcRight()
@@ -213,7 +263,7 @@ void arcRight()
 	Seg.ref_point.y = 14.74;
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
 	pathStack.push(Seg);
-	publisherMethod();
+	publishSeg();
 
 }
 
@@ -227,7 +277,7 @@ void arcLeft()
 	Seg.ref_point.y = 14.74;
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
 	pathStack.push(Seg);
-	publisherMethod();
+	publishSeg();
 }
 
 bool checkSide(int arcAngle, int dist)
@@ -290,7 +340,7 @@ void goStraight()
 	smallGoStraight.ref_point.y = last_map_pose.pose.position.y;//same
 	smallGoStraight.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);//should be constant and same as pre obs angle
 	pathStack.push(smallGoStraight);
-	publisherMethod();
+	publishSeg();
 }
 
 void publishSeg() 
