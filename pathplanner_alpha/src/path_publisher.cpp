@@ -42,6 +42,7 @@ void initStack()
 
 	msg_alpha::PathSegment Seg;		
 
+	//Initial segment
 	Seg.seg_number = 5;
 	Seg.seg_type = 1;
 	Seg.seg_length = 1;
@@ -58,6 +59,7 @@ void initStack()
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(45.22*PI/180.0);
 	pathStack.push(Seg);
 
+	//First turn
 	Seg.seg_number = 4;
 	Seg.seg_type = 3;
 	Seg.seg_length = -PI/2;
@@ -65,14 +67,120 @@ void initStack()
 	Seg.ref_point.y = 3.91;
 	pathStack.push(Seg);
 
+	//Long straight away from the lab
 	Seg.seg_number = 3;
 	Seg.seg_type = 1;
-	Seg.seg_length = 12.34;
+	Seg.seg_length = 1;
 	Seg.ref_point.x = 5.45;
 	Seg.ref_point.y = 11.92;
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
 	pathStack.push(Seg);
 
+	Seg.seg_number = 3;
+	Seg.seg_type = 1;
+	Seg.seg_length = 1;
+	Seg.ref_point.x = 5.45;
+	Seg.ref_point.y = 11.92;
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
+	pathStack.push(Seg);
+
+	Seg.seg_number = 3;
+	Seg.seg_type = 1;
+	Seg.seg_length = 1;
+	Seg.ref_point.x = 5.45;
+	Seg.ref_point.y = 11.92;
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
+	pathStack.push(Seg);
+
+	Seg.seg_number = 3;
+	Seg.seg_type = 1;
+	Seg.seg_length = 1;
+	Seg.ref_point.x = 5.45;
+	Seg.ref_point.y = 11.92;
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
+	pathStack.push(Seg);
+
+	Seg.seg_number = 3;
+	Seg.seg_type = 1;
+	Seg.seg_length = 1;
+	Seg.ref_point.x = 5.45;
+	Seg.ref_point.y = 11.92;
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
+	pathStack.push(Seg);
+
+	Seg.seg_number = 3;
+	Seg.seg_type = 1;
+	Seg.seg_length = 1;
+	Seg.ref_point.x = 5.45;
+	Seg.ref_point.y = 11.92;
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
+	pathStack.push(Seg);
+
+	Seg.seg_number = 3;
+	Seg.seg_type = 1;
+	Seg.seg_length = 1;
+	Seg.ref_point.x = 5.45;
+	Seg.ref_point.y = 11.92;
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
+	pathStack.push(Seg);
+
+	Seg.seg_number = 3;
+	Seg.seg_type = 1;
+	Seg.seg_length = 1;
+	Seg.ref_point.x = 5.45;
+	Seg.ref_point.y = 11.92;
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
+	pathStack.push(Seg);
+
+	Seg.seg_number = 3;
+	Seg.seg_type = 1;
+	Seg.seg_length = 1;
+	Seg.ref_point.x = 5.45;
+	Seg.ref_point.y = 11.92;
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
+	pathStack.push(Seg);
+
+	Seg.seg_number = 3;
+	Seg.seg_type = 1;
+	Seg.seg_length = 1;
+	Seg.ref_point.x = 5.45;
+	Seg.ref_point.y = 11.92;
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
+	pathStack.push(Seg);
+
+	Seg.seg_number = 3;
+	Seg.seg_type = 1;
+	Seg.seg_length = 1;
+	Seg.ref_point.x = 5.45;
+	Seg.ref_point.y = 11.92;
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
+	pathStack.push(Seg);
+
+	Seg.seg_number = 3;
+	Seg.seg_type = 1;
+	Seg.seg_length = 1;
+	Seg.ref_point.x = 5.45;
+	Seg.ref_point.y = 11.92;
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
+	pathStack.push(Seg);
+
+	Seg.seg_number = 3;
+	Seg.seg_type = 1;
+	Seg.seg_length = 1;
+	Seg.ref_point.x = 5.45;
+	Seg.ref_point.y = 11.92;
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
+	pathStack.push(Seg);
+
+	Seg.seg_number = 3;
+	Seg.seg_type = 1;
+	Seg.seg_length = .34;
+	Seg.ref_point.x = 5.45;
+	Seg.ref_point.y = 11.92;
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(136.0*PI/180.0);
+	pathStack.push(Seg);
+
+	//Turn toward the coffee machines
 	Seg.seg_number = 2;
 	Seg.seg_type = 3;
 	Seg.seg_length = -PI/2;
@@ -80,7 +188,7 @@ void initStack()
 	Seg.ref_point.y = 11.92;		
 	pathStack.push(Seg);
 
-	ROS_INFO("Sending out path %i",seg_number);
+	//Straight to the coffee machines
 	Seg.seg_number = 1;
 	Seg.seg_type = 1;
 	Seg.seg_length = 4.2;
@@ -100,6 +208,8 @@ void arcRight()
 	Seg.ref_point.y = 14.74;
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
 	pathStack.push(Seg);
+	publisherMethod();
+
 }
 
 void arcLeft()
@@ -112,6 +222,7 @@ void arcLeft()
 	Seg.ref_point.y = 14.74;
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
 	pathStack.push(Seg);
+	publisherMethod();
 }
 
 bool checkSide(int arcAngle, int dist)
@@ -127,6 +238,21 @@ void calcHalfSeg()
 {
 
 }
+
+void goStraight()
+{
+
+	msg_alpha::PathSegment smallGoStraight;
+	smallGoStraight.seg_number = 1;//need to increment from before obs
+	smallGoStraight.seg_type = 1; //straight
+	smallGoStraight.seg_length = 0.5;
+	smallGoStraight.ref_point.x = last_map_pose.pose.position.x;//need to recalculate every time
+	smallGoStraight.ref_point.y = last_map_pose.pose.position.y;//same
+	smallGoStraight.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);//should be constant and same as pre obs angle
+	pathStack.push(smallGoStraight);
+	publisherMethod();
+}
+
 void detour()
 {
 	//this method assumes that the lidar node will wait three seconds
@@ -136,15 +262,8 @@ void detour()
 	int arcAngle;
 	int obst_angle;
 	int obst_side = 0; //left is 1, right is 2. this should be an enum
-	msg_alpha::PathSegment straightSeg;
-	straightSeg.seg_number = 1;//need to increment from before obs
-	straightSeg.seg_type = 1; //straight
-	straightSeg.seg_length = 0.5;
-	straightSeg.ref_point.x = 8.27;//need to recalculate every time
-	straightSeg.ref_point.y = 14.74;//same
-	straightSeg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);//should be constant and same as pre obs angle
-	pathStack.push(straightSeg);
-	if (lastObs->rt_dist > arcAngle) {
+
+//	if (lastObs->rt_dist > arcAngle) {
 
 		ros::Subscriber obst_angle = n.subscribe<msg_alpha::Obstacles>("obstacles",1,obstaclesCallback);
 
@@ -152,21 +271,33 @@ void detour()
 		if (lastObs->left_dist == 0) { //only called on abort so one should be zero and one should be distance
 			obst_side = 2; //right
 			arcAngle = lastObs->wall_dist_rt/2;
-			arcLeft();
-			arcRight();
-			while(!checkRight()){
+			arcLeft(arcAngle);
+			arcRight(arcAngle);
+			while(!checkSide(.6,lastObs -> rt_dist)){
 				goStraight();
 			}
+			arcRight(arcAngle);
+			arcLeft(arcAngle);
+
 		} else {
 			obst_side = 1; //left
 			arcAngle = lastObs->wall_dist_lt/2;
-			arcRight();
-			arcLeft();
-			while(!checkLeft()){
+			arcRight(arcAngle);
+			arcLeft(arcAngle);
+			while(!checkSide(.6,lastObs->left_dist)){
 				goStraight();
 			}
+			arcLeft(arcAngle);
+			arcRight(arcAngle);
 		}
 	}
+//}
+
+void publisherMethod
+{
+
+
+
 }
 
 int main(int argc, char **argv)

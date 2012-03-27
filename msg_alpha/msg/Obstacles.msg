@@ -2,8 +2,12 @@
 
 #Used to determine whether or not an obstacle exists
 bool exists
+
+#Distance to the closest obstacle on the left and on the right
 uint64 left_dist
 uint64 rt_dist
+
+#Distance to the closest objects at 0 and 181
 uint64 wall_dist_lt
 uint64 wall_dist_rt
 
