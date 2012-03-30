@@ -162,7 +162,7 @@ class Test(unittest.TestCase):
         pathSeg.ref_point.x = 0.0
         pathSeg.ref_point.y = 0.0
         
-        init_quat = quaternion_from_euler(0,0,3*math.pi/4.0)
+        init_quat = quaternion_from_euler(0,0,math.pi/4.0+math.pi/2.0)
         pathSeg.init_tan_angle.w = init_quat[3]
         pathSeg.init_tan_angle.x = init_quat[0]
         pathSeg.init_tan_angle.y = init_quat[1]
@@ -196,7 +196,6 @@ class Test(unittest.TestCase):
         angle = State.getYaw(pathSeg.init_tan_angle)
         r=1/abs(rhoDes)
         startAngle = angle - math.pi/2
-
         
         # extrapolate next point
         while(state.segDistDone < 1.0 or maxIter < count):
@@ -216,16 +215,15 @@ class Test(unittest.TestCase):
         Test the robot perfectly following a negative
         curvature arc
         '''
-        self.assertTrue(False)
         pathSeg = PathSegmentMsg()
         pathSeg.seg_type = pathSeg.ARC
         pathSeg.seg_number = 1
-        pathSeg.seg_length = 2*math.pi
+        pathSeg.seg_length = math.pi/2.0
         
         pathSeg.ref_point.x = 0.0
         pathSeg.ref_point.y = 0.0
         
-        init_quat = quaternion_from_euler(0,0,math.pi/4.0)
+        init_quat = quaternion_from_euler(0,0,math.pi/4.0-math.pi/2)
         pathSeg.init_tan_angle.w = init_quat[3]
         pathSeg.init_tan_angle.x = init_quat[0]
         pathSeg.init_tan_angle.y = init_quat[1]
@@ -258,11 +256,7 @@ class Test(unittest.TestCase):
         rhoDes = pathSeg.curvature
         angle = State.getYaw(pathSeg.init_tan_angle)
         r=1/abs(rhoDes)
-        if(rhoDes >= 0):
-            startAngle = angle - math.pi/2
-        else:
-            startAngle = angle + math.pi/2
-
+        startAngle = angle + math.pi/2.0
         
         # extrapolate next point
         while(state.segDistDone < 1.0 or maxIter < count):
@@ -270,7 +264,7 @@ class Test(unittest.TestCase):
             dAng = pathSeg.seg_length*(count/(maxIter/2.0))*rhoDes
             arcAng = startAngle+dAng
             point.x = pathSeg.ref_point.x + r*math.cos(arcAng)
-            point.y = pathSeg.ref_point.y = r*math.sin(arcAng)
+            point.y = pathSeg.ref_point.y + r*math.sin(arcAng)
             state.updateState(vel_cmd, point, 0.0)
             count += 1
         

@@ -179,24 +179,43 @@ class State:
             posTheta = theta % (2*pi)
                 
             # figure out angle halfway between end and start angle
-            halfAngle = self.pathSeg.seg_length/(2*r)
-            finAngle = self.pathSeg.seg_length/r
+            if(rho >= 0):
+                halfAngle = self.pathSeg.seg_length/(2*r)
+                finAngle = self.pathSeg.seg_length/r
+            else:
+                halfAngle = self.pathSeg.seg_length/(2*r)
+                finAngle = -self.pathSeg.seg_length/r
             
             # find theta in terms of starting angle
-            if(posTheta > posPhi):
-                beta = posTheta - posPhi
+            if(rho >= 0):
+                if(posTheta > posPhi):
+                    beta = posTheta - posPhi
+                else:
+                    beta = 2*pi-posPhi+posTheta
             else:
-                beta = 2*pi-posPhi+posTheta
+                if(posTheta < posPhi):
+                    beta = posTheta - posPhi
+                else:
+                    beta = posTheta-posPhi-(2*pi)
+                    
                 
             # figure out what region the angle is in
-            if(beta >= 0 and beta <= finAngle): # beta is in the specified arc
-                alpha = beta
-            elif(beta > finAngle and beta <= halfAngle+pi):
-                alpha = beta
+            if(rho >= 0):
+                if(beta >= 0 and beta <= halfAngle+pi): # beta is in the specified arc
+                    alpha = beta
+                else:
+                    alpha = -(2*pi-beta)
             else:
-                alpha = -(2*pi-beta)
-            
-            self.segDistDone = r*alpha/self.pathSeg.seg_length 
+                if(beta >= halfAngle-pi and beta <= 0):
+                    alpha = beta;
+                else:
+                    alpha = beta + (2*pi)
+                    
+            if(rho >= 0):
+                self.segDistDone = r*alpha/self.pathSeg.seg_length
+            else:
+                self.segDistDone = -r*alpha/self.pathSeg.seg_length
+
         elif(self.pathSeg.seg_type == PathSegmentMsg.SPIN_IN_PLACE):
             yaw = State.getYaw(self.pathSeg.init_tan_angle)
             self.segDistDone = psi - yaw # distance done is the current heading minus the starting heading
