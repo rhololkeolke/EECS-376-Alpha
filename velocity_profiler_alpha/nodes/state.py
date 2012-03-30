@@ -12,7 +12,7 @@ from geometry_msgs.msg._Quaternion import Quaternion as QuaternionMsg
 from geometry_msgs.msg._Vector3 import Vector3 as Vector3Msg
 
 from tf.transformations import quaternion_from_euler,euler_from_quaternion # used to convert between the two representations
-from math import cos,sin,tan,sqrt,pi,acos,asin
+from math import cos,sin,tan,sqrt,pi,acos,asin,atan2
 
 class State:
     """
@@ -91,11 +91,6 @@ class State:
         if(pathSeg is not None): # as long as a path is specified
             self.pathPoint=pathSeg.ref_point # a pathPoint can be assumed
         self.segDistDone = 0.0 # new segment so completion is 0 
-        
-        print "self.pathSeg: " + str(self.pathSeg)
-        print "self.point: " + str(self.point)
-        print "self.psi: " + str(self.psi)
-        
     
     def updateState(self, vel_cmd, point, psi):
         """
@@ -127,6 +122,9 @@ class State:
             # using the point and the normal vector find the intersection of the line through the point and the line
             p0 = self.pathSeg.ref_point
             
+            # these equations came from solving for the intersection between a line defined
+            # as the direction of the line's normal vector passing through the robot's point
+            # and the line coincident with the path segment
             if(normVec.y != 0.0):
                 normRatio = normVec.x/normVec.y
                 numerator = p0.x - point.y - normRatio*p0.y + normRatio*point.y
@@ -157,84 +155,48 @@ class State:
             d = (d1+d2)/2.0
                         
             self.segDistDone = d/self.pathSeg.seg_length
-       
-        # need to redo these
+            
         elif(self.pathSeg.seg_type == PathSegmentMsg.ARC):
-            p = point
-            rhoDes = self.pathSeg.curvature
-            r = 1/abs(rhoDes) # turn radius is inverse of curvature
-            angle = State.getYaw(self.pathSeg.init_tan_angle)
-            center = PointMsg()
-            if(rhoDes >= 0):
-                if(angle > 0.0 and angle <= pi/2.0):
-                    center.x = -r*cos(angle) + self.pathSeg.ref_point.x
-                    center.y = -r*sin(angle) + self.pathSeg.ref_point.y
-                elif(angle > pi/2.0 and angle <= pi):
-                    center.x = r*cos(angle) + self.pathSeg.ref_point.x
-                    center.y = -r*sin(angle) + self.pathSeg.ref_point.y
-                elif(angle > pi and angle <= 3.0*pi/2.0):
-                    center.x = r*cos(angle) + self.pathSeg.ref_point.x
-                    center.y = r*sin(angle) + self.pathSeg.ref_point.y
-                else:
-                    center.x = -r*cos(angle) + self.pathSeg.ref_point.x
-                    center.y = r*sin(angle) + self.pathSeg.ref_point.y
+            tanAngStart = State.getYaw(self.pathSeg.init_tan_angle)
+            rho = self.pathSeg.curvature
+            r = 1/abs(rho)
+            if(rho >= 0):
+                startAngle = tanAngStart - pi/2
             else:
-                if(angle > 0.0 and angle <= pi/2.0):
-                    center.x = r*cos(angle) + self.pathSeg.ref_point.x
-                    center.y = r*sin(angle) + self.pathSeg.ref_point.y
-                elif(angle > pi/2.0 and angle <= pi):
-                    center.x = -r*cos(angle) + self.pathSeg.ref_point.x
-                    center.y = r*sin(angle) + self.pathSeg.ref_point.y
-                elif(angle > pi and angle <= 3.0*pi/2.0):
-                    center.x = -r*cos(angle) + self.pathSeg.ref_point.x
-                    center.y = -r*sin(angle) + self.pathSeg.ref_point.y
-                else:
-                    center.x = -r*cos(angle) + self.pathSeg.ref_point.x
-                    center.y = r*sin(angle) + self.pathSeg.ref_point.y
+                startAngle = tanAngStart + pi/2
+            
+            ref_point = self.pathSeg.ref_point
+            
+            rVec = State.createVector(ref_point, point)
+            theta = atan2(rVec.y,rVec.x)
+            
+            phi = startAngle % (2*pi)
+            
+            if(abs(phi-2*pi) < phi):
+                phi = phi - 2*pi
                 
-            # calculate the terms of the quadratic
-            a = pow(center.x,2) - 2.0*center.x*p.x + pow(p.x,2) + pow(center.y,2) - 2.0*center.y*p.y + pow(p.y,2)
-            b = 2.0*pow(center.x,2) - 4.0*center.x*p.x + 2.0*pow(p.x,2) + 2.0*pow(center.y,2) - 4.0*center.y*p.y + 2.0*pow(p.y,2)
-            c = pow(center.x,2) - 2.0*center.x*p.x + pow(p.x,2) + pow(center.y,2) - 2.0*center.y*p.y + pow(p.y,2) - pow(r,2)
+            posPhi = phi % (2*pi)
+            posTheta = theta % (2*pi)
+                
+            # figure out angle halfway between end and start angle
+            halfAngle = self.pathSeg.seg_length/(2*r)
+            finAngle = self.pathSeg.seg_length/r
             
-            # get the two solutions using the quadratic formula
-            s1 = (-b + sqrt(pow(b,2) - 4*a*c))/(2*a)
-            s2 = (-b - sqrt(pow(b,2) - 4*a*c))/(2*a)
-            
-            # calculate the point using s1
-            p1 = PointMsg()
-            p1.x = (p.x - center.x)*s1 + p.x
-            p1.y = (p.y - center.y)*s1 + p.y
-            
-            # calculate the point using s2
-            p2 = PointMsg()
-            p2.x = (p.x - center.x)*s2 + p.x
-            p2.y = (p.y - center.y)*s2 + p.y
-            
-            # calculate the distance from the point on the circle to the robot position
-            s1Dist = sqrt(pow(p1.x-p.x,2) + pow(p1.y-p.y,2))
-            s2Dist = sqrt(pow(p2.x-p.x,2) + pow(p2.y-p.y,2))
-            
-            # set the parameter to the one that minimizes the distance between the circle and the robot position
-            if(s1Dist < s2Dist):
-                s = s1
-                p = p1
+            # find theta in terms of starting angle
+            if(posTheta > posPhi):
+                beta = posTheta - posPhi
             else:
-                s = s2
-                p = p2
+                beta = 2*pi-posPhi+posTheta
                 
-            if(rhoDes >= 0):
-                arcAngStart = angle-pi/2
+            # figure out what region the angle is in
+            if(beta >= 0 and beta <= finAngle): # beta is in the specified arc
+                alpha = beta
+            elif(beta > finAngle and beta <= halfAngle+pi):
+                alpha = beta
             else:
-                arcAngStart = angle+pi/2
-                
-            d1 = (acos((p.x - self.pathSeg.ref_point.x)/r) - arcAngStart)/rhoDes
-            d2 = (asin((p.y - self.pathSeg.ref_point.y)/r) - arcAngStart)/rhoDes
+                alpha = -(2*pi-beta)
             
-            d = (d1+d2)/2.0
-            
-            self.segDistDone = d/self.pathSeg.seg_length
-            
+            self.segDistDone = r*alpha/self.pathSeg.seg_length 
         elif(self.pathSeg.seg_type == PathSegmentMsg.SPIN_IN_PLACE):
             yaw = State.getYaw(self.pathSeg.init_tan_angle)
             self.segDistDone = psi - yaw # distance done is the current heading minus the starting heading
@@ -284,9 +246,9 @@ class State:
     @staticmethod
     def createVector(p0,p1):
         vector = Vector3Msg()
-        vector.x = p1[0] - p0[0]
-        vector.y = p1[1] - p0[1]
-        vector.z = p1[2] - p0[2]
+        vector.x = p1.x - p0.x
+        vector.y = p1.y - p0.y
+        vector.z = p1.z - p0.z
         return vector
     
     @staticmethod

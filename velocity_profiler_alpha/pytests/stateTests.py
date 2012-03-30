@@ -157,12 +157,12 @@ class Test(unittest.TestCase):
         pathSeg = PathSegmentMsg()
         pathSeg.seg_type = pathSeg.ARC
         pathSeg.seg_number = 1
-        pathSeg.seg_length = 1.0
+        pathSeg.seg_length = math.pi/2
         
         pathSeg.ref_point.x = 0.0
         pathSeg.ref_point.y = 0.0
         
-        init_quat = quaternion_from_euler(0,0,math.pi/4.0)
+        init_quat = quaternion_from_euler(0,0,3*math.pi/4.0)
         pathSeg.init_tan_angle.w = init_quat[3]
         pathSeg.init_tan_angle.x = init_quat[0]
         pathSeg.init_tan_angle.y = init_quat[1]
@@ -195,18 +195,16 @@ class Test(unittest.TestCase):
         rhoDes = pathSeg.curvature
         angle = State.getYaw(pathSeg.init_tan_angle)
         r=1/abs(rhoDes)
-        if(rhoDes >= 0):
-            arcAngStart = angle-math.pi/2
-        else:
-            arcAngStart = angle+math.pi/2
+        startAngle = angle - math.pi/2
+
         
         # extrapolate next point
         while(state.segDistDone < 1.0 or maxIter < count):
             # create where the robot should have moved
             dAng = pathSeg.seg_length*(count/(maxIter/2.0))*rhoDes
-            arcAng = arcAngStart+dAng
+            arcAng = startAngle+dAng
             point.x = pathSeg.ref_point.x + r*math.cos(arcAng)
-            point.y = pathSeg.ref_point.y = r*math.sin(arcAng)
+            point.y = pathSeg.ref_point.y + r*math.sin(arcAng)
             state.updateState(vel_cmd, point, 0.0)
             count += 1
         
@@ -219,6 +217,65 @@ class Test(unittest.TestCase):
         curvature arc
         '''
         self.assertTrue(False)
+        pathSeg = PathSegmentMsg()
+        pathSeg.seg_type = pathSeg.ARC
+        pathSeg.seg_number = 1
+        pathSeg.seg_length = 2*math.pi
+        
+        pathSeg.ref_point.x = 0.0
+        pathSeg.ref_point.y = 0.0
+        
+        init_quat = quaternion_from_euler(0,0,math.pi/4.0)
+        pathSeg.init_tan_angle.w = init_quat[3]
+        pathSeg.init_tan_angle.x = init_quat[0]
+        pathSeg.init_tan_angle.y = init_quat[1]
+        pathSeg.init_tan_angle.z = init_quat[2]
+        
+        pathSeg.curvature = -1.0
+        
+        maxSpeed = TwistMsg()
+        maxSpeed.linear.x = 1.0
+        maxSpeed.angular.z = 1.0
+        pathSeg.max_speeds = maxSpeed
+        
+        minSpeed = TwistMsg()
+        pathSeg.min_speeds = minSpeed
+              
+        pathSeg.accel_limit = 1.0
+        pathSeg.decel_limit = -1.0
+
+        state = State(pathSeg)
+        
+        vel_cmd = TwistMsg()
+        vel_cmd.linear.x = 0.5
+        vel_cmd.angular.z = 0.0
+        
+        point = PointMsg()
+        
+        maxIter = 1000
+        count = 1
+        
+        rhoDes = pathSeg.curvature
+        angle = State.getYaw(pathSeg.init_tan_angle)
+        r=1/abs(rhoDes)
+        if(rhoDes >= 0):
+            startAngle = angle - math.pi/2
+        else:
+            startAngle = angle + math.pi/2
+
+        
+        # extrapolate next point
+        while(state.segDistDone < 1.0 or maxIter < count):
+            # create where the robot should have moved
+            dAng = pathSeg.seg_length*(count/(maxIter/2.0))*rhoDes
+            arcAng = startAngle+dAng
+            point.x = pathSeg.ref_point.x + r*math.cos(arcAng)
+            point.y = pathSeg.ref_point.y = r*math.sin(arcAng)
+            state.updateState(vel_cmd, point, 0.0)
+            count += 1
+        
+        self.assertTrue(count < maxIter)
+        self.assertTrue(state.segDistDone >= 1.0)
         
     def test_updateState_PosOffsetLine(self):
         '''
