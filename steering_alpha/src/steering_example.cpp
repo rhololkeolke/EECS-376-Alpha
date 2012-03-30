@@ -35,6 +35,7 @@ bool nextSegExists = false;
 bool currSegExists = false;
 msg_alpha::PathSegment nextSeg;
 msg_alpha::PathSegment currSeg;
+double progressMade;
 
 void obstaclesCallback(const msg_alpha::Obstacles::ConstPtr& obsData)
 {
@@ -86,6 +87,7 @@ void segStatusCallback(const msg_alpha::SegStatus::ConstPtr& status)
   {
     segComplete = status->segComplete;
     currSegExists = false;
+    progressMade = status->progress_made;
   }
 }
 
@@ -198,7 +200,11 @@ int main(int argc,char **argv)
 		  {
 
 		    double radius, tangentAngStart, arcAngStart, dAng, arcAng, rho;
-		    double tanAngle = tf::getYaw(temp_pose_out_.pose.orientation);
+
+		    //		    double tanAngle = tf::getYaw(temp_pose_out_.pose.orientation);
+
+		  //  double tanAngle = tf::getYaw(temp_pose_out_.pose.orientation);
+
 		    
 		    rho = currSeg.curvature;
 		    radius = 1.0/fabs(rho);
@@ -215,8 +221,8 @@ int main(int argc,char **argv)
 		    double yDes = currSeg.ref_point.y;
 		    double psiDes = tangentAngStart + dAng;
 
-		    seg.ref_point.y = yDes;
-		    seg.init_tan_angle = tf::createQuaternionMsgFromYaw(psiDes);
+		    currSeg.ref_point.y = yDes;
+		    currSeg.init_tan_angle = tf::createQuaternionMsgFromYaw(psiDes);
 		    
 		    desired_heading = psiDes;
 		  }

@@ -17,7 +17,7 @@ const double PI=3.14159;
 using namespace std;
 
 bool segComplete = true;
-bool abort = false;
+bool bAbort = false ; //was formerly abort
 int seg_number = 0;
 msg_alpha::Obstacles lastObs;
 int numSegs = 5;
@@ -38,13 +38,14 @@ void segStatusCallback(const msg_alpha::SegStatus::ConstPtr& status)
 	if(!segComplete)
 
 	{
-		segComplete = status->segComplete;
+	  segComplete = status->segComplete;
 	}
-	abort = status->abort;
-
+	
+	bAbort = status->abort;
+	
 	  {
 		segComplete = status->segComplete;
-		progressMade = status-> progressMade;
+		progressMade = status-> progress_made;
 		
 	  }
 	
@@ -53,11 +54,33 @@ void segStatusCallback(const msg_alpha::SegStatus::ConstPtr& status)
 
 void obstaclesCallback(const msg_alpha::Obstacles::ConstPtr& obstacles)
 {
-	if(obstacles.exists)
+	if(obstacles->exists)
 	{
-		lastObs = obstacles;
+		lastObs.exists = obstacles->exists;
+		lastObs.distance = obstacles->distance;
+		 
 	}
 }
+
+int calculateNewX(int initX, int distanceTraveled, int angle)
+{
+
+  //  int newX = cos(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled; 
+  int newX = cos(tf::getYaw(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled; 
+
+  return newX;
+
+}
+
+int calculateNewY(int initY, int distanceTraveled, int angle)
+{
+
+  //  int newY = (sin(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled;
+  int newY = sin(tf::getYaw(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled; 
+  return newY;
+
+}
+
 
 void initStack()
 {
@@ -252,47 +275,54 @@ void initStack()
 	pathStack.push(Seg);
 }
 
-int calculateNewX(int initX, int distanceTraveled, int angle)
+void publishSeg() 
 {
-
-	int newX = (cos(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled;
-
-	return newX;
-
+	if (pathStack.empty())
+		return;
+	//update currseg,pop,then pub. all in ros::ok loop
+	int temp = currSeg.seg_number;
+	currSeg = pathStack.top();
+	currSeg.seg_number = temp + 1;
+	do {
+		ros::spinOnce();
+		if (segComplete == true)
+		{
+			pathStack.pop();
+			pathPub.publish(currSeg);
+			segComplete = false;
+			ROS_INFO("I published another node! Be proud...");
+		}
+	} while(!segComplete);
 }
 
-int calculateNewY(int initY, int distanceTraveled, int angle)
+
+void arcRight(int angle)
 {
-
-	int newY = (sin(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled;
-
-	return newY;
-
-}
-
-void arcRight()
-{
+	msg_alpha::PathSegment Seg;
 	//fix me
 	Seg.seg_number = currSeg.seg_number+1;
 	Seg.seg_type = 1;
 	Seg.seg_length = 4.2;
 	Seg.ref_point.x = 8.27;
 	Seg.ref_point.y = 14.74;
-	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
+	//This needs attention
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(angle);
 	pathStack.push(Seg);
 	publishSeg();
 
 }
 
-void arcLeft()
+void arcLeft(int angle)
 {
+	msg_alpha::PathSegment Seg;	
 	//fix me
 	Seg.seg_number = currSeg.seg_number+1;
 	Seg.seg_type = 1;
 	Seg.seg_length = 4.2;
 	Seg.ref_point.x = 8.27;
 	Seg.ref_point.y = 14.74;
-	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
+	//this needs attention
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(angle);
 	pathStack.push(Seg);
 	publishSeg();
 }
@@ -319,6 +349,7 @@ void calcHalfSeg()
   double rho; //curvature
   //double tanAngle = tf::getYaw(temp_pose_out_.pose.orientation);
 	
+  msg_alpha::PathSegment finalSeg;
   finalSeg = pathStack.top();
 
   rho = finalSeg.curvature;  // curvature is +/- 1/radius of arc; + for CCW trajectory    
@@ -345,6 +376,7 @@ void calcHalfSeg()
 	seg.init_tan_angle = tf::createQuaternionMsgFromYaw(psiDes);
 	pathStack.push(seg);
 */
+	msg_alpha::PathSegment newFinalSeg;
 	newFinalSeg = pathStack.top();
 
 
@@ -363,25 +395,6 @@ void calcHalfSeg()
 
 }
 
-void publishSeg() 
-{
-	if (pathStack.empty())
-		return;
-	//update currseg,pop,then pub. all in ros::ok loop
-	int temp = currSeg.seg_number;
-	currSeg = pathStack.top();
-	currSeg.seg_number = temp + 1;
-	do {
-		ros::spinOnce();
-		if (segComplete == true)
-		{
-			pathStack.pop();
-			pathPub.publish(currSeg);
-			segComplete = false;
-			ROS_INFO("I published another node! Be proud...");
-		}
-	} while(!segComplete);
-}
 
 void goStraight()
 {
@@ -410,12 +423,12 @@ void detour()
 
 
 	//figure out which way to turn
-	if (lastObs->left_dist == 0) { //only called on abort so one should be zero and one should be distance
+	if (lastObs.left_dist == 0) { //only called on abort so one should be zero and one should be distance
 		obst_side = 2; //right
-		arcAngle = lastObs->wall_dist_rt/2;
+		arcAngle = lastObs.wall_dist_rt/2;
 		arcLeft(arcAngle);
 		arcRight(arcAngle);
-		while(!checkSide(.6,lastObs -> rt_dist)){
+		while(!checkSide(0.6,lastObs.rt_dist)){
 			goStraight();
 		}
 		arcRight(arcAngle);
@@ -423,10 +436,10 @@ void detour()
 
 	} else {
 		obst_side = 1; //left
-		arcAngle = lastObs->wall_dist_lt/2;
+		arcAngle = lastObs.wall_dist_lt/2;
 		arcRight(arcAngle);
 		arcLeft(arcAngle);
-		while(!checkSide(.6,lastObs->left_dist)){
+		while(!checkSide(.6,lastObs.left_dist)){
 			goStraight();
 		}
 		arcLeft(arcAngle);
@@ -455,9 +468,9 @@ int main(int argc, char **argv)
 		if(!abort)
 		{
 			publishSeg();
-			}
-		} else {
-			detour();
+		}
+		else {
+		  detour();
 		}
 		naptime.sleep();
 	}
