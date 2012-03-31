@@ -217,8 +217,43 @@ class State:
                 self.segDistDone = -r*alpha/self.pathSeg.seg_length
 
         elif(self.pathSeg.seg_type == PathSegmentMsg.SPIN_IN_PLACE):
-            yaw = State.getYaw(self.pathSeg.init_tan_angle)
-            self.segDistDone = psi - yaw # distance done is the current heading minus the starting heading
+            rho = self.pathSeg.curvature
+            phi = State.getYaw(self.pathSeg.init_tan_angle)
+                
+            posPhi = phi % (2*pi)
+            posPsi = psi % (2*pi)
+            
+            if(rho >= 0):
+                halfAngle = self.pathSeg.seg_length/2.0
+            else:
+                halfAngle = self.pathSeg.seg_length/2.0
+            
+            # find beta in terms of starting angle
+            if(rho >= 0):
+                if(posPsi > posPhi):
+                    beta = posPsi - posPhi
+                else:
+                    beta = 2*pi-posPhi+posPsi
+            else:
+                if(posPsi < posPhi):
+                    beta = posPsi - posPhi
+                else:
+                    beta = posPsi-posPhi-(2*pi)
+                    
+                
+            # figure out what region the angle is in
+            if(rho >= 0):
+                if(beta >= 0 and beta <= halfAngle+pi): # beta is in the specified arc
+                    alpha = beta
+                else:
+                    alpha = beta - (2*pi)
+            else:
+                if(beta >= halfAngle-pi and beta <= 0):
+                    alpha = beta-posPhi;
+                else:
+                    alpha = beta + (2*pi)
+                    
+            self.segDistDone = alpha/self.pathSeg.seg_length
         else:
             pass # should probably throw an unknown segment type error
         
