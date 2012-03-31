@@ -39,20 +39,20 @@ def pathSegCallback(segData):
 
 #Receives laser data from the base_scan topic and places the data into an array
 def laserCallback(data):
-#    scanData = data
+    global scanData
+    scanData = data
 
     obsPub = rospy.Publisher('obstacles', Obstacles)     #Data should be published to the obstacles topics using the Obstacles message type                         
     obsData = Obstacles() #initalize an Obstacle message                     
+
     
     obsPub.publish(obsData)
 
-    obsData.wall_dist_left = data[0]
-    obsData.wall_dist_rt = data[181]
     
 
 
-    straight(data.ranges)
-    arc(data.ranges)
+ #   straight(data.ranges)
+#    arc(data.ranges)
     #print len(scanData)
 
 #Determine if there are obstacles along a straight path        
@@ -67,8 +67,10 @@ def straight(scanData):
     #Check to see if a lidar ping is less than cos(T)/Width if so there is an obstacle
     #i is always within the bounds of the scanData array
     for x in range(len(scanData)):
-    
         
+        obsData.wall_dist_left = scanData[0]
+        obsData.wall_dist_rt = scanData[181]
+
     
         if(x < 90-angleSwitch or x > 90+angleSwitch):
 
