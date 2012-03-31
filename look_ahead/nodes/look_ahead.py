@@ -6,21 +6,18 @@ from sensor_msgs.msg import LaserScan
 from msg_alpha.msg._Obstacles import Obstacles
 
 
-
-
-
-scanData=[]
-BOX_WIDTH = 0.5
-BOX_HEIGHT = 1.0
-angleSwitch = math.atanh(BOX_WIDTH) * 180/math.pi
+scanData=[]  #laser scan data
+BOX_WIDTH = 0.5 #width for the bounded box if the path segment is straight(1)
+BOX_HEIGHT = 1.0 #height for bounded box if the path segment is 1
+angleSwitch = math.atanh(BOX_WIDTH) * 180/math.pi  #angle to switch distance formulas within the bounded box
 ping_angle = None #the angle at which the lidar scanner picks up an obstacle
 
-#Globals are only temporary for testing of logic
-segType = None
-curvature = None
-segLenth = None
-initTanAngle = None
-refPoint = None
+#Globals are only temporary for testing of logic if path segment is arc(2)
+segType = None  #segment type
+curvature = None  #curvature of the path
+segLenth = None  #length of the segment
+initTanAngle = None  #inital tangent angle of the path segment
+refPoint = None  #reference point
 
 
 #Receives path segment information from the path_seg topic
@@ -42,13 +39,18 @@ def pathSegCallback(segData):
 
 #Receives laser data from the base_scan topic and places the data into an array
 def laserCallback(data):
+#    scanData = data
+
     obsPub = rospy.Publisher('obstacles', Obstacles)     #Data should be published to the obstacles topics using the Obstacles message type                         
     obsData = Obstacles() #initalize an Obstacle message                     
     
+    obsPub.publish(obsData)
+
     obsData.wall_dist_left = data[0]
     obsData.wall_dist_rt = data[181]
-    obsPub.publish(obsData)
     
+
+
     straight(data.ranges)
     arc(data.ranges)
     #print len(scanData)
@@ -111,6 +113,7 @@ def arc(scanData):
 
     #    seg = pathSegCallback(segInfo) #call the path seg callback 
 
+
     #globals here temporarily for testing
     global curvature
     global segLenth
@@ -119,16 +122,19 @@ def arc(scanData):
 
     radius = 0.5 #radius of the circle to be made around each lidar ping
     theta = 0.0 #angle measure of circle
-    circles = []
+    circles = [] #a list of each circle, each circle will be compared to the path circle.
 
     #The starting point for the path segment of the robot should be (0,0) assuming the paths are passed in for scanning at the robots present location
-    xStartPt = 0 
-    yStartPt = 0
+    xStartPt = 0.0 
+    yStartPt = 0.0
 
     #HOPEFULLY the end point will be generated from a message
     xEndPt = None
-    yEndPt = None 
+    yEndPt = None
 
+    #identify the mid point of the of the path segment
+    xMid = (xStartPt + xEndPt)/2.0
+    yMid = (yStartPt + yEndPt)/2.0
 
     #Make a circle around the path segment
     #Make a circle around each ping excluding the path segment
@@ -138,15 +144,17 @@ def arc(scanData):
         
         #if the lidar ping has reached the end point of the projected path segment
         #create a circle around the path segment
-        if(i == xEndPt and scanData(i) == yEndPt): 
-            pathRadius = math.tan(i)/(math.sqrt(math.pow(i - xStartPt),2.0) + math.pow(scanData(i) - yStartPt)) #tangent of the angle divded by the euclidean distance give the radius of the arc as if it were a circle
-            xPathCent = i * pathRadius * math.sin(i)
-            yPathCent = scanData(i) * pathRadius * math.sin(i)
-            pathCircle = [xPathCent,yPathCent]
+        if(i == xMid and scanData(i) == yMid): 
+            pathDiam = math.sqrt(math.pow(xEndPt - xStartPt),2.0 + math.pow(yEndPt + yStartPt))
+            pathRadius = pathDiam/2.0
+
+
+            xPathCent = i * pathRadius * math.sin(i)  #convert to polar coords.
+            yPathCent = scanData(i) * pathRadius * math.sin(i) #convert polar coords.
+            pathCircle = [xPathCent,yPathCent]  #path circle
             
 
         #create an circle around each lidar ping with the ping as the center
-        #??? Must figure out mathematically how to exclude the path segment circle form these calculations
         while(theta < 2 * math.pi):
             
             
@@ -157,38 +165,35 @@ def arc(scanData):
             #dx*dx + dy+dy < radius * radius
             #j is always within range of the lidar pings
             for j in ranges(scanData):
-                insideCircle = False
-
-                dx = xPathCent - j ;
-                dy = yPathCent- scanData(j);
+                
+                
+                dx = xPathCent - j 
+                dy = yPathCent- scanData(j)
                 
                 if(dx * dx + dy * dy < pathRadius * pathRadius):
-                
-                
+                    
+                    pass
+
                 else:
                     
-                theta += 0.1
-                xCenter = i * radius * math.sin(theta) #create the x-coord for the center of the circle
-                yCenter = scanData(i) * radius * math.cos(theta) # create the y-coord for the center of the circle
-                circle = [xCenter,yCenter] #a list of circle information contains ifs centerpoint and location along lidar ping
-                circles.append(circle)  # place each circle in a list of circles
+    
+                    theta += 0.1
+                    xCenter = i * radius * math.sin(theta) #create the x-coord for the center of the circle
+                    yCenter = scanData(i) * radius * math.cos(theta) # create the y-coord for the center of the circle
+                    circle = [xCenter,yCenter] #a list of circle information contains ifs centerpoint and location along lidar ping
+                    circles.append(circle)  # place each circle in a list of circles
 
         #if the euclidean distance between a circle and the radii of the path segment circle is less than the sum of the radii then an obstacle exists else it does not
         for c in ranges(circles):
-            if(math.sqrt(math.pow(circles[c][0] - pathCircle[0],2.0) + math.pow(circles[c][1] - pathCircle[1],2.0)))) -   < radius + pathRadius))
+            if(math.sqrt(math.pow(circles[c][0] - pathCircle[0],2.0) + math.pow(circles[c][1] - pathCircle[1],2.0))  < radius + pathRadius):
             
                 obsData.exists = True   #an obstacle exists
             
-            elif:
+            else:
                 obsData.exists = False  #an obstacle does not exists
                 
         obsPub.publish(obsData)  #publish the obstacle information
         
-
-        
-
-        #publish that an obstacle exists
-
 
 def main():
     
