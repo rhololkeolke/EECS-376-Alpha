@@ -665,8 +665,72 @@ def computeTrajectory(currSeg,nextSeg=None):
     return (sVAccel,sVDecel,sWAccel,sWDecel)
             
 
-def getVelCmd():
-    pass
+def getVelCmd(sVAccel, sVDecel, sWAccel, sWDecel):
+    global currState
+    global RATE
+    global currSeg
+    
+    dt = 1.0/RATE
+    a_max = currState.pathSeg.accel_limit
+    d_max = currState.pathSeg.decel_limit
+    v_max = currState.pathSeg.max_speeds.linear.x
+    w_max = currState.pathSeg.max_speeds.angular.z
+    segLength = currState.pathSeg.seg_length
+    segDistDone = currState.segDistDone
+    
+    des_vel = TwistMsg()
+    
+    if(currState.segDistDone < 1.0):
+        if(currState is None):
+            return des_vel
+        
+        if(currState.pathSeg.seg_type == PathSegmentMsg.ARC):
+            (v_max,w_max) = max_v_w(v_max,w_max,currState.pathSeg.curvature)
+            
+        # figure out the v_cmd
+        if(segDistDone < sVDecel):
+            if(currState.v < v_max):
+                v_test = currState.v + a_max*dt
+                des_vel.linear.x = min(v_test,v_max)
+            elif(currState.v > v_max):
+                v_test = currState.v + d_max*dt # NOTE: This assumes the d_max is opposite sign of velocity
+                des_vel.linear.x = max(v_test,v_max)
+            else:
+                des_vel.linear.x = currState.v
+        else:
+            v_scheduled = sqrt(2*(1.0-segDistDone)*segLength*a_max)
+            if(currState.v < v_scheduled):
+                v_test = currState.v + a_max*dt
+                des_vel.linear.x = min(v_test,v_max)
+            elif(currState.v > v_scheduled):
+                v_test = currState.v + d_max*dt
+                des_vel.linear.x = max(v_test,v_max)
+            else:
+                des_vel.linear.x = currState.v
+        
+        # figure out the w_cmd
+        if(segDistDone < sWDecel):
+            if(currState.w < w_max):
+                w_test = currState.w + a_max*dt
+                des_vel.angular.z = min(w_test,w_max)
+            elif(currState.w > w_max):
+                w_test = currState.w + d_max*dt
+                des_vel.angular.z = max(w_test,w_max)
+            else:
+                des_vel.angular.z = currState.w
+        else:
+            w_scheduled = sqrt(2*(1.0-segDistDone)*(abs(currState.pathSeg.curvature)/segLength)*a_max)
+            if(currState.w < w_scheduled):
+                w_test = currState.w + a_max*dt
+                des_vel.angular.z = min(w_test,w_max)
+            elif(currState.w > w_scheduled):
+                w_test = currState.w + d_max*dt
+                des_vel.angular.z = max(w_test,w_max)
+            else:
+                des_vel.angular.z = currState.w
+
+    return des_vel
+        
 
 def publishSegStatus(segStatusPub,abort=False):
     pass
@@ -709,6 +773,7 @@ def main():
     global currSeg
     global nextSegExists
     global nextSeg
+    global pose
     
     rospy.init_node('main')
     desVelPub = rospy.Publisher('des_vel',TwistMsg) # Steering reads this and adds steering corrections on top of the desired velocities
@@ -721,6 +786,10 @@ def main():
     
     naptime = rospy.Rate(RATE)
     
+    vel_cmd = TwistMsg()
+    point = PointMsg()
+
+    
     # while(not ros.Time.isValid()):
         #pass
     
@@ -731,16 +800,38 @@ def main():
         if(stopped):
             stopForEstop(desVelPub,segStatusPub)
             continue
-        if(obsExists):
-            stopForObs()
-            continue
-        criticalPoints = computeTrajectory()
-        des_vel = getVelCmd()
-        publishSegStatus(segStatusPub)
-        naptime.sleep()
-        continue
+        if(currSegExists):
+            if(obsExists):
+                stopForObs()
+                continue
             
-        
+            vel_cmd.linear.x = lastVCmd
+            vel_cmd.angular.z = lastOCmd
+            
+            point.x = pose.pose.position.x
+            point.y = pose.pose.position.y
+            point.z = pose.pose.position.z
+            
+            currState.updateState(vel_cmd, point, State.getYaw(pose.pose.orientation)) # update where the robot is at
+            (sVAccel, sVDecel, sWAccel, sWDecel) = computeTrajectory(currSeg,nextSeg) # figure out the switching points in the trajectory
+            
+            des_vel = getVelCmd(sVAccel, sVDecel, sWAccel, sWDecel) # figure out the robot commands given the current state and the desired trajectory
+            desVelPub.publish(des_vel) # publish the commands
+            
+            publishSegStatus(segStatusPub) # let everyone else know the status of the segment
+            
+            # see if its time to switch segments yet
+            if(currState.segDistDone > 1.0):
+                if(nextSegExists):
+                    currState.updateState(nextSeg,point,pose.pose.orientation)
+                    nextSeg = currSeg
+                    nextSegExists = False
+                else:
+                    currSeg = None
+                    currSegExists = None
+            
+            naptime.sleep()
+        continue
         
         if(not currSegExists):
             if(nextSegExists):

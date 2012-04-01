@@ -247,16 +247,16 @@ class Test(unittest.TestCase):
         self.assertEquals(sWAccel,0.0)
         self.assertEquals(sWDecel,1.0)
         
-    def test_LINE_ARC_GreaterThan(self):
+    def test_posLINE_ARC_GreaterThan(self):
         self.fail("Unit test not yet implemented")
         
-    def test_LINE_ARC_SameAs(self):
+    def test_posLINE_ARC_SameAs(self):
         self.fail("Unit test not yet implemented")
         
-    def test_LINE_ARC_LessThan(self):
+    def test_posLINE_ARC_LessThan(self):
         self.fail("Unit test not yet implemented")
         
-    def test_LINE_ARC_OppositeSign(self):
+    def test_posLINE_ARC_OppositeSign(self):
         self.fail("Unit test not yet implemented")
         
     def test_LINE_SPIN_GreaterThan(self):
