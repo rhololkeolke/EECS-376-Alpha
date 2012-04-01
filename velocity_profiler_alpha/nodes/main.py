@@ -106,7 +106,7 @@ def stopForEstop(desVelPub,segStatusPub):
     rospy.sleep(rospy.Duration(1.0)) # sleep for 1 more second to ensure motor controllers are back online
     rospy.loginfo("Good Morning!")
 
-def stopForObs(segStatusPub):
+def stopForObs(desVelPub,segStatusPub):
     global obsExists
     global obsDist
     global currState
@@ -120,6 +120,8 @@ def stopForObs(segStatusPub):
     dt = 1.0/RATE
     decel_rate = -pow(currState.v,2)/(2*(obsDist-.6))
     
+    naptime = rospy.Rate(RATE)
+    
     des_vel = TwistMsg()
     
     while(currState.v-.0001 <= 0 and currState.v+.0001 >= 0):
@@ -130,8 +132,10 @@ def stopForObs(segStatusPub):
         if(abs(currState.v) > 0):
             v_test = cmp(currState.v,0)*(abs(currState.v) - decel_rate*dt)
             des_vel.linear.x = cmp(v_test,0)*min(abs(v_test),0)
+            desVelPub.publish(des_vel)
             
         publishSegStatus(segStatusPub) # let everyone else know the status of the segment
+        naptime.sleep()
     
     startTime = rospy.Time.now()
     waitPeriod = rospy.Duration(3.0)
@@ -141,6 +145,7 @@ def stopForObs(segStatusPub):
             publishSegStatus(segStatusPub,True) # send the abort flag
             currSeg = None
             nextSeg = None 
+        naptime.sleep()
     return
             
         
@@ -505,7 +510,7 @@ def main():
             if(currSeg.seg_type == PathSegmentMsg.LINE):
                 # if there is an obstacle and the obstacle is within the segment length
                 if(obsExists and obsDist/currSeg.seg_length < 1.0):
-                    stopForObs(segStatusPub)
+                    stopForObs(desVelPub,segStatusPub)
                     continue
             
             vel_cmd.linear.x = lastVCmd
