@@ -789,7 +789,7 @@ def main():
     global nextSeg
     global pose
     
-    rospy.init_node('main')
+    rospy.init_node('velocity_profiler_alpha')
     desVelPub = rospy.Publisher('des_vel',TwistMsg) # Steering reads this and adds steering corrections on top of the desired velocities
     segStatusPub = rospy.Publisher('seg_status', SegStatusMsg) # Lets the other nodes know what path segment the robot is currently executing
     rospy.Subscriber("motors_enabled", BoolMsg, eStopCallback) # Lets velocity profiler know the E-stop is enabled
