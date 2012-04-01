@@ -524,11 +524,18 @@ def computeTrajectory(currSeg,nextSeg=None):
         else:
             return (0.0,0.0,0.0,0.0)
     elif(currSeg.seg_type == PathSegmentMsg.LINE and nextSeg.seg_type == PathSegmentMsg.LINE):
-        # dV is how much velocity has to change from amx to next segment
-        if(currSeg.max_speeds.linear.x <= nextSeg.max_speeds.linear.x):
-            dV = 0.0
-        else:
-            if(cmp(currSeg.max_speeds.linear.x,0) == cmp(nextSeg.max_speeds.linear.x,0)):
+        # dV is how much velocity has to change from max to next segment
+        if(cmp(currSeg.max_speeds.linear.x,0) >= 0): # positive velocity
+            if(currSeg.max_speeds.linear.x <= nextSeg.max_speeds.linear.x):
+                dV = 0.0
+            elif(cmp(currSeg.max_speeds.linear.x,0) == cmp(nextSeg.max_speeds.linear.x,0)): # if they are the same sign
+                dV = currSeg.max_speeds.linear.x - nextSeg.max_speeds.linear.x
+            else:
+                dV = currSeg.max_speeds.linear.x
+        else: # negative velocity
+            if(currSeg.max_speeds.linear.x >= nextSeg.max_speeds.linear.x):
+                dV = 0.0
+            elif(cmp(currSeg.max_speeds.linear.x,0) == cmp(nextSeg.max_speeds.linear.x,0)): # if they are the same sign
                 dV = currSeg.max_speeds.linear.x - nextSeg.max_speeds.linear.x
             else:
                 dV = currSeg.max_speeds.linear.x
