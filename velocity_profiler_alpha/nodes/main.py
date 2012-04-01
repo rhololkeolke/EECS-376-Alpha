@@ -30,7 +30,7 @@ stopped = False # stores the value of the E-stop
 
 # stores the values of obstacles in the way
 obsExists = False
-obs_dist = 0.0
+obsDist = 0.0
 
 lastVCmd = 0.0
 lastOCmd = 0.0
@@ -53,10 +53,10 @@ def eStopCallback(eStop):
 
 def obstaclesCallback(obsData):
     global obs
-    global obs_dist
+    global obsDist
     
     obsExists = obsData.exists
-    obs_dist = obsData.distance
+    obsDist = obsData.distance
 
 def pathSegmentCallback(seg):
     global segments
@@ -106,8 +106,44 @@ def stopForEstop(desVelPub,segStatusPub):
     rospy.sleep(rospy.Duration(1.0)) # sleep for 1 more second to ensure motor controllers are back online
     rospy.loginfo("Good Morning!")
 
-def stopForObs():
-    pass
+def stopForObs(segStatusPub):
+    global obsExists
+    global obsDist
+    global currState
+    global currSeg
+    global nextSeg
+    global RATE
+    # calculate the stopping acceleration
+    # this is allowed to override the segment constraints, because its more important
+    # to not crash than to follow the speed limit
+
+    dt = 1.0/RATE
+    decel_rate = -pow(currState.v,2)/(2*(obsDist-.6))
+    
+    des_vel = TwistMsg()
+    
+    while(currState.v-.0001 <= 0 and currState.v+.0001 >= 0):
+        if(not obsExists):
+            return # if the obstacle went away then resume without fully stopping
+        
+        # this should take care of negatives
+        if(abs(currState.v) > 0):
+            v_test = cmp(currState.v,0)*(abs(currState.v) - decel_rate*dt)
+            des_vel.linear.x = cmp(v_test,0)*min(abs(v_test),0)
+            
+        publishSegStatus(segStatusPub) # let everyone else know the status of the segment
+    
+    startTime = rospy.Time.now()
+    waitPeriod = rospy.Duration(3.0)
+    while(obsExists):
+        if(rospy.Time.now() - startTime > waitPeriod):
+            segments = Queue() # flush the queue, the callback thread probably won't appreciate this
+            publishSegStatus(segStatusPub,True) # send the abort flag
+            currSeg = None
+            nextSeg = None 
+    return
+            
+        
 
 def computeTrajectory(currSeg,nextSeg=None):
     """
@@ -432,7 +468,7 @@ def main():
     global lastVCmd
     global lastOCmd
     global obs
-    global obs_dist
+    global obsDist
     global stopped
     global seg_number
     global currSeg
@@ -464,9 +500,13 @@ def main():
             stopForEstop(desVelPub,segStatusPub)
             continue
         if(currSeg is not None):
-            if(obsExists):
-                stopForObs()
-                continue
+            # Eventually this should work with arcs, spins and lines, but right
+            # now its only working with lines
+            if(currSeg.seg_type == PathSegmentMsg.LINE):
+                # if there is an obstacle and the obstacle is within the segment length
+                if(obsExists and obsDist/currSeg.seg_length < 1.0):
+                    stopForObs(segStatusPub)
+                    continue
             
             vel_cmd.linear.x = lastVCmd
             vel_cmd.angular.z = lastOCmd
