@@ -46,7 +46,7 @@ class Test(unittest.TestCase):
         self.currSeg.seg_length = 4.0
         self.currSeg.max_speeds.linear.x = 1
         self.currSeg.accel_limit = 0.5
-        self.currSeg.decel_limit = 0.5
+        self.currSeg.decel_limit = -0.5
         
         (sVAccel,sVDecel,sWAccel,sWDecel) = computeTrajectory(self.currSeg)
         
@@ -62,7 +62,7 @@ class Test(unittest.TestCase):
         self.currSeg.max_speeds.angular.z = .5
         self.currSeg.curvature = 1.0
         self.currSeg.accel_limit = 0.5
-        self.currSeg.decel_limit = 0.5
+        self.currSeg.decel_limit = -0.5
         
         (sVAccel,sVDecel,sWAccel,sWDecel) = computeTrajectory(self.currSeg)
         
@@ -78,7 +78,7 @@ class Test(unittest.TestCase):
         self.currSeg.max_speeds.angular.z = .5
         self.currSeg.curvature = 1.0
         self.currSeg.accel_limit = 0.5
-        self.currSeg.decel_limit = 0.5
+        self.currSeg.decel_limit = -0.5
         
         (sVAccel,sVDecel,sWAccel,sWDecel) = computeTrajectory(self.currSeg)
         
@@ -92,13 +92,13 @@ class Test(unittest.TestCase):
         self.currSeg.seg_length = 4.0
         self.currSeg.max_speeds.linear.x = 1.0
         self.currSeg.accel_limit = 0.5
-        self.currSeg.decel_limit = 0.5
+        self.currSeg.decel_limit = -0.5
         
         self.nextSeg.seg_type = PathSegmentMsg.LINE
         self.nextSeg.seg_length = 3.0
         self.nextSeg.max_speeds.linear.x = 2.0
         self.nextSeg.accel_limit = 0.5
-        self.nextSeg.decel_limit = 0.5
+        self.nextSeg.decel_limit = -0.5
         
         (sVAccel,sVDecel,sWAccel,sWDecel) = computeTrajectory(self.currSeg, self.nextSeg)
         
@@ -112,33 +112,33 @@ class Test(unittest.TestCase):
         self.currSeg.seg_length = 4.0
         self.currSeg.max_speeds.linear.x = 1.0
         self.currSeg.accel_limit = 0.5
-        self.currSeg.decel_limit = 0.5
+        self.currSeg.decel_limit = -0.5
         
         self.nextSeg.seg_type = PathSegmentMsg.LINE
         self.nextSeg.seg_length = 1.0
         self.nextSeg.max_speeds.linear.x = 1.0
         self.nextSeg.accel_limit = 0.7
-        self.nextSeg.decel_limit = 0.5
+        self.nextSeg.decel_limit = -0.5
         
         (sVAccel,sVDecel,sWAccel,sWDecel) = computeTrajectory(self.currSeg, self.nextSeg)
         
+        self.assertAlmostEqual(sVAccel, .25, delta=.01)
         self.assertEquals(sVDecel,1.0)
         self.assertEquals(sWAccel,0.0)
         self.assertEquals(sWDecel,1.0)
-        self.assertTrue(sVDecel > sVAccel)
         
     def test_posLINE_LINE_LessThan(self):
         self.currSeg.seg_type = PathSegmentMsg.LINE
         self.currSeg.seg_length = 4.0
         self.currSeg.max_speeds.linear.x = 2.0
         self.currSeg.accel_limit = 0.5
-        self.currSeg.decel_limit = 0.5
+        self.currSeg.decel_limit = -0.5
         
         self.nextSeg.seg_type = PathSegmentMsg.LINE
         self.nextSeg.seg_length = 1.0
         self.nextSeg.max_speeds.linear.x = 0.5
         self.nextSeg.accel_limit = 0.7
-        self.nextSeg.decel_limit = 0.5
+        self.nextSeg.decel_limit = -0.5
         
         (sVAccel,sVDecel,sWAccel,sWDecel) = computeTrajectory(self.currSeg, self.nextSeg)
         
@@ -152,13 +152,13 @@ class Test(unittest.TestCase):
         self.currSeg.seg_length = 6.0
         self.currSeg.max_speeds.linear.x = 2.0
         self.currSeg.accel_limit = 0.5
-        self.currSeg.decel_limit = 0.5
+        self.currSeg.decel_limit = -0.5
         
         self.nextSeg.seg_type = PathSegmentMsg.LINE
         self.nextSeg.seg_length = 1.0
         self.nextSeg.max_speeds.linear.x = -1.0
         self.nextSeg.accel_limit = 0.7
-        self.nextSeg.decel_limit = 0.5
+        self.nextSeg.decel_limit = -0.5
         
         (sVAccel,sVDecel,sWAccel,sWDecel) = computeTrajectory(self.currSeg, self.nextSeg)
         
@@ -168,16 +168,84 @@ class Test(unittest.TestCase):
         self.assertEquals(sWDecel,1.0)
         
     def test_negLINE_LINE_GreaterThan(self):
-        self.fail("Unit test not yet implemented")
+        self.currSeg.seg_type = PathSegmentMsg.LINE
+        self.currSeg.seg_length = 4.0
+        self.currSeg.max_speeds.linear.x = -1.0
+        self.currSeg.accel_limit = -0.5
+        self.currSeg.decel_limit = 0.5
+        
+        self.nextSeg.seg_type = PathSegmentMsg.LINE
+        self.nextSeg.seg_length = 3.0
+        self.nextSeg.max_speeds.linear.x = -2.0
+        self.nextSeg.accel_limit = -0.5
+        self.nextSeg.decel_limit = 0.5
+        
+        (sVAccel,sVDecel,sWAccel,sWDecel) = computeTrajectory(self.currSeg, self.nextSeg)
+        
+        self.assertEquals(sVDecel,1.0)
+        self.assertEquals(sWAccel,0.0)
+        self.assertEquals(sWDecel,1.0)
+        self.assertAlmostEqual(sVAccel, 0.25, delta=.01)
         
     def test_negLINE_LINE_SameAs(self):
-        self.fail("Unit test not yet implemented")
+        self.currSeg.seg_type = PathSegmentMsg.LINE
+        self.currSeg.seg_length = 4.0
+        self.currSeg.max_speeds.linear.x = -1.0
+        self.currSeg.accel_limit = -0.5
+        self.currSeg.decel_limit = 0.5
+        
+        self.nextSeg.seg_type = PathSegmentMsg.LINE
+        self.nextSeg.seg_length = 1.0
+        self.nextSeg.max_speeds.linear.x = -1.0
+        self.nextSeg.accel_limit = -0.7
+        self.nextSeg.decel_limit = 0.5
+        
+        (sVAccel,sVDecel,sWAccel,sWDecel) = computeTrajectory(self.currSeg, self.nextSeg)
+        
+        self.assertAlmostEqual(sVAccel, .25, delta=.01)
+        self.assertEquals(sVDecel,1.0)
+        self.assertEquals(sWAccel,0.0)
+        self.assertEquals(sWDecel,1.0)
         
     def test_negLINE_LINE_LessThan(self):
-        self.fail("Unit test not yet implemented")
+        self.currSeg.seg_type = PathSegmentMsg.LINE
+        self.currSeg.seg_length = 4.0
+        self.currSeg.max_speeds.linear.x = -2.0
+        self.currSeg.accel_limit = -0.5
+        self.currSeg.decel_limit = 0.5
+        
+        self.nextSeg.seg_type = PathSegmentMsg.LINE
+        self.nextSeg.seg_length = 1.0
+        self.nextSeg.max_speeds.linear.x = -0.5
+        self.nextSeg.accel_limit = -0.7
+        self.nextSeg.decel_limit = 0.5
+        
+        (sVAccel,sVDecel,sWAccel,sWDecel) = computeTrajectory(self.currSeg, self.nextSeg)
+        
+        self.assertEquals(sVAccel,1.0)
+        self.assertEquals(sVDecel,0.4375)
+        self.assertEquals(sWAccel,0.0)
+        self.assertEquals(sWDecel,1.0)
         
     def test_negLINE_LINE_OppositeSign(self):
-        self.fail("Unit test not yet implemented")
+        self.currSeg.seg_type = PathSegmentMsg.LINE
+        self.currSeg.seg_length = 6.0
+        self.currSeg.max_speeds.linear.x = -2.0
+        self.currSeg.accel_limit = -0.5
+        self.currSeg.decel_limit = 0.5
+        
+        self.nextSeg.seg_type = PathSegmentMsg.LINE
+        self.nextSeg.seg_length = 1.0
+        self.nextSeg.max_speeds.linear.x = 1.0
+        self.nextSeg.accel_limit = 0.7
+        self.nextSeg.decel_limit = -0.5
+        
+        (sVAccel,sVDecel,sWAccel,sWDecel) = computeTrajectory(self.currSeg, self.nextSeg)
+        
+        self.assertAlmostEqual(sVAccel, 0.666, delta = 0.001)
+        self.assertAlmostEqual(sVDecel, 0.333, delta = 0.001)
+        self.assertEquals(sWAccel,0.0)
+        self.assertEquals(sWDecel,1.0)
         
     def test_LINE_ARC_GreaterThan(self):
         self.fail("Unit test not yet implemented")
