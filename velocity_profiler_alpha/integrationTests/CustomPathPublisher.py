@@ -16,9 +16,7 @@ import roslib; roslib.load_manifest('velocity_profiler_alpha');
 import rospy
 
 from msg_alpha.msg._PathSegment import PathSegment as PathSegmentMsg
-from geometry_msgs.msg._Point import Point as PointMsg
-from geometry_msgs.msg._Twist import Twist as TwistMsg
-from tf.transformations import quaternion_from_euler,euler_from_quaternion
+from tf.transformations import quaternion_from_euler
 
 import csv
 
@@ -40,6 +38,9 @@ def publishFromFile(fullPath):
     """
     
     with open(fullPath,'rb') as csvFile:
+        rospy.init_node('DummySteering')
+        pathSegPublisher = rospy.Publisher('path_seg',PathSegmentMsg) 
+        
         dialect = csv.Sniffer().sniff(csvFile.read(1024)) # auto detect delimiters
         csvFile.seek(0)
         reader = csv.reader(csvFile, dialect) # open up a csv reader object with the csv file
@@ -91,7 +92,7 @@ def publishFromFile(fullPath):
                 y = float(row[3])
             except ValueError:
                 print "Problem reading %s" % row[3]
-                print "\tMake sure the 5th column is a number"
+                print "\tMake sure the 4th column is a number"
                 print "\tDefaulting y to 0.0"
                 y = 0.0
             pathSeg.ref_point.y = y
@@ -100,7 +101,7 @@ def publishFromFile(fullPath):
                 tan_angle = float(row[4])
             except ValueError:
                 print "Problem reading %s" % row[4]
-                print "\tMake sure the 6th column is a number"
+                print "\tMake sure the 5th column is a number"
                 print "\tDefaulting tan_angle to 0.0"
                 tan_angle = 0.0
             init_quat = quaternion_from_euler(0,0,tan_angle)
@@ -113,14 +114,71 @@ def publishFromFile(fullPath):
                 curvature = float(row[5])
             except ValueError:
                 print "Problem reading %s" % row[5]
-                print "\tMake sure the 7th column is a number"
+                print "\tMake sure the 6th column is a number"
                 print "\tDefaulting curvature to 0.0"
                 curvature = 0.0
             pathSeg.curvature = curvature
-                    
-                            
-                        
-                    
+            
+            try:
+                max_v = float(row[6])
+            except ValueError:
+                print "Problem reading %s" % row[6]
+                print "\tMake sure the 7th column is a number"
+                print "\tDefaulting max_v to 1.0"
+                max_v = 1.0
+            pathSeg.max_speeds.linear.x = max_v
+            
+            try:
+                max_w = float(row[7])
+            except ValueError:
+                print "Problem reading %s" % row[7]
+                print "\tMake sure the 8th column is a number"
+                print "\tDefaulting max_w to 1.0"
+                max_w = 1.0
+            pathSeg.max_speeds.angular.z = max_w
+            
+            try:
+                min_v = float(row[8])
+            except ValueError:
+                print "Problem reading %s" % row[8]
+                print "\tMake sure the 9th column is a number"
+                print "\tDefaulting min_v to 0.0"
+                min_v = 0.0
+            pathSeg.min_speeds.linear.x = min_v
+            
+            try:
+                min_w = float(row[9])
+            except ValueError:
+                print "Problem reading %s" % row[9]
+                print "\tMake sure the 10th column is a number"
+                print "\tDefaulting min_w to 0.0"
+                min_w = 0.0
+            pathSeg.min_speeds.angular.z = min_w
+            
+            try:
+                accel_limit = float(row[10])
+            except ValueError:
+                print "Problem reading %s" % row[10]
+                print "\tMake sure the 11th column is a number"
+                print "\tDefaulting accel_limit to 0.5"
+                accel_limit = 0.5
+            pathSeg.accel_limit = accel_limit
+            
+            try:
+                decel_limit = float(row[11])
+            except ValueError:
+                print "Problem reading %s" % row[11]
+                print "\tMake sure the 12th column is a number"
+                print "\tDefaulting decel_limit to 0.5"
+                decel_limit = 0.5
+            pathSeg.decel_limit = decel_limit
+        segs.append(pathSeg)
+    
+    sleepTime = rospy.Duration(1)
+    for pathSeg in segs:
+        pathSegPublisher.publish(pathSeg)
+        rospy.sleep(sleepTime)
+    
                 
 
 def publishFromCommandLine():
