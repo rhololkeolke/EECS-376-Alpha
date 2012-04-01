@@ -248,7 +248,26 @@ class Test(unittest.TestCase):
         self.assertEquals(sWDecel,1.0)
         
     def test_posLINE_ARC_GreaterThan(self):
-        self.fail("Unit test not yet implemented")
+        self.currSeg.seg_type = PathSegmentMsg.LINE
+        self.currSeg.seg_length = 6.0
+        self.currSeg.max_speeds.linear.x = 1.0
+        self.currSeg.accel_limit = 0.5
+        self.currSeg.decel_limit = -0.5
+        
+        self.nextSeg.seg_type = PathSegmentMsg.ARC
+        self.nextSeg.seg_length = 1.0
+        self.nextSeg.curvature = 1.0
+        self.nextSeg.max_speeds.linear.x = 2.0
+        self.nextSeg.max_speeds.angular.z = 2.0
+        self.nextSeg.accel_limit = 0.7
+        self.nextSeg.decel_limit = -0.5
+        
+        (sVAccel,sVDecel,sWAccel,sWDecel) = computeTrajectory(self.currSeg, self.nextSeg)
+        
+        self.assertAlmostEqual(sVAccel, 0.666, delta = 0.001)
+        self.assertAlmostEqual(sVDecel, 0.0688, delta = 0.001)
+        self.assertEquals(sWAccel,0.0)
+        self.assertEquals(sWDecel,1.0)
         
     def test_posLINE_ARC_SameAs(self):
         self.fail("Unit test not yet implemented")
