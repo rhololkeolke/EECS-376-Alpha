@@ -21,14 +21,13 @@ from geometry_msgs.msg._PoseStamped import PoseStamped as PoseStampedMsg
 from math import sqrt,cos,sin
 
 from state import State
-import tf
 
 RATE = 20.0 # set the rate of refresh
 
 stopped = False # stores the value of the E-stop
 
 # stores the values of obstacles in the way
-obs = False
+obsExists = False
 obs_dist = 0.0
 
 lastVCmd = 0.0
@@ -38,13 +37,14 @@ seg_number = 0
 
 pose = PoseStampedMsg()
 
+currState = State()
+
 # true when currSeg and nextSeg have actual values we want to follow
 currSegExists = False
 nextSegExists = False
 nextSeg = PathSegmentMsg()
 currSeg = PathSegmentMsg()
 
-tfl = tf.TransformListener()
 
 def eStopCallback(eStop):
     global stopped
@@ -54,7 +54,7 @@ def obstaclesCallback(obsData):
     global obs
     global obs_dist
     
-    obs = obsData.exists
+    obsExists = obsData.exists
     obs_dist = obsData.distance
 
 def pathSegmentCallback(seg):
@@ -274,7 +274,6 @@ def straight(desVelPub,segStatusPub,distance):
     vel_object.angular.z = 0.0
     desVelPub.publish(vel_object)
 
-
 def turn(desVelPub, segStatusPub, angle):
     global RATE
     global lastVCmd
@@ -419,8 +418,250 @@ def turn(desVelPub, segStatusPub, angle):
     vel_object.angular.z = 0.0
     desVelPub.publish(vel_object)
 
-
 def arc(desVelPub, segStatusPub, distance):
+    pass
+
+def max_v_w(maxV,maxW,rho):
+    v_cmd = maxV;
+    w_cmd = rho*v_cmd
+    
+    if(w_cmd > maxW):
+        w_cmd = maxW
+        v_cmd = w_cmd/rho
+        
+    return (v_cmd,w_cmd)
+
+def stopForEstop(desVelPub,segStatusPub):
+    global RATE
+    global currState
+    
+    currState.stop() # make sure currentState knows the robot is stopped
+    
+    rospy.loginfo("E-Stop enabled. Pausing...")
+    
+    des_vel = TwistMsg() # publish 0's for velocity
+    desVelPub.publish(des_vel)
+    
+    publishSegStatus(segStatusPub) # publish the segment status
+    
+    naptime = rospy.Rate(RATE)
+
+    while(stopped): # stay here until the robot is no longer stopped
+        desVelPub.publish(des_vel)
+        publishSegStatus(segStatusPub)
+        naptime.sleep()
+    rospy.loginfo("E-Stop disabled. Taking a quick nap...")
+    rospy.sleep(rospy.Duration(1.0)) # sleep for 1 more second to ensure motor controllers are back online
+    rospy.loginfo("Good Morning!")
+
+def stopForObs():
+    pass
+
+def computeTrajectory(currSeg,nextSeg=None):
+    """
+    Uses information from the current segment definition and the next segment definition
+    to compute the maximum time to accelerate and the maximum time to decelerate.
+    The rest of this program will use the trajectories to compute the desired velocity
+    and omega commands that best follow the trajectory.
+    """
+    global RATE
+    
+    dt = 1.0/RATE
+    
+    if(currSeg.seg_type == PathSegmentMsg.LINE):
+        tVAccel = currSeg.max_speeds.linear.x/currSeg.accel_limit
+        distVAccel = 0.5*abs(currSeg.accel_limit)*pow(tVAccel,2)
+        sVAccel = distVAccel/currSeg.seg_length # the percentage along the path to stop accelerating
+        sWAccel = 0.0;
+    elif(currSeg.seg_type == PathSegmentMsg.ARC):
+        (maxVCmd,maxWCmd) = max_v_w(currSeg.max_speeds.linear.x,currSeg.max_speeds.angular.z,currSeg.curvature)
+        
+        tVAccel = maxVCmd/currSeg.accel_limit
+        distVAccel = 0.5*abs(currSeg.accel_limit)*pow(tVAccel,2)
+        sVAccel = distVAccel/currSeg.seg_length
+        
+        tWAccel = maxWCmd/currSeg.accel_limit
+        distWAccel = 0.5*abs(currSeg.accel_limit)*pow(tWAccel,2)
+        sWAccel = distWAccel/(currSeg.seg_length/abs(currSeg.curvature))
+        
+        # velocity and omega have to stay in sync
+        # they need to stop accelerating at the same time
+        if(sVAccel < sWAccel):
+            sWAccel = sVAccel
+        else:
+            sVAccel = sWAccel
+    elif(currSeg.seg_type == PathSegmentMsg.SPIN_IN_PLACE):
+        sVAccel = 0;
+        tWAccel = currSeg.max_speeds.angular.z/currSeg.accel_limit
+        distWAccel = 0.5*abs(currSeg.accel_limit)*pow(tWAccel,2)
+        sWAccel = distWAccel/currSeg.seg_length
+    else: # should maybe make this throw an exception
+        return (0.0,0.0,0.0,0.0)
+    
+    if(nextSeg is None): # if the next seg is None then assume the robot should stop at the end of the segment
+        if(currSeg.seg_type == PathSegmentMsg.LINE):
+            tVDecel = abs(currSeg.max_speeds.linear.x/currSeg.decel_limit)
+            distVDecel = 0.5*abs(currSeg.decel_limit)*pow(tVDecel,2)
+            sVDecel = 1-distVDecel/currSeg.seg_length
+            
+            sWDecel = 1.0
+        elif(currSeg.seg_type == PathSegmentMsg.ARC):
+            (maxVCmd,maxWCmd) = max_v_w(currSeg.max_speeds.linear.x,currSeg.max_speeds.angular.z,currSeg.curvature)
+            
+            tVDecel = abs(currSeg.max_speeds.linear.x/currSeg.decel_limit)
+            distVDecel = 0.5*abs(currSeg.decel_limit)*pow(tVDecel,2)
+            sVDecel = 1.0-distVDecel/currSeg.seg_length
+            
+            tWDecel = abs(currSeg.max_speeds.angular.z/currSeg.decel_limit)
+            distWDecel = 0.5*abs(currSeg.decel_limit)*pow(tWDecel,2)
+            sWDecel = 1.0-distWDecel/(currSeg.seg_length/abs(currSeg.curvature))
+        elif(currSeg.seg_type == PathSegmentMsg.SPIN_IN_PLACE):
+            tVDecel = 1.0;
+            
+            tWDecel = abs(currSeg.max_speeds.angular.z/currSeg.decel_limit)
+            distWDecel = 0.5*abs(currSeg.decel_limit)*pow(tWDecel,2)
+            sWDecel = 1.0-distWDecel/currSeg.seg_length # spin seg lengths are in radians, so no need to divide by the curvature
+        else:
+            return (0.0,0.0,0.0,0.0)
+    elif(currSeg.seg_type == PathSegmentMsg.LINE and nextSeg.seg_type == PathSegmentMsg.LINE):
+        # dV is how much velocity has to change from amx to next segment
+        if(currSeg.max_speeds.linear.x <= nextSeg.max_speeds.linear.x):
+            dV = 0.0
+        else:
+            if(cmp(currSeg.max_speeds.linear.x,0) == cmp(nextSeg.max_speeds.linear.x,0)):
+                dV = currSeg.max_speeds.linear.x - nextSeg.max_speeds.linear.x
+            else:
+                dV = currSeg.max_speeds.linear.x
+                
+        tVDecel = abs(dV/currSeg.decel_limit)
+        distVDecel = 0.5*abs(currSeg.decel_limit)*pow(tVDecel,2)
+        sVDecel = 1.0 - distVDecel/currSeg.seg_length
+        
+        sWDecel = 1.0
+    elif(currSeg.seg_type == PathSegmentMsg.LINE and nextSeg.seg_type == PathSegmentMsg.ARC):
+        # figure out the maximum v so that w constraint in next segment is not violated
+        # currently assuming that a line will not allow any omega
+        (maxVCmd,maxWCmd) = max_v_w(nextSeg.max_speeds.linear.x,nextSeg.accel_limit*dt,nextSeg.curvature)
+        
+        if(maxWCmd < nextSeg.max_speeds.angular.z):
+            maxWCmd = nextSeg.max_speeds.angular.z
+            
+        # dV is how much velocity has to change from max to next segment
+        if(currSeg.max_speeds.linear.x <= maxVCmd):
+            dV = 0.0
+        else:
+            if(cmp(maxVCmd,0) == cmp(currSeg.max_speeds.linear.x)):
+                dV = currSeg.max_speeds.linear.x - maxVCmd
+            else:
+                dV = currSeg.max_speeds.linear.x
+                
+        tVDecel = abs(dV/currSeg.decel_limit)
+        distVDecel = 0.5*abs(currSeg.decel_limit)*pow(tVDecel,2)
+        sVDecel = 1.0 - distVDecel/currSeg.seg_length
+        
+        sWDecel = 1.0
+    elif(currSeg.seg_type == PathSegmentMsg.ARC and nextSeg.seg_type == PathSegmentMsg.ARC):
+        (currVCmd,currWCmd) = max_v_w(currSeg.max_speeds.linear.x, currSeg.max_speeds.angular.z, currSeg.curvature)
+        (nextVCmd,nextWCmd) = max_v_w(nextSeg.max_speeds.linear.x, nextSeg.max_speeds.angular.z, nextSeg.curvature)
+        
+        if(currVCmd <= nextVCmd):
+            dV = 0.0
+        else:
+            if(cmp(currVCmd,0) == cmp(nextVCmd,0)):
+                dV = currVCmd - nextVCmd
+            else:
+                dV = currVCmd
+                
+        tVDecel = abs(dV/currSeg.decel_limit)
+        distVDecel = 0.5*abs(currSeg.decel_limit)*pow(tVDecel,2)
+        sVDecel = 1.0-distVDecel/currSeg.seg_length
+        
+        if(currWCmd <= nextWCmd):
+            dW = 0.0
+        else:
+            if(cmp(currSeg.curvature,0) == cmp(nextSeg.curvature,0)):
+                dW = currWCmd - nextWCmd
+            else:
+                dW = currWCmd
+                
+        tWDecel = abs(dW/currSeg.decel_limit)
+        distWDecel = 0.5*abs(currSeg.decel_limit)*pow(tWDecel,2)
+        sWDecel = 1.0-distWDecel/(currSeg.seg_length/abs(currSeg.curvature))
+        
+        if(sVDecel > sWDecel):
+            sVDecel = sWDecel
+        else:
+            sWDecel = sVDecel  
+    elif(currSeg.seg_type == PathSegmentMsg.ARC and nextSeg.seg_type == PathSegmentMsg.LINE):
+        (currVCmd,currWCmd) = max_v_w(currSeg.max_speeds.linear.x, currSeg.max_speeds.angular.z, currSeg.curvature)
+        
+        if(currVCmd <= nextSeg.max_speeds.linear.x):
+            dV = 0.0
+        else:
+            if(cmp(currVCmd,0) == cmp(nextSeg.max_speeds.linear.x)):
+                dV = currVCmd - nextSeg.max_speeds.linear.x
+            else:
+                dV = currVCmd
+                
+        tVDecel = abs(dV/currSeg.decel_limit)
+        distVDecel = 0.5*abs(currSeg.decel_limit)*pow(tVDecel,2)
+        sVDecel = 1.0-distVDecel/currSeg.seg_length
+        
+        tWDecel = abs(currWCmd/currSeg.decel_limit)
+        distWDecel = 0.5*abs(currSeg.decel_limit)*pow(tWDecel,2)
+        sWDecel = 1.0-distWDecel/(currSeg.seg_length/abs(currSeg.curvature))
+        
+        if(sVDecel > sWDecel):
+            sVDecel = sWDecel
+        else:
+            sWDecel = sVDecel
+    elif(currSeg.seg_type == PathSegmentMsg.SPIN_IN_PLACE and nextSeg.seg_type == PathSegmentMsg.SPIN_IN_PLACE):
+        if(currSeg.max_speeds.angular.z <= nextSeg.max_speeds.angular.z):
+            dW = 0.0
+        else:
+            if(cmp(currSeg.curvature,0) == cmp(nextSeg.curvature,0)):
+                dW = currSeg.max_speeds.angular.z - nextSeg.max_speeds.angular.z
+            else:
+                dW = currSeg.max_speeds.angular.z
+        
+        tWDecel = abs(dW/currSeg.decel_limit)
+        distWDecel = 0.5*abs(currSeg.decel_limit)*pow(tWDecel,2)
+        sWDecel = 1.0-distWDecel/currSeg.seg_length
+        
+        sVDecel = 1.0
+    else:
+        if(currSeg.seg_type == PathSegmentMsg.LINE):
+            tVDecel = abs(currSeg.max_speeds.linear.x/currSeg.decel_limit)
+            distVDecel = 0.5*abs(currSeg.decel_limit)*pow(tVDecel,2)
+            sVDecel = 1-distVDecel/currSeg.seg_length
+            
+            sWDecel = 1.0
+        elif(currSeg.seg_type == PathSegmentMsg.ARC):
+            (maxVCmd,maxWCmd) = max_v_w(currSeg.max_speeds.linear.x,currSeg.max_speeds.angular.z,currSeg.curvature)
+            
+            tVDecel = abs(currSeg.max_speeds.linear.x/currSeg.decel_limit)
+            distVDecel = 0.5*abs(currSeg.decel_limit)*pow(tVDecel,2)
+            sVDecel = 1.0-distVDecel/currSeg.seg_length
+            
+            tWDecel = abs(currSeg.max_speeds.angular.z/currSeg.decel_limit)
+            distWDecel = 0.5*abs(currSeg.decel_limit)*pow(tWDecel,2)
+            sWDecel = 1.0-distWDecel/(currSeg.seg_length/abs(currSeg.curvature))
+        elif(currSeg.seg_type == PathSegmentMsg.SPIN_IN_PLACE):
+            tVDecel = 1.0;
+            
+            tWDecel = abs(currSeg.max_speeds.angular.z/currSeg.decel_limit)
+            distWDecel = 0.5*abs(currSeg.decel_limit)*pow(tWDecel,2)
+            sWDecel = 1-distWDecel/currSeg.seg_length # spin seg lengths are in radians, so no need to divide by the curvature
+        else:
+            return (0.0,0.0,0.0,0.0)
+        
+    return (sVAccel,sVDecel,sWAccel,sWDecel)
+            
+
+def getVelCmd():
+    pass
+
+def publishSegStatus(segStatusPub,abort=False):
     pass
 
 """
@@ -480,6 +721,20 @@ def main():
     
     dist = 0.0
     while(not rospy.is_shutdown()):
+        if(stopped):
+            stopForEstop(desVelPub,segStatusPub)
+            continue
+        if(obsExists):
+            stopForObs()
+            continue
+        criticalPoints = computeTrajectory()
+        des_vel = getVelCmd()
+        publishSegStatus(segStatusPub)
+        naptime.sleep()
+        continue
+            
+        
+        
         if(not currSegExists):
             if(nextSegExists):
                 currSegExists = True
