@@ -491,7 +491,7 @@ def computeTrajectory(currSeg,nextSeg=None):
         else:
             sVAccel = sWAccel
     elif(currSeg.seg_type == PathSegmentMsg.SPIN_IN_PLACE):
-        sVAccel = 0;
+        sVAccel = 0.0;
         tWAccel = currSeg.max_speeds.angular.z/currSeg.accel_limit
         distWAccel = 0.5*abs(currSeg.accel_limit)*pow(tWAccel,2)
         sWAccel = distWAccel/currSeg.seg_length
@@ -516,7 +516,7 @@ def computeTrajectory(currSeg,nextSeg=None):
             distWDecel = 0.5*abs(currSeg.decel_limit)*pow(tWDecel,2)
             sWDecel = 1.0-distWDecel/(currSeg.seg_length/abs(currSeg.curvature))
         elif(currSeg.seg_type == PathSegmentMsg.SPIN_IN_PLACE):
-            tVDecel = 1.0;
+            sVDecel = 1.0;
             
             tWDecel = abs(currSeg.max_speeds.angular.z/currSeg.decel_limit)
             distWDecel = 0.5*abs(currSeg.decel_limit)*pow(tWDecel,2)
