@@ -508,11 +508,11 @@ def computeTrajectory(currSeg,nextSeg=None):
         elif(currSeg.seg_type == PathSegmentMsg.ARC):
             (maxVCmd,maxWCmd) = max_v_w(currSeg.max_speeds.linear.x,currSeg.max_speeds.angular.z,currSeg.curvature)
             
-            tVDecel = abs(currSeg.max_speeds.linear.x/currSeg.decel_limit)
+            tVDecel = abs(maxVCmd/currSeg.decel_limit)
             distVDecel = 0.5*abs(currSeg.decel_limit)*pow(tVDecel,2)
             sVDecel = 1.0-distVDecel/currSeg.seg_length
             
-            tWDecel = abs(currSeg.max_speeds.angular.z/currSeg.decel_limit)
+            tWDecel = abs(maxWCmd/currSeg.decel_limit)
             distWDecel = 0.5*abs(currSeg.decel_limit)*pow(tWDecel,2)
             sWDecel = 1.0-distWDecel/(currSeg.seg_length/abs(currSeg.curvature))
         elif(currSeg.seg_type == PathSegmentMsg.SPIN_IN_PLACE):
