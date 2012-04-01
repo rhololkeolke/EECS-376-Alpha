@@ -323,7 +323,7 @@ void publishSeg()
 }
 
 
-void arcRight(int angle, int arcRadius)
+void arcRight(int angle)
 {
 	int arcRadius = lastObs.wall_dist_rt/2 - 20;
 
@@ -341,7 +341,7 @@ void arcRight(int angle, int arcRadius)
 
 void arcLeft(int angle)
 {
-	int arcRadius = lastObs.wall_dist_l/2 - 20;
+	int arcRadius = lastObs.wall_dist_lt/2 - 20;
 
 	msg_alpha::PathSegment Seg;
 	Seg.seg_number = currSeg.seg_number+1;
