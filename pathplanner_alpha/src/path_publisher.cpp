@@ -22,12 +22,31 @@ int seg_number = 0;
 msg_alpha::Obstacles lastObs;
 int numSegs = 5;
 msg_alpha::PathSegment currSeg;
+geometry_msgs::PoseStamped last_map_pose;
+tf::TransformListener *tfl;
+nav_msgs::Odometry last_odom;
 
 //Stack is created
 stack <msg_alpha::PathSegment> pathStack;
 
 ros::Publisher pathPub;
 double progressMade;
+
+geometry_msgs::PoseStamped temp;
+
+void odomCallback(const nav_msgs::Odometry::ConstPtr& odom) {
+        last_odom = *odom;
+        temp.pose = last_odom.pose.pose;
+        temp.header = last_odom.header;
+
+//cout << "pose " << temp.pose << ", header " << temp.header << endl;
+        try {
+          tfl->transformPose("map", temp, last_map_pose); // given most recent odometry and most recent coord-frame transform, compute
+                                                          // estimate of most recent pose in map coordinates..."last_map_pose"
+        } catch (tf::TransformException ex) {
+          ROS_ERROR("%s", ex.what());
+        }
+}
 
 
 void segStatusCallback(const msg_alpha::SegStatus::ConstPtr& status)
@@ -66,7 +85,7 @@ int calculateNewX(int initX, int distanceTraveled, int angle)
 {
 
   //  int newX = cos(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled; 
-  int newX = cos(tf::getYaw(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled; 
+  int newX = initX + cos(tf::getYaw(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled; 
 
   return newX;
 
@@ -76,7 +95,7 @@ int calculateNewY(int initY, int distanceTraveled, int angle)
 {
 
   //  int newY = (sin(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled;
-  int newY = sin(tf::getYaw(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled; 
+  int newY = initY + sin(tf::getYaw(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled; 
   return newY;
 
 }
@@ -273,6 +292,14 @@ void initStack()
 	Seg.ref_point.y = 14.74;
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
 	pathStack.push(Seg);
+
+	Seg.seg_number = 1;
+	Seg.seg_type = 1;
+	Seg.seg_length = 0;
+	Seg.ref_point.x = 8.27;
+	Seg.ref_point.y = 14.74;
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
+	pathStack.push(Seg);
 }
 
 void publishSeg() 
@@ -296,17 +323,17 @@ void publishSeg()
 }
 
 
-void arcRight(int angle)
+void arcRight(int angle, int arcRadius)
 {
+	int arcRadius = lastObs.wall_dist_rt/2 - 20;
+
 	msg_alpha::PathSegment Seg;
-	//fix me
 	Seg.seg_number = currSeg.seg_number+1;
-	Seg.seg_type = 1;
-	Seg.seg_length = 4.2;
-	Seg.ref_point.x = 8.27;
-	Seg.ref_point.y = 14.74;
-	//This needs attention
-	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(angle);
+	Seg.seg_type = 2;
+	Seg.seg_length = (PI/2)*arcRadius;
+	Seg.ref_point.x = last_map_pose.pose.position.x;
+	Seg.ref_point.y = last_map_pose.pose.position.y;
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-PI/2);	
 	pathStack.push(Seg);
 	publishSeg();
 
@@ -314,6 +341,19 @@ void arcRight(int angle)
 
 void arcLeft(int angle)
 {
+	int arcRadius = lastObs.wall_dist_l/2 - 20;
+
+	msg_alpha::PathSegment Seg;
+	Seg.seg_number = currSeg.seg_number+1;
+	Seg.seg_type = 2;
+	Seg.seg_length = (PI/2)*arcRadius;
+	Seg.ref_point.x = last_map_pose.pose.position.x;
+	Seg.ref_point.y = last_map_pose.pose.position.y;
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(PI/2);	
+	pathStack.push(Seg);
+	publishSeg();
+
+/*
 	msg_alpha::PathSegment Seg;	
 	//fix me
 	Seg.seg_number = currSeg.seg_number+1;
@@ -325,11 +365,13 @@ void arcLeft(int angle)
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(angle);
 	pathStack.push(Seg);
 	publishSeg();
+
+*/
 }
 
-bool checkSide(int arcAngle, int dist)
+bool checkSide(int arcRadius, int dist)
 {
-	if (dist > arcAngle) {
+	if (dist > arcRadius) {
 		return true;
 	} else {
 		return false;
@@ -416,7 +458,7 @@ void detour()
 	//before publishing a segStatus of !OK
 
 	//First thing we need to do is 
-	int arcAngle;
+	int arcRadius;
 	int obst_angle;
 	int obst_side = 0; //left is 1, right is 2. this should be an enum
 
@@ -425,25 +467,25 @@ void detour()
 	//figure out which way to turn
 	if (lastObs.left_dist == 0) { //only called on abort so one should be zero and one should be distance
 		obst_side = 2; //right
-		arcAngle = lastObs.wall_dist_rt/2;
-		arcLeft(arcAngle);
-		arcRight(arcAngle);
+		arcRadius = lastObs.wall_dist_rt/2 + 20;
+		arcLeft(arcRadius);
+		arcRight(arcRadius);
 		while(!checkSide(0.6,lastObs.rt_dist)){
 			goStraight();
 		}
-		arcRight(arcAngle);
-		arcLeft(arcAngle);
+		arcRight(arcRadius);
+		arcLeft(arcRadius);
 
 	} else {
 		obst_side = 1; //left
-		arcAngle = lastObs.wall_dist_lt/2;
-		arcRight(arcAngle);
-		arcLeft(arcAngle);
+		arcRadius = lastObs.wall_dist_lt/2;
+		arcRight(arcRadius);
+		arcLeft(arcRadius);
 		while(!checkSide(.6,lastObs.left_dist)){
 			goStraight();
 		}
-		arcLeft(arcAngle);
-		arcRight(arcAngle);
+		arcLeft(arcRadius);
+		arcRight(arcRadius);
 	}
 }
 
@@ -452,9 +494,12 @@ int main(int argc, char **argv)
 	ros::init(argc,argv,"path_publisher");
 	ros::NodeHandle n;
 
+	tfl = new tf::TransformListener();
+
 	msg_alpha::PathSegment Seg;
 
 	pathPub = n.advertise<msg_alpha::PathSegment>("path_seg",1);
+	ros::Subscriber sub = n.subscribe<nav_msgs::Odometry>("odom", 1, odomCallback); 
 	ros::Subscriber segSub = n.subscribe<msg_alpha::SegStatus>("seg_status",1,segStatusCallback);
 	ros::Subscriber obst_angle = n.subscribe<msg_alpha::Obstacles>("obstacles",1,obstaclesCallback);
 
