@@ -21,7 +21,7 @@ def desVelCallback(des_vel):
 
 def DummySteering():
     global cmdVelPub
-    rospy.init_node('main')
+    rospy.init_node('DummySteering')
     cmdVelPub = rospy.Publisher('cmd_vel',TwistMsg) 
     rospy.Subscriber("des_vel", TwistMsg, desVelCallback) 
     
