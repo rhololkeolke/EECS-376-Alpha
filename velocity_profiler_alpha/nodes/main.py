@@ -733,7 +733,21 @@ def getVelCmd(sVAccel, sVDecel, sWAccel, sWDecel):
         
 
 def publishSegStatus(segStatusPub,abort=False):
-    pass
+    global currState
+    
+    status = SegStatusMsg()
+
+    if(currSegExists):
+        status.seg_number = currState.pathSeg.seg_number
+        status.abort = abort
+        status.progress_made = currState.segDistDone
+        
+        if(currState.segDistDone < 1.0):
+            status.segComplete = False
+        else:
+            status.segComplete = True   
+        
+    segStatusPub.publish(status)
 
 """
 This function is responsible for velocity profiling.  
@@ -829,8 +843,17 @@ def main():
                 else:
                     currSeg = None
                     currSegExists = None
-            
-            naptime.sleep()
+        else:
+            if(nextSegExists):
+                currSeg = nextSeg
+                currSegExists = True
+                nextSeg = None
+                nextSegExists = False
+                
+            des_vel = TwistMsg()
+            desVelPub.publish(des_vel) # publish all zeros for the des_vel
+            publishSegStatus(segStatusPub) # publish that there is no segment
+        naptime.sleep()
         continue
         
         if(not currSegExists):
