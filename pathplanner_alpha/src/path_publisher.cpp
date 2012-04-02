@@ -34,19 +34,17 @@ double progressMade;
 
 geometry_msgs::PoseStamped temp;
 
-void odomCallback(const nav_msgs::Odometry::ConstPtr& odom) {
+void odomCallback(const nav_msgs::Odometry::ConstPtr& odom) 
+{
         last_odom = *odom;
         temp.pose = last_odom.pose.pose;
         temp.header = last_odom.header;
 
-        temp.header = last_odom.header;
-
-//cout << "pose " << temp.pose << ", header " << temp.header << endl;
         try {
-          tfl->transformPose("map", temp, last_map_pose); // given most recent odometry and most recent coord-frame transform, compute
+        	tfl->transformPose("map", temp, last_map_pose); // given most recent odometry and most recent coord-frame transform, compute
                                                           // estimate of most recent pose in map coordinates..."last_map_pose"
-        } catch (tf::TransformException ex) {
-          ROS_ERROR("%s", ex.what());
+        }catch (tf::TransformException ex) {
+        	ROS_ERROR("%s", ex.what());
         }
 }
 
@@ -69,8 +67,6 @@ void segStatusCallback(const msg_alpha::SegStatus::ConstPtr& status)
 		progressMade = status-> progress_made;
 		
 	  }
-	
-
 }
 
 void obstaclesCallback(const msg_alpha::Obstacles::ConstPtr& obstacles)
@@ -79,7 +75,7 @@ void obstaclesCallback(const msg_alpha::Obstacles::ConstPtr& obstacles)
 	{
 		lastObs.exists = obstacles->exists;
 		lastObs.distance = obstacles->distance;
-		 
+		lastObs.ping_angle = obstacles->ping_angle;
 	}
 }
 
@@ -90,7 +86,6 @@ int calculateNewX(int initX, int distanceTraveled, int angle)
   int newX = initX + cos(tf::getYaw(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled; 
 
   return newX;
-
 }
 
 int calculateNewY(int initY, int distanceTraveled, int angle)
@@ -99,7 +94,6 @@ int calculateNewY(int initY, int distanceTraveled, int angle)
   //  int newY = (sin(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled;
   int newY = initY + sin(tf::getYaw(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled; 
   return newY;
-
 }
 
 
@@ -324,7 +318,6 @@ void publishSeg()
 	} while(!segComplete);
 }
 
-
 void arcRight()
 {
 	int arcRadius = lastObs.wall_dist_right/2 - 20;
@@ -355,20 +348,6 @@ void arcLeft()
 	pathStack.push(Seg);
 	publishSeg();
 
-/*
-	msg_alpha::PathSegment Seg;	
-	//fix me
-	Seg.seg_number = currSeg.seg_number+1;
-	Seg.seg_type = 1;
-	Seg.seg_length = 4.2;
-	Seg.ref_point.x = 8.27;
-	Seg.ref_point.y = 14.74;
-	//this needs attention
-	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(angle);
-	pathStack.push(Seg);
-	publishSeg();
-
-*/
 }
 
 bool checkSide(int arcRadius, int dist)
@@ -410,16 +389,7 @@ void calcHalfSeg()
 	double xDes = finalSeg.ref_point.x; //update desired x pos
 	double yDes = finalSeg.ref_point.y; //update desired y pos
 	double psiDes = tangentAngStart + dAng;
-/*
-	msg_alpha::PathSegment seg;
-	seg.seg_number = 2;//need to increment from before obs                                                                                                 
-	seg.seg_type = 1; //straight                                                                                                                           
-	seg.seg_length = ?;
-	seg.ref_point.x = xDes;
-	seg.ref_point.y = yDes;
-	seg.init_tan_angle = tf::createQuaternionMsgFromYaw(psiDes);
-	pathStack.push(seg);
-*/
+
 	msg_alpha::PathSegment newFinalSeg;
 	newFinalSeg = pathStack.top();
 
@@ -436,7 +406,6 @@ void calcHalfSeg()
 	pathStack.push(newSeg);
 
 	pathStack.push(newFinalSeg); 
-
 }
 
 
@@ -467,29 +436,31 @@ void detour()
 
 
 	//figure out which way to turn
-	if (lastObs.left_dist == 0) { //only called on abort so one should be zero and one should be distance
+	//Is called on right turn
+	if (lastObs.ping_angle < 90) { //only called on abort so one should be zero and one should be distance
 		obst_side = 2; //right
 		arcRadius = lastObs.wall_dist_right/2 + 20;
 		arcLeft();
 		arcRight();
-		while(!checkSide(0.6,lastObs.right_dist)){
+		while(!checkSide(0.6,lastObs.wall_dist_right)){
 			goStraight();
 		}
 		arcRight();
 		arcLeft();
-
+	//Is called on a left turn
 	} else {
 		obst_side = 1; //left
 		arcRadius = lastObs.wall_dist_left/2;
 		arcRight();
 		arcLeft();
-		while(!checkSide(.6,lastObs.left_dist)){
+		while(!checkSide(.6,lastObs.wall_dist_left)){
 			goStraight();
 		}
 		arcLeft();
 		arcRight();
 	}
 }
+
 
 int main(int argc, char **argv)
 {
@@ -499,6 +470,8 @@ int main(int argc, char **argv)
 	tfl = new tf::TransformListener();
 
 	msg_alpha::PathSegment Seg;
+
+	initStack();
 
 	pathPub = n.advertise<msg_alpha::PathSegment>("path_seg",1);
 	ros::Subscriber sub = n.subscribe<nav_msgs::Odometry>("odom", 1, odomCallback); 
