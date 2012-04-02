@@ -8,10 +8,6 @@ uint64 distance
 uint64 left_dist
 uint64 rt_dist
 
-#Distance to the closest objects at 0 and 181
-uint64 wall_dist_lt
-uint64 wall_dist_rt
-
 #Tells the angle at which the closest ping is, should there be one.
 uint64 ping_angle
 
