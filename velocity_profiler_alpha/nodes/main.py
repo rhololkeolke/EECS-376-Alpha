@@ -537,12 +537,6 @@ def main():
             # try and get new segments
             if(nextSeg is not None):
                 currSeg = nextSeg # move the nextSegment up in line
-                
-                point.x = pose.pose.position.x
-                point.y = pose.pose.position.y
-                point.z = pose.pose.position.z
-                
-                currState.newPathSegment(currSeg, point, pose.pose.orientation)
                 nextSeg = None # assume no segment until code below is run
             else: # didn't have a next segment before
                 try: # so try and get a new one from the queue
@@ -554,7 +548,13 @@ def main():
                 nextSeg = segments.get(False) # try and get it
             except QueueEmpty: # if nothing specified
                 nextSeg = None # set to None
-                
+            
+            point = PointMsg()
+            point.x = pose.pose.position.x
+            point.y = pose.pose.position.y
+            point.z = pose.pose.position.z
+            
+            currState.newPathSegment(currSeg, point, pose.pose.orientation)
             des_vel = TwistMsg()
             desVelPub.publish(des_vel) # publish all zeros for the des_vel
             publishSegStatus(segStatusPub) # publish that there is no segment

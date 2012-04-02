@@ -259,7 +259,7 @@ class State:
         
         # update the current velocity
         self.v = vel_cmd.linear.x
-        self.o = vel_cmd.angular.z
+        self.w = vel_cmd.angular.z
         
         # update the current point and heading
         self.point= point
@@ -278,7 +278,7 @@ class State:
         Nothing
         """
         self.v = 0.0
-        self.o = 0.0
+        self.w = 0.0
     
     @staticmethod
     def getYaw(quat):

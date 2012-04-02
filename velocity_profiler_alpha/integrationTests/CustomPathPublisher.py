@@ -38,7 +38,7 @@ def publishFromFile(fullPath):
     """
     
     with open(fullPath,'rb') as csvFile:
-        rospy.init_node('DummySteering')
+        rospy.init_node('CustomPathPublisher')
         pathSegPublisher = rospy.Publisher('path_seg',PathSegmentMsg) 
         
         dialect = csv.Sniffer().sniff(csvFile.read(1024)) # auto detect delimiters
@@ -46,6 +46,7 @@ def publishFromFile(fullPath):
         reader = csv.reader(csvFile, dialect) # open up a csv reader object with the csv file
         
         segs = []
+        segs.append(PathSegmentMsg())
         
         headers = next(reader)
         
@@ -172,12 +173,16 @@ def publishFromFile(fullPath):
                 print "\tDefaulting decel_limit to 0.5"
                 decel_limit = 0.5
             pathSeg.decel_limit = decel_limit
-        segs.append(pathSeg)
+            
+            segs.append(pathSeg)
     
-    sleepTime = rospy.Duration(1)
-    for pathSeg in segs:
-        pathSegPublisher.publish(pathSeg)
-        rospy.sleep(sleepTime)
+        print "About to publish"
+        naptime = rospy.Rate(1)
+        for pathSeg in segs:
+            print "Publishing path segment %i" % (pathSeg.seg_number)
+            print pathSeg
+            pathSegPublisher.publish(pathSeg)
+            naptime.sleep()
     
                 
 
