@@ -56,6 +56,7 @@ def eStopCallback(eStop):
 def obstaclesCallback(obsData):
     global obs
     global obsDist
+    global obsExists
     
     obsExists = obsData.exists
     obsDist = obsData.distance
@@ -121,34 +122,48 @@ def stopForObs(desVelPub,segStatusPub):
     # this is allowed to override the segment constraints, because its more important
     # to not crash than to follow the speed limit
 
+    print "Obstacle detected!"
     dt = 1.0/RATE
-    decel_rate = -pow(currState.v,2)/(2*(obsDist-.6))
+    decel_rate = pow(currState.v,2)/(2*(obsDist-.7))
+
     
     naptime = rospy.Rate(RATE)
     
     des_vel = TwistMsg()
     
-    while(currState.v-.0001 <= 0 and currState.v+.0001 >= 0):
-        if(not obsExists):
-            return # if the obstacle went away then resume without fully stopping
-        
-        # this should take care of negatives
-        if(abs(currState.v) > 0):
-            v_test = cmp(currState.v,0)*(abs(currState.v) - decel_rate*dt)
-            des_vel.linear.x = cmp(v_test,0)*min(abs(v_test),0)
-            desVelPub.publish(des_vel)
+    if(decel_rate > 0):
+        while(currState.v-.0001 > 0 or currState.v+.0001 < 0):
+            print "Ramping down"
+            if(not obsExists):
+                return # if the obstacle went away then resume without fully stopping
             
-        publishSegStatus(segStatusPub) # let everyone else know the status of the segment
-        naptime.sleep()
+            # this should take care of negatives
+            if(currState.v > 0):
+                v_test = currState.v - decel_rate*dt
+                des_vel.linear.x = max(v_test,0.0)
+                desVelPub.publish(des_vel)
+                currState.updateState(des_vel,pose.pose.position,State.getYaw(pose.pose.orientation))
+            
+            publishSegStatus(segStatusPub) # let everyone else know the status of the segment
+            naptime.sleep()
+        else: # should already be stopped
+            currState.stop()
+            publishSegStatus(segStatusPub)
+            naptime.sleep()
     
+    print "Waiting for obstacle to move..."
     startTime = rospy.Time.now()
     waitPeriod = rospy.Duration(3.0)
     while(obsExists):
         if(rospy.Time.now() - startTime > waitPeriod):
+            print "Aborting"
             segments = Queue() # flush the queue, the callback thread probably won't appreciate this
             publishSegStatus(segStatusPub,True) # send the abort flag
             currSeg = None
-            nextSeg = None 
+            nextSeg = None
+            break
+        else:
+            publishSegStatus(segStatusPub)
         naptime.sleep()
     return
             
@@ -374,8 +389,6 @@ def getVelCmd(sVAccel, sVDecel, sWAccel, sWDecel):
     global RATE
     global currSeg
     global dV
-    print "in getVelCmd"
-    print "segDistDone: %f" % (currState.segDistDone)
     
     dt = 1.0/RATE
     a_max = currState.pathSeg.accel_limit
@@ -497,6 +510,7 @@ def main():
     global lastOCmd
     global obs
     global obsDist
+    global obsExists
     global stopped
     global seg_number
     global currSeg
