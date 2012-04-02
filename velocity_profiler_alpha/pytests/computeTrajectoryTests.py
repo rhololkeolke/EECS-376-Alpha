@@ -339,103 +339,222 @@ class Test(unittest.TestCase):
         self.assertEquals(sWDecel,1.0)
         
     def test_LINE_SPIN_GreaterThan(self):
-        self.fail("Unit test not yet implemented")
+        self.currSeg.seg_type = PathSegmentMsg.LINE
+        self.currSeg.seg_length = 4.0
+        self.currSeg.max_speeds.linear.x = 1.0
+        self.currSeg.accel_limit = 0.5
+        self.currSeg.decel_limit = -0.5
+        
+        self.nextSeg.seg_type = PathSegmentMsg.SPIN_IN_PLACE
+        self.nextSeg.seg_length = pi/2
+        self.nextSeg.curvature = 1.0
+        self.nextSeg.max_speeds.linear.x = 0.0
+        self.nextSeg.max_speeds.angular.z = 2.0
+        self.nextSeg.accel_limit = 0.7
+        self.nextSeg.decel_limit = -0.5
+        
+        (sVAccel,sVDecel,sWAccel,sWDecel) = computeTrajectory(self.currSeg, self.nextSeg)
+        
+        self.assertAlmostEqual(sVAccel, 0.2500, delta = 0.0001)
+        self.assertAlmostEqual(sVDecel, 0.7500, delta = 0.0001)
+        self.assertEquals(sWAccel,0.0)
+        self.assertEquals(sWDecel,1.0)
         
     def test_LINE_SPIN_SameAs(self):
-        self.fail("Unit test not yet implemented")
+        self.currSeg.seg_type = PathSegmentMsg.LINE
+        self.currSeg.seg_length = 4.0
+        self.currSeg.max_speeds.linear.x = 1.0
+        self.currSeg.accel_limit = 0.5
+        self.currSeg.decel_limit = -0.5
+        
+        self.nextSeg.seg_type = PathSegmentMsg.SPIN_IN_PLACE
+        self.nextSeg.seg_length = pi/2
+        self.nextSeg.curvature = 1.0
+        self.nextSeg.max_speeds.linear.x = 0.0
+        self.nextSeg.max_speeds.angular.z = 1.0
+        self.nextSeg.accel_limit = 0.7
+        self.nextSeg.decel_limit = -0.5
+        
+        (sVAccel,sVDecel,sWAccel,sWDecel) = computeTrajectory(self.currSeg, self.nextSeg)
+        
+        self.assertAlmostEqual(sVAccel, 0.2500, delta = 0.0001)
+        self.assertAlmostEqual(sVDecel, 0.7500, delta = 0.0001)
+        self.assertEquals(sWAccel,0.0)
+        self.assertEquals(sWDecel,1.0)
         
     def test_LINE_SPIN_LessThan(self):
-        self.fail("Unit test not yet implemented")
+        self.currSeg.seg_type = PathSegmentMsg.LINE
+        self.currSeg.seg_length = 4.0
+        self.currSeg.max_speeds.linear.x = 1.0
+        self.currSeg.accel_limit = 0.5
+        self.currSeg.decel_limit = -0.5
+        
+        self.nextSeg.seg_type = PathSegmentMsg.SPIN_IN_PLACE
+        self.nextSeg.seg_length = pi/2
+        self.nextSeg.curvature = 1.0
+        self.nextSeg.max_speeds.linear.x = 0.0
+        self.nextSeg.max_speeds.angular.z = 0.5
+        self.nextSeg.accel_limit = 0.7
+        self.nextSeg.decel_limit = -0.5
+        
+        (sVAccel,sVDecel,sWAccel,sWDecel) = computeTrajectory(self.currSeg, self.nextSeg)
+        
+        self.assertAlmostEqual(sVAccel, 0.2500, delta = 0.0001)
+        self.assertAlmostEqual(sVDecel, 0.7500, delta = 0.0001)
+        self.assertEquals(sWAccel,0.0)
+        self.assertEquals(sWDecel,1.0)
         
     def test_LINE_SPIN_OppositeSign(self):
+        self.currSeg.seg_type = PathSegmentMsg.LINE
+        self.currSeg.seg_length = 4.0
+        self.currSeg.max_speeds.linear.x = 1.0
+        self.currSeg.accel_limit = 0.5
+        self.currSeg.decel_limit = -0.5
+        
+        self.nextSeg.seg_type = PathSegmentMsg.SPIN_IN_PLACE
+        self.nextSeg.seg_length = pi/2
+        self.nextSeg.curvature = 1.0
+        self.nextSeg.max_speeds.linear.x = 0.0
+        self.nextSeg.max_speeds.angular.z = -2.0
+        self.nextSeg.accel_limit = -0.7
+        self.nextSeg.decel_limit = 0.5
+        
+        (sVAccel,sVDecel,sWAccel,sWDecel) = computeTrajectory(self.currSeg, self.nextSeg)
+        
+        self.assertAlmostEqual(sVAccel, 0.2500, delta = 0.0001)
+        self.assertAlmostEqual(sVDecel, 0.7500, delta = 0.0001)
+        self.assertEquals(sWAccel,0.0)
+        self.assertEquals(sWDecel,1.0)
+        
+    def test_posARC_LINE_GreaterThan(self):
         self.fail("Unit test not yet implemented")
         
-    def test_ARC_LINE_GreaterThan(self):
+    def test_posARC_LINE_SameAs(self):
         self.fail("Unit test not yet implemented")
         
-    def test_ARC_LINE_SameAs(self):
+    def test_posARC_LINE_LessThan(self):
         self.fail("Unit test not yet implemented")
         
-    def test_ARC_LINE_LessThan(self):
+    def test_posARC_LINE_OppositeSign(self):
         self.fail("Unit test not yet implemented")
         
-    def test_ARC_LINE_OppositeSign(self):
+    def test_posARC_ARC_GreaterThan(self):
         self.fail("Unit test not yet implemented")
         
-    def test_ARC_ARC_GreaterThan(self):
+    def test_posARC_ARC_SameAs(self):
         self.fail("Unit test not yet implemented")
         
-    def test_ARC_ARC_SameAs(self):
+    def test_posARC_ARC_LessThan(self):
         self.fail("Unit test not yet implemented")
         
-    def test_ARC_ARC_LessThan(self):
+    def test_posARC_ARC_OppositeSign(self):
         self.fail("Unit test not yet implemented")
         
-    def test_ARC_ARC_OppositeSign(self):
+    def test_posARC_SPIN_GreaterThan(self):
         self.fail("Unit test not yet implemented")
         
-    def test_ARC_SPIN_GreaterThan(self):
+    def test_posARC_SPIN_SameAs(self):
         self.fail("Unit test not yet implemented")
         
-    def test_ARC_SPIN_SameAs(self):
+    def test_posARC_SPIN_LessThan(self):
         self.fail("Unit test not yet implemented")
         
-    def test_ARC_SPIN_LessThan(self):
+    def test_posARC_SPIN_OppositeSign(self):
         self.fail("Unit test not yet implemented")
         
-    def test_ARC_SPIN_OppositeSign(self):
+    def test_posSPIN_LINE_GreaterThan(self):
         self.fail("Unit test not yet implemented")
         
-    def test_SPIN_LINE_GreaterThan(self):
+    def test_posSPIN_LINE_SameAs(self):
         self.fail("Unit test not yet implemented")
         
-    def test_SPIN_LINE_SameAs(self):
+    def test_posSPIN_LINE_LessThan(self):
         self.fail("Unit test not yet implemented")
         
-    def test_SPIN_LINE_LessThan(self):
+    def test_posSPIN_LINE_OppositeSign(self):
         self.fail("Unit test not yet implemented")
         
-    def test_SPIN_LINE_OppositeSign(self):
+    def test_posSPIN_ARC_GreaterThan(self):
         self.fail("Unit test not yet implemented")
         
-    def test_SPIN_ARC_GreaterThan(self):
+    def test_posSPIN_ARC_SameAs(self):
         self.fail("Unit test not yet implemented")
         
-    def test_SPIN_ARC_SameAs(self):
+    def test_posSPIN_ARC_LessThan(self):
         self.fail("Unit test not yet implemented")
         
-    def test_SPIN_ARC_LessThan(self):
+    def test_posSPIN_ARC_OppositeSign(self):
         self.fail("Unit test not yet implemented")
         
-    def test_SPIN_ARC_OppositeSign(self):
+    def test_posSPIN_SPIN_GreaterThan(self):
         self.fail("Unit test not yet implemented")
         
-    def test_SPIN_SPIN_GreaterThan(self):
+    def test_posSPIN_SPIN_SameAs(self):
         self.fail("Unit test not yet implemented")
         
-    def test_SPIN_SPIN_SameAs(self):
+    def test_posSPIN_SPIN_LessThan(self):
         self.fail("Unit test not yet implemented")
         
-    def test_SPIN_SPIN_LessThan(self):
-        self.fail("Unit test not yet implemented")
-        
-    def test_SPIN_SPIN_OppositeSign(self):
+    def test_posSPIN_SPIN_OppositeSign(self):
         self.fail("Unit test not yet implemented")
         
     def test_LINE_Unknown(self):
-        self.fail("Unit test not yet implemented")
+        self.currSeg.seg_type = PathSegmentMsg.LINE
+        self.currSeg.seg_length = 4.0
+        self.currSeg.max_speeds.linear.x = 1.0
+        self.currSeg.accel_limit = 0.5
+        self.currSeg.decel_limit = -0.5
         
-    def test_ARC_Unknown(self):
-        self.fail("Unit test not yet implemented")
+        self.nextSeg.seg_type = 4
+        self.nextSeg.seg_length = pi/2
+        self.nextSeg.curvature = 1.0
+        self.nextSeg.max_speeds.linear.x = 0.0
+        self.nextSeg.max_speeds.angular.z = 2.0
+        self.nextSeg.accel_limit = 0.7
+        self.nextSeg.decel_limit = -0.5
         
-    def test_SPIN_Unknown(self):
+        (sVAccel,sVDecel,sWAccel,sWDecel) = computeTrajectory(self.currSeg, self.nextSeg)
+        
+        self.assertAlmostEqual(sVAccel, 0.2500, delta = 0.0001)
+        self.assertAlmostEqual(sVDecel, 0.7500, delta = 0.0001)
+        self.assertEquals(sWAccel,0.0)
+        self.assertEquals(sWDecel,1.0)
+        
+    def test_posARC_Unknown(self):
+        self.currSeg.seg_type = PathSegmentMsg.ARC
+        self.currSeg.seg_length = pi/2
+        self.currSeg.curvature = 2.0
+        self.currSeg.max_speeds.linear.x = 1.0
+        self.currSeg.max_speeds.angular.z = 1.0
+        self.currSeg.accel_limit = 0.5
+        self.currSeg.decel_limit = -0.5
+        
+        self.nextSeg.seg_type = 4
+        
+        (sVAccel,sVDecel,sWAccel,sWDecel) = computeTrajectory(self.currSeg, self.nextSeg)
+        
+        # these numbers may not be right
+        self.assertAlmostEqual(sVAccel, 0.25, delta = 0.0001)
+        self.assertAlmostEqual(sVDecel, 0.7500, delta = 0.0001)
+        self.assertEquals(sWAccel,0.0)
+        self.assertEquals(sWDecel,1.0)
+        
+    def test_posSPIN_Unknown(self):
         self.fail("Unit test not yet implemented")
         
     def test_None(self):
-        self.fail("Unit test not yet implemented")
+        (sVAccel,sVDecel,sWAccel,sWDecel) = computeTrajectory(self.currSeg, self.nextSeg)
+        self.assertEqual(sVAccel, 0.0)
+        self.assertEqual(sVDecel, 0.0)
+        self.assertEqual(sWAccel, 0.0)
+        self.assertEqual(sWDecel, 0.0)
         
     def test_Unknown(self):
-        self.fail("Unit test not yet implemented")
+        (sVAccel,sVDecel,sWAccel,sWDecel) = computeTrajectory(self.currSeg, self.nextSeg)
+        self.assertEqual(sVAccel, 0.0)
+        self.assertEqual(sVDecel, 0.0)
+        self.assertEqual(sWAccel, 0.0)
+        self.assertEqual(sWDecel, 0.0)
 
 
 if __name__ == "__main__":
