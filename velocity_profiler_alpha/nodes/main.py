@@ -74,13 +74,15 @@ def poseCallback(poseData):
     #rospy.loginfo("x: %f, y: %f, psi: %f" % (pose.pose.position.x,pose.pose.position.y,State.getYaw(pose.pose.orientation)))
 
 def max_v_w(maxV,maxW,rho):
-    v_cmd = maxV;
-    w_cmd = rho*v_cmd
+    v_cmd = abs(maxV);
+    w_cmd = abs(rho*v_cmd)
     
-    if(w_cmd > maxW):
-        w_cmd = maxW
-        v_cmd = w_cmd/rho
+    if(abs(w_cmd) > abs(maxW)):
+        w_cmd = abs(maxW)
+        v_cmd = abs(w_cmd/rho)
         
+    v_cmd = cmp(maxV,0)*v_cmd
+    w_cmd = cmp(maxW,0)*v_cmd
     return (v_cmd,w_cmd)
 
 def stopForEstop(desVelPub,segStatusPub):
@@ -241,16 +243,16 @@ def computeTrajectory(currSeg,nextSeg=None):
     elif(currSeg.seg_type == PathSegmentMsg.LINE and nextSeg.seg_type == PathSegmentMsg.ARC):
         # figure out the maximum v so that w constraint in next segment is not violated
         # currently assuming that a line will not allow any omega
-        (maxVCmd,maxWCmd) = max_v_w(nextSeg.max_speeds.linear.x,nextSeg.accel_limit*dt,nextSeg.curvature)
+        (maxVCmd,maxWCmd) = max_v_w(nextSeg.max_speeds.linear.x,cmp(nextSeg.max_speeds.angular.z,0)*nextSeg.accel_limit*dt,nextSeg.curvature)
         
-        if(maxWCmd < nextSeg.max_speeds.angular.z):
-            maxWCmd = nextSeg.max_speeds.angular.z
+        if(abs(maxWCmd) > abs(nextSeg.max_speeds.angular.z)):
+            (maxVCmd,maxWCmd) = max_v_w(nextSeg.max_speeds.linear.x,nextSeg.max_speeds.angular.z,nextSeg.curvature)
             
         # dV is how much velocity has to change from max to next segment
         if(currSeg.max_speeds.linear.x <= maxVCmd):
             dV = 0.0
         else:
-            if(cmp(maxVCmd,0) == cmp(currSeg.max_speeds.linear.x)):
+            if(cmp(maxVCmd,0) == cmp(currSeg.max_speeds.linear.x,0)):
                 dV = currSeg.max_speeds.linear.x - maxVCmd
             else:
                 dV = currSeg.max_speeds.linear.x
