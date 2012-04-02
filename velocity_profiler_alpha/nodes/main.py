@@ -35,6 +35,8 @@ obsDist = 0.0
 lastVCmd = 0.0
 lastOCmd = 0.0
 
+dV = 0.0
+
 seg_number = 0
 
 pose = PoseStampedMsg()
@@ -160,6 +162,7 @@ def computeTrajectory(currSeg,nextSeg=None):
     and omega commands that best follow the trajectory.
     """
     global RATE
+    global dV
     
     dt = 1.0/RATE
     
@@ -195,24 +198,30 @@ def computeTrajectory(currSeg,nextSeg=None):
     
     if(nextSeg is None): # if the next seg is None then assume the robot should stop at the end of the segment
         if(currSeg.seg_type == PathSegmentMsg.LINE):
+            dV = currSeg.max_speeds.linear.x
             tVDecel = abs(currSeg.max_speeds.linear.x/currSeg.decel_limit)
             distVDecel = 0.5*abs(currSeg.decel_limit)*pow(tVDecel,2)
             sVDecel = 1-distVDecel/currSeg.seg_length
             
+            dW = 0.0
             sWDecel = 1.0
         elif(currSeg.seg_type == PathSegmentMsg.ARC):
             (maxVCmd,maxWCmd) = max_v_w(currSeg.max_speeds.linear.x,currSeg.max_speeds.angular.z,currSeg.curvature)
             
+            dV = maxVCmd
             tVDecel = abs(maxVCmd/currSeg.decel_limit)
             distVDecel = 0.5*abs(currSeg.decel_limit)*pow(tVDecel,2)
             sVDecel = 1.0-distVDecel/currSeg.seg_length
             
+            dW = maxWCmd
             tWDecel = abs(maxWCmd/currSeg.decel_limit)
             distWDecel = 0.5*abs(currSeg.decel_limit)*pow(tWDecel,2)
             sWDecel = 1.0-distWDecel/(currSeg.seg_length/abs(currSeg.curvature))
         elif(currSeg.seg_type == PathSegmentMsg.SPIN_IN_PLACE):
+            dV = 0.0
             sVDecel = 1.0;
             
+            dW = currSeg.max_speeds.angular.z
             tWDecel = abs(currSeg.max_speeds.angular.z/currSeg.decel_limit)
             distWDecel = 0.5*abs(currSeg.decel_limit)*pow(tWDecel,2)
             sWDecel = 1.0-distWDecel/currSeg.seg_length # spin seg lengths are in radians, so no need to divide by the curvature
@@ -364,6 +373,9 @@ def getVelCmd(sVAccel, sVDecel, sWAccel, sWDecel):
     global currState
     global RATE
     global currSeg
+    global dV
+    print "in getVelCmd"
+    print "segDistDone: %f" % (currState.segDistDone)
     
     dt = 1.0/RATE
     a_max = currState.pathSeg.accel_limit
@@ -384,6 +396,7 @@ def getVelCmd(sVAccel, sVDecel, sWAccel, sWDecel):
             
         # figure out the v_cmd
         if(segDistDone < sVDecel):
+            print "Not Decelerating"
             if(currState.v < v_max):
                 v_test = currState.v + a_max*dt
                 des_vel.linear.x = min(v_test,v_max)
@@ -393,15 +406,22 @@ def getVelCmd(sVAccel, sVDecel, sWAccel, sWDecel):
             else:
                 des_vel.linear.x = currState.v
         else:
-            v_scheduled = sqrt(2*(1.0-segDistDone)*segLength*a_max)
-            if(currState.v < v_scheduled):
-                v_test = currState.v + a_max*dt
+            print "max_v: %f" % (currSeg.max_speeds.linear.x)
+            print "dV: %f" % (dV)
+            v_i = currSeg.max_speeds.linear.x - dV
+            v_scheduled = sqrt(2*(1.0-segDistDone)*segLength*d_max + pow(v_i,2))
+            print "v_i: %f" % (v_i)
+            print "v_scheduled: %f" % (v_scheduled)
+            if(currState.v > v_scheduled):
+                v_test = currState.v - d_max*dt
                 des_vel.linear.x = min(v_test,v_max)
-            elif(currState.v > v_scheduled):
-                v_test = currState.v + d_max*dt
+            elif(currState.v < v_scheduled):
+                v_test = currState.v + a_max*dt
                 des_vel.linear.x = max(v_test,v_max)
             else:
                 des_vel.linear.x = currState.v
+                
+            print "Decelerating V: %f" % (des_vel.linear.x)
         
         # figure out the w_cmd
         if(segDistDone < sWDecel):
@@ -424,6 +444,7 @@ def getVelCmd(sVAccel, sVDecel, sWAccel, sWDecel):
             else:
                 des_vel.angular.z = currState.w
 
+    print des_vel
     return des_vel
         
 
@@ -524,6 +545,8 @@ def main():
             
             currState.updateState(vel_cmd, point, State.getYaw(pose.pose.orientation)) # update where the robot is at
             (sVAccel, sVDecel, sWAccel, sWDecel) = computeTrajectory(currSeg,nextSeg) # figure out the switching points in the trajectory
+            
+            #print "sVAccel: %f sVDecel: %f" % (sVAccel,sVDecel)
             
             des_vel = getVelCmd(sVAccel, sVDecel, sWAccel, sWDecel) # figure out the robot commands given the current state and the desired trajectory
             desVelPub.publish(des_vel) # publish the commands

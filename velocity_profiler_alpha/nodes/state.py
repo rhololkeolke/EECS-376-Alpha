@@ -109,53 +109,30 @@ class State:
         """
         
         if(self.pathSeg.seg_type == PathSegmentMsg.LINE):
-            # find the normal vector to the line segment
+            # grab the angle of the path
             angle = State.getYaw(self.pathSeg.init_tan_angle)
-            normVec = Vector3Msg()
-            normVec.x = cos(angle+pi/2.0)
-            normVec.y = sin(angle+pi/2.0)
-            
-            tanVec = Vector3Msg()
-            tanVec.x = cos(angle)
-            tanVec.y = sin(angle)
-            
-            # using the point and the normal vector find the intersection of the line through the point and the line
-            p0 = self.pathSeg.ref_point
-            
-            # these equations came from solving for the intersection between a line defined
-            # as the direction of the line's normal vector passing through the robot's point
-            # and the line coincident with the path segment
-            if(normVec.y != 0.0):
-                normRatio = normVec.x/normVec.y
-                numerator = p0.x - point.y - normRatio*p0.y + normRatio*point.y
-                denominator = normRatio*tanVec.y - tanVec.x
-                s = numerator/denominator
-            else:
-                normRatio = normVec.y/normVec.x
-                numerator = p0.y - point.y + normRatio*point.x - normRatio*p0.x
-                denominator = normRatio*tanVec.x - tanVec.y
-                s = numerator/denominator
-            
-            self.pathPoint = PointMsg()
-            self.pathPoint.x = p0.x + tanVec.x*s
-            self.pathPoint.y = p0.y + tanVec.y*s
-            self.pathPoint.z = 0.0
-            
-            # using the intersection find the segDistDone
-            if(angle % pi != pi/2 or angle % pi != 0.0):
-                d1 = (self.pathPoint.x - p0.x)/cos(angle)
-                d2 = (self.pathPoint.y - p0.y)/sin(angle)
-            elif(angle % pi != pi/2):
-                d2 = (self.pathPoint.y - p0.y)/sin(angle)
-                d1 = d2
-            else:
-                d1 = (self.pathPoint.x - p0.x)/cos(angle)
-                d2 = d1
 
-            d = (d1+d2)/2.0
-                        
-            self.segDistDone = d/self.pathSeg.seg_length
+            # grab the starting point                        
+            p0 = self.pathSeg.ref_point
+
+            # calculate another point along the line
+            p1 = PointMsg()
+            p1.x = p0.x + cos(angle)
+            p1.y = p0.y + sin(angle)
             
+            # line segment
+            tanVecMag = pow(p0.x-p1.x,2) + pow(p0.y-p1.y,2)
+
+            # intersection point
+            u = ((point.x - p0.x)*(p1.x-p0.x) + (point.y-p0.y)*(p1.y-p0.y))/tanVecMag
+
+            intersect = PointMsg()
+            intersect.x = point.x + u*cos(angle)
+            intersect.y = point.y + u*sin(angle)
+            
+            d = sqrt(pow(point.x-intersect.x,2)+pow(point.y-intersect.y,2))
+
+            self.segDistDone = d/self.pathSeg.seg_length            
         elif(self.pathSeg.seg_type == PathSegmentMsg.ARC):
             tanAngStart = State.getYaw(self.pathSeg.init_tan_angle)
             rho = self.pathSeg.curvature
