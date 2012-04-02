@@ -39,6 +39,8 @@ void odomCallback(const nav_msgs::Odometry::ConstPtr& odom) {
         temp.pose = last_odom.pose.pose;
         temp.header = last_odom.header;
 
+        temp.header = last_odom.header;
+
 //cout << "pose " << temp.pose << ", header " << temp.header << endl;
         try {
           tfl->transformPose("map", temp, last_map_pose); // given most recent odometry and most recent coord-frame transform, compute
@@ -317,13 +319,13 @@ void publishSeg()
 			pathStack.pop();
 			pathPub.publish(currSeg);
 			segComplete = false;
-			ROS_INFO("I published another node! Be proud...");
+			ROS_INFO("I published another node! Be proud... Seg number was %d", currSeg.seg_number);
 		}
 	} while(!segComplete);
 }
 
 
-void arcRight(int angle)
+void arcRight()
 {
 	int arcRadius = lastObs.wall_dist_rt/2 - 20;
 
@@ -331,24 +333,24 @@ void arcRight(int angle)
 	Seg.seg_number = currSeg.seg_number+1;
 	Seg.seg_type = 2;
 	Seg.seg_length = (PI/2)*arcRadius;
-	Seg.ref_point.x = last_map_pose.pose.position.x;
-	Seg.ref_point.y = last_map_pose.pose.position.y;
+	Seg.ref_point.x = last_map_pose.pose.position.x + arcRadius*cos(tf::getYaw(last_map_pose.pose.orientation));
+	Seg.ref_point.y = last_map_pose.pose.position.y + arcRadius*sin(tf::getYaw(last_map_pose.pose.orientation));
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-PI/2);	
 	pathStack.push(Seg);
 	publishSeg();
 
 }
 
-void arcLeft(int angle)
+void arcLeft()
 {
 	int arcRadius = lastObs.wall_dist_lt/2 - 20;
 
 	msg_alpha::PathSegment Seg;
 	Seg.seg_number = currSeg.seg_number+1;
 	Seg.seg_type = 2;
-	Seg.seg_length = (PI/2)*arcRadius;
-	Seg.ref_point.x = last_map_pose.pose.position.x;
-	Seg.ref_point.y = last_map_pose.pose.position.y;
+	Seg.seg_length = (PI/2)*arcRadius;34
+	Seg.ref_point.x = last_map_pose.pose.position.x + arcRadius*cos(tf::getYaw(last_map_pose.pose.orientation));
+	Seg.ref_point.y = last_map_pose.pose.position.y + arcRadius*sin(tf::getYaw(last_map_pose.pose.orientation));
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(PI/2);	
 	pathStack.push(Seg);
 	publishSeg();
