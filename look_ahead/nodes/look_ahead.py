@@ -99,7 +99,7 @@ def straight(scanData):
         obsData.distance = 0.0
         
     obsPub.publish(obsData)
-    print len(scanData)
+    #print len(scanData)
 
 
 
