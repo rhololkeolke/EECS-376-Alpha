@@ -24,7 +24,7 @@ def laserCallback(data):
     
     #obsData.wall_dist_left = data.ranges[0]
     #obsData.wall_dist_right = data.ranges[180]
-    print len(data.ranges)
+    #print len(data.ranges)
     obsPub.publish(obsData)
     
     straight(data.ranges)
@@ -67,6 +67,10 @@ def straight(scanData):
     else:
         obsData.exists = False
         obsData.distance = 0.0
+
+    obsData.wall_dist_right = scanData[0]
+    obsData.wall_dist_left = scanData[180]
+
         
     obsPub.publish(obsData)
     #print len(scanData)
