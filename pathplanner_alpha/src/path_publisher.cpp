@@ -327,7 +327,7 @@ void publishSeg()
 
 void arcRight()
 {
-	int arcRadius = lastObs.wall_dist_rt/2 - 20;
+	int arcRadius = lastObs.wall_dist_right/2 - 20;
 
 	msg_alpha::PathSegment Seg;
 	Seg.seg_number = currSeg.seg_number+1;
@@ -343,12 +343,12 @@ void arcRight()
 
 void arcLeft()
 {
-	int arcRadius = lastObs.wall_dist_lt/2 - 20;
+	int arcRadius = lastObs.wall_dist_left/2 - 20;
 
 	msg_alpha::PathSegment Seg;
 	Seg.seg_number = currSeg.seg_number+1;
 	Seg.seg_type = 2;
-	Seg.seg_length = (PI/2)*arcRadius;34
+	Seg.seg_length = (PI/2)*arcRadius;
 	Seg.ref_point.x = last_map_pose.pose.position.x + arcRadius*cos(tf::getYaw(last_map_pose.pose.orientation));
 	Seg.ref_point.y = last_map_pose.pose.position.y + arcRadius*sin(tf::getYaw(last_map_pose.pose.orientation));
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(PI/2);	
@@ -469,25 +469,25 @@ void detour()
 	//figure out which way to turn
 	if (lastObs.left_dist == 0) { //only called on abort so one should be zero and one should be distance
 		obst_side = 2; //right
-		arcRadius = lastObs.wall_dist_rt/2 + 20;
-		arcLeft(arcRadius);
-		arcRight(arcRadius);
-		while(!checkSide(0.6,lastObs.rt_dist)){
+		arcRadius = lastObs.wall_dist_right/2 + 20;
+		arcLeft();
+		arcRight();
+		while(!checkSide(0.6,lastObs.right_dist)){
 			goStraight();
 		}
-		arcRight(arcRadius);
-		arcLeft(arcRadius);
+		arcRight();
+		arcLeft();
 
 	} else {
 		obst_side = 1; //left
-		arcRadius = lastObs.wall_dist_lt/2;
-		arcRight(arcRadius);
-		arcLeft(arcRadius);
+		arcRadius = lastObs.wall_dist_left/2;
+		arcRight();
+		arcLeft();
 		while(!checkSide(.6,lastObs.left_dist)){
 			goStraight();
 		}
-		arcLeft(arcRadius);
-		arcRight(arcRadius);
+		arcLeft();
+		arcRight();
 	}
 }
 
