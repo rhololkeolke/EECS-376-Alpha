@@ -2,6 +2,7 @@
 import roslib; roslib.load_manifest('look_ahead')
 import math
 import rospy
+from copy import deepcopy
 from sensor_msgs.msg import LaserScan
 from msg_alpha.msg._Obstacles import Obstacles
 
@@ -21,6 +22,9 @@ refPoint = None  #reference point
 
 
 #Receives path segment information from the path_seg topic
+#@param Segment Status Data
+#@type ROS msg ?
+#@return nothing
 def pathSegCallback(segData):
     global segType
     global curvature
@@ -33,27 +37,33 @@ def pathSegCallback(segData):
     segLength = segData.seg_length
     initTanAngle = segData.init_tan_angle
     refPoint = segData.ref_point
+
+    laserMsg = None
     
     #segInfo = [segType,curvature,segLength,initTanAngle,refPoint]
 #    return segInfo
 
 #Receives laser data from the base_scan topic and places the data into an array
+#@param laserScan data
+#@type tupile
+#@return nothing
 def laserCallback(data):
     global scanData
-    scanData = data
+    scanData = deepcopy(data)
 
-    obsPub = rospy.Publisher('obstacles', Obstacles)     #Data should be published to the obstacles topics using the Obstacles message type                         
-    obsData = Obstacles() #initalize an Obstacle message                     
+    #obsPub = rospy.Publisher('obstacles', Obstacles)     #Data should be published to the obstacles topics using the Obstacles message type                         
+    #obsData = Obstacles() #initalize an Obstacle message                     
 
+    #obsPub.publish(obsData)
     
-    obsPub.publish(obsData)
-
     
+
 
 
  #   straight(data.ranges)
 #    arc(data.ranges)
-    #print len(scanData)
+#    print len(scanData)
+#    print type(data)
 
 #Determine if there are obstacles along a straight path        
 def straight(scanData):
@@ -99,16 +109,15 @@ def straight(scanData):
         obsData.distance = 0.0
         
     obsPub.publish(obsData)
-    #print len(scanData)
+#    print len(scanData)
 
-
+def arcCircle():
+    
 
 #Determines if there is an obstacle within the path segment.
 #@param data from the laser scan
 #@type tupile
-#@param path segment info
-#@type list
-#@return Obstacle existance and distance
+#@return nothing
 def arc(scanData):
     obsPub = rospy.Publisher('obstacles', Obstacles)     #Data should be published to the obstacles topics using the Obstacles message type
     obsData = Obstacles() #initalize an Obstacle message
@@ -130,9 +139,9 @@ def arc(scanData):
     xStartPt = 0.0 
     yStartPt = 0.0
 
-    #HOPEFULLY the end point will be generated from a message
-    xEndPt = None
-    yEndPt = None
+    #The end point is the center of the path circle
+    xEndPt = refPoint.x
+    yEndPt = refPoint.y
 
     #identify the mid point of the of the path segment
     xMid = (xStartPt + xEndPt)/2.0
@@ -195,14 +204,38 @@ def arc(scanData):
                 obsData.exists = False  #an obstacle does not exists
                 
         obsPub.publish(obsData)  #publish the obstacle information
+
+
+#def spin():
+#stuff
+
         
 
 def main():
-    
     rospy.init_node('n')
     r = rospy.Rate(100)
     rospy.Subscriber("base_scan",LaserScan,laserCallback)    
-    rospy.spin()
+
+    global scanData
+#    global segTyep
+    
+ #   if(segType == 1):
+    straight(scanData)
+        
+    #elif(segType == 2):
+  #      arc()
+        #   if(segType == 3):
+        #     spin()
+    #elif(segType == None):
+     #   print "Seg Type is currently NULL"
+#    else:
+ #       print "Seg Type is invalid"
+       
+    rospy.spin()       
+    
+        
+
+
 
 if __name__ == '__main__':
 
