@@ -2,7 +2,6 @@
 import roslib; roslib.load_manifest('look_ahead')
 import math
 import rospy
-from copy import deepcopy
 from sensor_msgs.msg import LaserScan
 from msg_alpha.msg._Obstacles import Obstacles
 
@@ -38,34 +37,36 @@ def pathSegCallback(segData):
     initTanAngle = segData.init_tan_angle
     refPoint = segData.ref_point
 
-    laserMsg = None
-    
-    #segInfo = [segType,curvature,segLength,initTanAngle,refPoint]
-#    return segInfo
-
 #Receives laser data from the base_scan topic and places the data into an array
 #@param laserScan data
 #@type tupile
 #@return nothing
 def laserCallback(data):
-    global scanData
-    scanData = deepcopy(data)
+    global segType
+    segType = 1
 
-    #obsPub = rospy.Publisher('obstacles', Obstacles)     #Data should be published to the obstacles topics using the Obstacles message type                         
-    #obsData = Obstacles() #initalize an Obstacle message                     
+    obsPub = rospy.Publisher('obstacles', Obstacles)     #Data should be published to the obstacles topics using the Obstacles message type                         
+    obsData = Obstacles() #initalize an Obstacle message                     
 
-    #obsPub.publish(obsData)
+    #find distance to closest objects on left and right and publish distances
+    obsData.left_dist = data.ranges[0]   #left distance
+    obsData.rt_dist = data.ranges[180]   #right distance
+    obsPub.publish(obsData)     
     
-    
-
-
-
- #   straight(data.ranges)
-#    arc(data.ranges)
-#    print len(scanData)
-#    print type(data)
+    #Run function to run based on the path segment type
+    if(segType == 1):
+        straight(data.ranges)
+    elif(segType == 2):
+        arc(data.ranges)
+    elif(segType == 3):
+        spin(data.ranges)
+    else:
+        print "Invalid Segment Type passed into Look Ahead"
 
 #Determine if there are obstacles along a straight path        
+#@param laserScan data
+#@type tupile
+#@return nothing
 def straight(scanData):
     obsPub = rospy.Publisher('obstacles', Obstacles)     #Data should be published to the obstacles topics using the Obstacles message type
     obsData = Obstacles() #initalize an Obstacle message
@@ -78,10 +79,6 @@ def straight(scanData):
     #i is always within the bounds of the scanData array
     for x in range(len(scanData)):
         
-        obsData.wall_dist_left = scanData[0]
-        obsData.wall_dist_rt = scanData[181]
-
-    
         if(x < 90-angleSwitch or x > 90+angleSwitch):
 
             if(scanData[x] < BOX_WIDTH/math.cos((180.0-x) * math.pi/180.0)):
@@ -109,10 +106,8 @@ def straight(scanData):
         obsData.distance = 0.0
         
     obsPub.publish(obsData)
-#    print len(scanData)
 
-def arcCircle():
-    
+
 
 #Determines if there is an obstacle within the path segment.
 #@param data from the laser scan
@@ -205,38 +200,16 @@ def arc(scanData):
                 
         obsPub.publish(obsData)  #publish the obstacle information
 
+def spin():
+#do stuff
 
-#def spin():
-#stuff
 
-        
-
+#the subscriber calls the laserCallback which determines which function to run based on the segType found in the segCallback
 def main():
-    rospy.init_node('n')
-    r = rospy.Rate(100)
-    rospy.Subscriber("base_scan",LaserScan,laserCallback)    
-
-    global scanData
-#    global segTyep
-    
- #   if(segType == 1):
-    straight(scanData)
-        
-    #elif(segType == 2):
-  #      arc()
-        #   if(segType == 3):
-        #     spin()
-    #elif(segType == None):
-     #   print "Seg Type is currently NULL"
-#    else:
- #       print "Seg Type is invalid"
-       
+    rospy.init_node('n')  #initialize node with the name n
+    rospy.Subscriber("base_scan",LaserScan,laserCallback) #node subscribes to base_scan topic which is of type LaserScan which invokes the laserCallback with the msg as first arg
     rospy.spin()       
     
-        
-
-
-
 if __name__ == '__main__':
 
     main()
