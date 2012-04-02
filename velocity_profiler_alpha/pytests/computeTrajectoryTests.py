@@ -4,6 +4,9 @@ Created on Apr 1, 2012
 @author: Devin Schwab
 '''
 import unittest
+import roslib
+roslib.load_manifest('velocity_profiler_alpha')
+
 from main import computeTrajectory,max_v_w
 from msg_alpha.msg._PathSegment import PathSegment as PathSegmentMsg
 from geometry_msgs.msg._Twist import Twist as TwistMsg
@@ -257,6 +260,50 @@ class Test(unittest.TestCase):
         self.nextSeg.seg_type = PathSegmentMsg.ARC
         self.nextSeg.seg_length = 1.0
         self.nextSeg.curvature = 1.0
+        self.nextSeg.max_speeds.linear.x = 3.0
+        self.nextSeg.max_speeds.angular.z = 2.0
+        self.nextSeg.accel_limit = 100.0 # this number would never actually be this large
+        self.nextSeg.decel_limit = -0.5
+        
+        (sVAccel,sVDecel,sWAccel,sWDecel) = computeTrajectory(self.currSeg, self.nextSeg)
+        
+        self.assertAlmostEqual(sVAccel, 0.1667, delta = 0.0001)
+        self.assertAlmostEqual(sVDecel, 1.0, delta = 0.0001)
+        self.assertEquals(sWAccel,0.0)
+        self.assertEquals(sWDecel,1.0)
+        
+    def test_posLINE_ARC_SameAs(self):
+        self.currSeg.seg_type = PathSegmentMsg.LINE
+        self.currSeg.seg_length = 6.0
+        self.currSeg.max_speeds.linear.x = 1.0
+        self.currSeg.accel_limit = 0.5
+        self.currSeg.decel_limit = -0.5
+        
+        self.nextSeg.seg_type = PathSegmentMsg.ARC
+        self.nextSeg.seg_length = 1.0
+        self.nextSeg.curvature = 1.0
+        self.nextSeg.max_speeds.linear.x = 1.0
+        self.nextSeg.max_speeds.angular.z = 1.0
+        self.nextSeg.accel_limit = 20.0
+        self.nextSeg.decel_limit = -0.5
+        
+        (sVAccel,sVDecel,sWAccel,sWDecel) = computeTrajectory(self.currSeg, self.nextSeg)
+        
+        self.assertAlmostEqual(sVAccel, 0.1667, delta = 0.0001)
+        self.assertAlmostEqual(sVDecel, 1.0, delta = 0.0001)
+        self.assertEquals(sWAccel,0.0)
+        self.assertEquals(sWDecel,1.0)
+        
+    def test_posLINE_ARC_LessThan(self):
+        self.currSeg.seg_type = PathSegmentMsg.LINE
+        self.currSeg.seg_length = 6.0
+        self.currSeg.max_speeds.linear.x = 1.0
+        self.currSeg.accel_limit = 0.5
+        self.currSeg.decel_limit = -0.5
+        
+        self.nextSeg.seg_type = PathSegmentMsg.ARC
+        self.nextSeg.seg_length = 1.0
+        self.nextSeg.curvature = 1.0
         self.nextSeg.max_speeds.linear.x = 2.0
         self.nextSeg.max_speeds.angular.z = 2.0
         self.nextSeg.accel_limit = 0.7
@@ -264,19 +311,32 @@ class Test(unittest.TestCase):
         
         (sVAccel,sVDecel,sWAccel,sWDecel) = computeTrajectory(self.currSeg, self.nextSeg)
         
-        self.assertAlmostEqual(sVAccel, 0.666, delta = 0.001)
-        self.assertAlmostEqual(sVDecel, 0.0688, delta = 0.001)
+        self.assertAlmostEqual(sVAccel, 0.1667, delta = 0.0001)
+        self.assertAlmostEqual(sVDecel, 0.8448, delta = 0.0001)
         self.assertEquals(sWAccel,0.0)
         self.assertEquals(sWDecel,1.0)
         
-    def test_posLINE_ARC_SameAs(self):
-        self.fail("Unit test not yet implemented")
-        
-    def test_posLINE_ARC_LessThan(self):
-        self.fail("Unit test not yet implemented")
-        
     def test_posLINE_ARC_OppositeSign(self):
-        self.fail("Unit test not yet implemented")
+        self.currSeg.seg_type = PathSegmentMsg.LINE
+        self.currSeg.seg_length = 6.0
+        self.currSeg.max_speeds.linear.x = 1.0
+        self.currSeg.accel_limit = 0.5
+        self.currSeg.decel_limit = -0.5
+        
+        self.nextSeg.seg_type = PathSegmentMsg.ARC
+        self.nextSeg.seg_length = 1.0
+        self.nextSeg.curvature = -1.0
+        self.nextSeg.max_speeds.linear.x = 2.0
+        self.nextSeg.max_speeds.angular.z = -2.0
+        self.nextSeg.accel_limit = 0.7
+        self.nextSeg.decel_limit = -0.5
+        
+        (sVAccel,sVDecel,sWAccel,sWDecel) = computeTrajectory(self.currSeg, self.nextSeg)
+        
+        self.assertAlmostEqual(sVAccel, 0.1667, delta = 0.0001)
+        self.assertAlmostEqual(sVDecel, 0.8448, delta = 0.0001)
+        self.assertEquals(sWAccel,0.0)
+        self.assertEquals(sWDecel,1.0)
         
     def test_LINE_SPIN_GreaterThan(self):
         self.fail("Unit test not yet implemented")
