@@ -133,7 +133,6 @@ def stopForObs(desVelPub,segStatusPub):
     
     if(decel_rate > 0):
         while(currState.v-.0001 > 0 or currState.v+.0001 < 0):
-            print "Ramping down"
             if(not obsExists):
                 return # if the obstacle went away then resume without fully stopping
             
