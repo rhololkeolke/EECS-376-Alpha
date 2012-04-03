@@ -43,7 +43,6 @@ def pathSegCallback(segData):
 #@return nothing
 def laserCallback(data):
     global segType
-    segType = 1
 
     obsPub = rospy.Publisher('obstacles', Obstacles)     #Data should be published to the obstacles topics using the Obstacles message type                         
     obsData = Obstacles() #initalize an Obstacle message                     
@@ -67,6 +66,8 @@ def laserCallback(data):
         arc(data.ranges)
     elif(segType == 3):
         spin(data.ranges)
+    elif(segType == None):
+        print "Segment Type is Null therefore I will simply check for obstacles as if it were an arc"
     else:
         print "Invalid Segment Type passed into Look Ahead"
 
@@ -185,7 +186,7 @@ def arc(scanData):
                 
                 if(dx * dx + dy * dy < pathRadius * pathRadius):
                     
-                    pass
+`                    pass
 
                 else:
                     
@@ -208,19 +209,58 @@ def arc(scanData):
         obsPub.publish(obsData)  #publish the obstacle information
 
 def spin(scanData):
-    global BOX_WIDTH
+    global BOX_WIDTH #width of the bounded box for checkAhead
+    closestObs = 90.0 #distance for bounded box alg
+
+    checkRight = False #scan to the right
+    checkLeft = False #scan to the left
+    checkAhead = False #scan ahead
+    
 
     obsPub = rospy.Publisher('obstacles', Obstacles)     #Data should be published to the obstacles topics using the Obstacles message type                         
     obsData = Obstacles() #initalize an Obstacle message                     
 
+    #bounded box algorithim founded in straight()
+    for x in range(len(scanData)):
     
-    #if an obstace is less than the box width on the left and right an obstacle exists
-    if(scanData[0] < BOX_WIDTH ): #check left
-        obsData.exists = True
-    if(scanData[180] < BOX_WIDTH): #check right
-        obsData.exists = True
+        if(x < 90-angleSwitch or x > 90+angleSwitch):
+            
+            if(scanData[x] < BOX_WIDTH/math.cos((180.0-x) * math.pi/180.0)):
 
-    obsPub.publish(obsData) #publish the data
+                if(scanData[x] < closestObs):
+                    
+                    closestObs = scanData[x]
+                    ping_angle = x
+                    
+                elif(x > 90 - angleSwitch and x < 90 + angleSwitch):
+                    
+                    if(scanData[x] < BOX_HEIGHT/math.cos((x-90) * math.pi/180.0)):
+                        
+                        if(scanData[x] < closestObs):
+                            
+                            closestObs = scanData[x]
+                            ping_angle = x
+                            
+    if(closestObs < 90):
+        checkAhead = True
+                                
+    else:
+        checkAhead = False
+
+
+    #if an obstace is less than the box width on the left and right and some leeway then an obstacle exists
+    if(scanData[0] < BOX_WIDTH + 0.2 ): #check left
+        checkLeft = True
+    if(scanData[180] < BOX_WIDTH + 0.2): #check right
+        checkRight = True
+
+    #if there is an obstacle on the Left, Right or infront then an obstalce exists otherwise, there is no obstacle
+    if(checkAhead == True or checkRight == True or checkLeft == True):
+        obsData.exists = True
+    else:
+        obsData.exists = False
+
+        obsPub.publish(obsData) #publish the data
 
 
 #the subscriber calls the laserCallback which determines which function to run based on the segType found in the segCallback
