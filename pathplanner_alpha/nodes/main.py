@@ -207,9 +207,9 @@ def leftRightArc(pathPub,radius):
     rightArc = PathSegmentMsg()
     rightArc.seg_type = PathSegmentMsg.ARC
     rightArc.seg_number = last_seg
-    rightArc.seg_length = .5
+    rightArc.seg_length = 1
     rightArc.init_tan_angle = pose.pose.orientation
-    rightArc.curvature = -1.0/.6
+    rightArc.curvature = -1.0/.8
     rightArc.max_speeds.linear.x = .25
     rightArc.max_speeds.angular.z = .25
     rightArc.accel_limit = .25
@@ -226,11 +226,12 @@ def leftRightArc(pathPub,radius):
     pathPub.publish(rightArc)
     while not rospy.is_shutdown() and not segComplete:
         naptime.sleep()
-
+    
+    """
     straight = PathSegmentMsg()
     straight.seg_type = PathSegmentMsg.LINE
     straight.seg_number = last_seg
-    straight.seg_length = .7
+    straight.seg_length = .2
     straight.ref_point.x = pose.pose.position.x
     straight.ref_point.y = pose.pose.position.y
     straight.init_tan_angle = yawToQuat(quatToYaw(pose.pose.orientation) + 5)
@@ -243,23 +244,23 @@ def leftRightArc(pathPub,radius):
 
     while not rospy.is_shutdown() and not segComplete:
         naptime.sleep()
-
+    """
     print "position: %s" % pose.pose.position
     
     leftArc = PathSegmentMsg()
     leftArc.seg_type = PathSegmentMsg.ARC
     leftArc.seg_number = last_seg
-    leftArc.seg_length = .3
+    leftArc.seg_length = 1
     leftArc.init_tan_angle = pose.pose.orientation
-    leftArc.curvature = 1.0/.4
+    leftArc.curvature = 1.0/.8
     leftArc.max_speeds.linear.x = .25
     leftArc.max_speeds.angular.z = .25
     leftArc.accel_limit = .25
     leftArc.decel_limit = .25
 
     if(last_seg == 1):
-        leftArc.ref_point.x = pose.pose.position.x - .3 #(pose.pose.position.x + radius*cos(quatToYaw(pose.pose.orientation))) - radius*cos(46*pi/180.0)
-        leftArc.ref_point.y = pose.pose.position.y + .3 #(pose.pose.position.y + radius*sin(quatToYaw(pose.pose.orientation))) + radius*sin(46*pi/180.0)
+        leftArc.ref_point.x = pose.pose.position.x + .3 #(pose.pose.position.x + radius*cos(quatToYaw(pose.pose.orientation))) - radius*cos(46*pi/180.0)
+        leftArc.ref_point.y = pose.pose.position.y - .3 #(pose.pose.position.y + radius*sin(quatToYaw(pose.pose.orientation))) + radius*sin(46*pi/180.0)
     elif(last_seg == 3):
         leftArc.ref_point.x = (pose.pose.position.x + radius*cos(quatToYaw(pose.pose.orientation))) + radius*cos(46*pi/180.0)
         leftArc.ref_point.y = (pose.pose.position.y + radius*sin(quatToYaw(pose.pose.orientation))) + radius*sin(46*pi/180.0)

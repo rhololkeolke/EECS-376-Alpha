@@ -628,7 +628,7 @@ def main():
             if(currSeg.seg_type == PathSegmentMsg.LINE):
                 # if there is an obstacle and the obstacle is within the segment length
                 print ping_angle
-                if(obsExists and obsDist/currSeg.seg_length < 1.0 and ping_angle > 45 and ping_angle < 145):
+                if(obsExists and obsDist/currSeg.seg_length < 1.0 and ping_angle > 55 and ping_angle < 135):
                     stopForObs(desVelPub,segStatusPub)
                     continue
             

@@ -107,7 +107,7 @@ class State:
         True if everything went okay
         False if an error occurred
         """
-        
+        dt = 1.0/20.0
         if(self.pathSeg.seg_type == PathSegmentMsg.LINE):
             # grab the angle of the path
             angle = State.getYaw(self.pathSeg.init_tan_angle)
@@ -134,6 +134,8 @@ class State:
 
             self.segDistDone = d/self.pathSeg.seg_length            
         elif(self.pathSeg.seg_type == PathSegmentMsg.ARC):
+            self.segDistDone += abs((vel_cmd.angular.z*dt)/(self.pathSeg.seg_length/abs(self.pathSeg.curvature)))
+            """
             tanAngStart = State.getYaw(self.pathSeg.init_tan_angle)
             rho = self.pathSeg.curvature
             r = 1/abs(rho)
@@ -192,6 +194,7 @@ class State:
                 self.segDistDone = r*alpha/self.pathSeg.seg_length
             else:
                 self.segDistDone = -r*alpha/self.pathSeg.seg_length
+            """
 
         elif(self.pathSeg.seg_type == PathSegmentMsg.SPIN_IN_PLACE):
             rho = self.pathSeg.curvature
