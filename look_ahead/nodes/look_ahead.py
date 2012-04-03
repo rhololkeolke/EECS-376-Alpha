@@ -77,7 +77,7 @@ def laserCallback(data):
 def straight(scanData):
     obsPub = rospy.Publisher('obstacles', Obstacles)     #Data should be published to the obstacles topics using the Obstacles message type
     obsData = Obstacles() #initalize an Obstacle message
-    closestObs = 90 # the range of the lidar scanner is 80m therefore no data should be beyond this value
+    closestObs = 90.0 # the range of the lidar scanner is 80m therefore no data should be beyond this value
     global ping_angle #refernce to the global
 
 
@@ -168,7 +168,7 @@ def arc(scanData):
             
 
         #create an circle around each lidar ping with the ping as the center
-        while(theta < 2 * math.pi):
+        while(theta < 2.0 * math.pi):
             
             
             #Do not turn lidar pings within the path segment circle or along the path segment into circles
@@ -207,8 +207,20 @@ def arc(scanData):
                 
         obsPub.publish(obsData)  #publish the obstacle information
 
-def spin():
-#do stuff
+def spin(scanData):
+    global BOX_WIDTH
+
+    obsPub = rospy.Publisher('obstacles', Obstacles)     #Data should be published to the obstacles topics using the Obstacles message type                         
+    obsData = Obstacles() #initalize an Obstacle message                     
+
+    
+    #if an obstace is less than the box width on the left and right an obstacle exists
+    if(scanData[0] < BOX_WIDTH ): #check left
+        obsData.exists = True
+    if(scanData[180] < BOX_WIDTH): #check right
+        obsData.exists = True
+
+    obsPub.publish(obsData) #publish the data
 
 
 #the subscriber calls the laserCallback which determines which function to run based on the segType found in the segCallback
