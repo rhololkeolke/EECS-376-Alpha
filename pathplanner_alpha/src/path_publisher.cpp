@@ -97,44 +97,61 @@ int calculateNewY(int initY, int distanceTraveled, int angle)
 
 void initStack()
 {
+	msg_alpha::PathSegment Seg1;
+	Seg1.curvature = 0; //Sets the curvature to 0 for the straight
+	Seg1.max_speeds.linear.x = .25;
+	Seg1.max_speeds.angular.z = .25;
+	Seg1.min_speeds.linear.x = 0;
+	Seg1.min_speeds.angular.z = 0;
+	Seg1.accel_limit = .25;
+	Seg1.decel_limit = .25;
+	Seg1.seg_number = 5;
+	Seg1.seg_type = 1;
+	Seg1.seg_length = 1;
+	Seg1.ref_point.x = calculateNewX(-3.28,1,45.22);
+	Seg1.ref_point.y = calculateNewY(20.8,1,45.22);
+	Seg1.init_tan_angle = tf::createQuaternionMsgFromYaw(45.22*PI/180.0);
+	pathStack.push(Seg1);
+
+	msg_alpha::PathSegment Seg2;
+	Seg2.curvature = 0; //Sets the curvature to 0 for the straight
+	Seg2.max_speeds.linear.x = .25;
+	Seg2.max_speeds.angular.z = .25;
+	Seg2.min_speeds.linear.x = 0;
+	Seg2.min_speeds.angular.z = 0;
+	Seg2.accel_limit = .25;
+	Seg2.decel_limit = .25;
+	Seg2.seg_number = 5;
+	Seg2.seg_type = 1;
+	Seg2.seg_length = 1;
+	Seg2.ref_point.x = -3.28;
+	Seg2.ref_point.y = 20.8;
+	Seg2.init_tan_angle = tf::createQuaternionMsgFromYaw(45.22*PI/180.0);
+	pathStack.push(Seg2);
+
+	//Second turn
+	msg_alpha::PathSegment Seg3;
+	Seg3.max_speeds.linear.x = .25;
+	Seg3.max_speeds.angular.z = .25;
+	Seg3.min_speeds.linear.x = 0;
+	Seg3.min_speeds.angular.z = 0;
+	Seg3.accel_limit = .25;
+	Seg3.decel_limit = .25;
+	Seg3.seg_number = 5;
+	Seg3.curvature = -1; //sets the curvature ot -1 for just the turn
+	Seg3.seg_type = 3;
+	Seg3.seg_length = -PI/2;
+	Seg3.ref_point.x = 14.84;
+	Seg3.ref_point.y = 3.91;
+	pathStack.push(Seg3);
 
 	msg_alpha::PathSegment Seg;
-
-
 	Seg.max_speeds.linear.x = .25;
 	Seg.max_speeds.angular.z = .25;
 	Seg.min_speeds.linear.x = 0;
 	Seg.min_speeds.angular.z = 0;
 	Seg.accel_limit = .25;
 	Seg.decel_limit = .25;
-
-	Seg.curvature = 0; //Sets the curvature to 0 for the straight
-	//To the Coffee Machine
-	Seg.seg_number = 5;
-	Seg.seg_type = 1;
-	Seg.seg_length = 1;
-	Seg.ref_point.x = calculateNewX(-3.28,1,45.22);
-	Seg.ref_point.y = calculateNewY(20.8,1,45.22);
-	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(45.22*PI/180.0);
-	pathStack.push(Seg);
-
-	Seg.seg_number = 5;
-	Seg.seg_type = 1;
-	Seg.seg_length = 1;
-	Seg.ref_point.x = -3.28;
-	Seg.ref_point.y = 20.8;
-	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(45.22*PI/180.0);
-	pathStack.push(Seg);
-
-	//Second turn
-	Seg.seg_number = 4;
-	Seg.curvature = -1; //sets the curvature ot -1 for just the turn
-	Seg.seg_type = 3;
-	Seg.seg_length = -PI/2;
-	Seg.ref_point.x = 14.84;
-	Seg.ref_point.y = 3.91;
-	pathStack.push(Seg);
-
 	Seg.curvature = 0; //sets the curvature to 0 for the entire straight
 	//Long straight away from the lab
 	Seg.seg_number = 3;
