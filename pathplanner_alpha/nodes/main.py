@@ -258,8 +258,8 @@ def leftRightArc(pathPub,radius):
     leftArc.decel_limit = .25
 
     if(last_seg == 1):
-        leftArc.ref_point.x = pose.pose.position.x + .3 #(pose.pose.position.x + radius*cos(quatToYaw(pose.pose.orientation))) - radius*cos(46*pi/180.0)
-        leftArc.ref_point.y = pose.pose.position.y - .3 #(pose.pose.position.y + radius*sin(quatToYaw(pose.pose.orientation))) + radius*sin(46*pi/180.0)
+        leftArc.ref_point.x = pose.pose.position.x - .3 #(pose.pose.position.x + radius*cos(quatToYaw(pose.pose.orientation))) - radius*cos(46*pi/180.0)
+        leftArc.ref_point.y = pose.pose.position.y + .3 #(pose.pose.position.y + radius*sin(quatToYaw(pose.pose.orientation))) + radius*sin(46*pi/180.0)
     elif(last_seg == 3):
         leftArc.ref_point.x = (pose.pose.position.x + radius*cos(quatToYaw(pose.pose.orientation))) + radius*cos(46*pi/180.0)
         leftArc.ref_point.y = (pose.pose.position.y + radius*sin(quatToYaw(pose.pose.orientation))) + radius*sin(46*pi/180.0)
@@ -267,7 +267,7 @@ def leftRightArc(pathPub,radius):
 
     pathPub.publish(leftArc)
     naptime.sleep()
-
+    
 
 def rightLeftArc(pathPub,radius):
     global RATE

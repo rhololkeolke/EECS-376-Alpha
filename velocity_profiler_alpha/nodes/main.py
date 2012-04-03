@@ -48,6 +48,7 @@ segments = Queue()
 currSeg = None
 nextSeg = None
 
+ping_angle = 0
 
 def eStopCallback(eStop):
     global stopped
@@ -57,9 +58,11 @@ def obstaclesCallback(obsData):
     global obs
     global obsDist
     global obsExists
+    global ping_angle
     
     obsExists = obsData.exists
     obsDist = obsData.distance
+    ping_angle = obsData.ping_angle
 
 def pathSegmentCallback(seg):
     global segments
@@ -588,6 +591,7 @@ def main():
     global currSeg
     global nextSeg
     global pose
+    global ping_angle
     
     rospy.init_node('velocity_profiler_alpha')
     desVelPub = rospy.Publisher('des_vel',TwistMsg) # Steering reads this and adds steering corrections on top of the desired velocities
@@ -623,7 +627,8 @@ def main():
             # now its only working with lines
             if(currSeg.seg_type == PathSegmentMsg.LINE):
                 # if there is an obstacle and the obstacle is within the segment length
-                if(obsExists and obsDist/currSeg.seg_length < 1.0):
+                print ping_angle
+                if(obsExists and obsDist/currSeg.seg_length < 1.0 and ping_angle > 45 and ping_angle < 145):
                     stopForObs(desVelPub,segStatusPub)
                     continue
             
