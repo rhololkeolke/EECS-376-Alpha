@@ -390,7 +390,7 @@ def computeTrajectory(currSeg,nextSeg=None):
             sWDecel = 1.0-distWDecel/(currSeg.seg_length/abs(currSeg.curvature))
         elif(currSeg.seg_type == PathSegmentMsg.SPIN_IN_PLACE):
             dV = 0.0
-            tVDecel = 1.0;
+            sVDecel = 1.0;
             
             dW = currSeg.max_speeds.angular.z
             tWDecel = abs(currSeg.max_speeds.angular.z/currSeg.decel_limit)
