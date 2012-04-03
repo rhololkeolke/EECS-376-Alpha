@@ -236,7 +236,7 @@ class Test(unittest.TestCase):
         # extrapolate next point
         while(state.segDistDone < 1.0 and maxIter > count):
             # create where the robot should have moved
-            psi = 2.0*state.pathSeg.seg_length*count/maxIter + 3*math.pi/4.0
+            psi = -2.0*state.pathSeg.seg_length*count/maxIter + 3*math.pi/4.0
             state.updateState(vel_cmd, point, psi)
             count += 1
         
