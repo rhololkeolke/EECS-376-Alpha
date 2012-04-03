@@ -71,13 +71,12 @@ def straight(scanData):
     obsData.wall_dist_right = scanData[0]
     obsData.wall_dist_left = scanData[180]
 
-        
     obsPub.publish(obsData)
     #print len(scanData)
 
 def main():
     
-    rospy.init_node('n')
+    rospy.init_node('look_ahead')
     r = rospy.Rate(100)
     rospy.Subscriber("base_scan",LaserScan,laserCallback)    
     rospy.spin()
