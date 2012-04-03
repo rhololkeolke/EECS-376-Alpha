@@ -200,36 +200,28 @@ class State:
             posPhi = phi % (2*pi)
             posPsi = psi % (2*pi)
             
-            if(rho >= 0):
+            if(rho >=0):
                 halfAngle = self.pathSeg.seg_length/2.0
             else:
-                halfAngle = self.pathSeg.seg_length/2.0
+                halfAngle = self.pathSeg.seg_length/2.0-pi
+            
             
             # find beta in terms of starting angle
-            if(rho >= 0):
-                if(posPsi > posPhi):
-                    beta = posPsi - posPhi
-                else:
-                    beta = 2*pi-posPhi+posPsi
+
+            if(posPsi > posPhi):
+                beta = posPsi - posPhi
             else:
-                if(posPsi < posPhi):
-                    beta = posPsi - posPhi
-                else:
-                    beta = posPsi-posPhi-(2*pi)
+                beta = 2*pi-posPhi+posPsi
                     
                 
             # figure out what region the angle is in
-            if(rho >= 0):
-                if(beta >= 0 and beta <= halfAngle+pi): # beta is in the specified arc
-                    alpha = beta
-                else:
-                    alpha = beta - (2*pi)
+            if(beta >= 0 and beta <= halfAngle+pi): # beta is in the specified arc
+                alpha = beta
             else:
-                if(beta >= halfAngle-pi and beta <= 0):
-                    alpha = beta-posPhi;
-                else:
-                    alpha = beta + (2*pi)
+                alpha = 2*pi - beta
                     
+            alpha = alpha % (2*pi)
+                
             self.segDistDone = alpha/self.pathSeg.seg_length
         else:
             pass # should probably throw an unknown segment type error
