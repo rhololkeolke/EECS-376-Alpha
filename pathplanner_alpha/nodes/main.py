@@ -60,6 +60,11 @@ def publishSegments(pathPub):
     naptime = rospy.Rate(RATE)
 
     pathSeg = PathSegmentMsg()
+    pathPub.publish(pathSeg)
+
+    naptime.sleep()
+
+    pathSeg = PathSegmentMsg()
     pathSeg.seg_type = PathSegmentMsg.LINE
     pathSeg.seg_number = seg_number
     pathSeg.seg_length = 4.2

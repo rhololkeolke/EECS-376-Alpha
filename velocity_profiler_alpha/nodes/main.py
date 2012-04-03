@@ -423,6 +423,7 @@ def getVelCmd(sVAccel, sVDecel, sWAccel, sWDecel):
             return des_vel
         
         if(currState.pathSeg.seg_type == PathSegmentMsg.ARC):
+            print "This is an arc"
             (v_max,w_max) = max_v_w(v_max,w_max,currState.pathSeg.curvature)
             
         # figure out the v_cmd
@@ -431,7 +432,7 @@ def getVelCmd(sVAccel, sVDecel, sWAccel, sWDecel):
                 v_test = currState.v + a_max*dt
                 des_vel.linear.x = min(v_test,v_max)
             elif(currState.v > v_max):
-                v_test = currState.v + d_max*dt # NOTE: This assumes the d_max is opposite sign of velocity
+                v_test = currState.v - d_max*dt # NOTE: This assumes the d_max is opposite sign of velocity
                 des_vel.linear.x = max(v_test,v_max)
             else:
                 des_vel.linear.x = currState.v
@@ -447,9 +448,10 @@ def getVelCmd(sVAccel, sVDecel, sWAccel, sWDecel):
             else:
                 des_vel.linear.x = currState.v
                 
-        print "max_v: %f, max_w: %f" % (currSeg.max_speeds.linear.x,currSeg.max_speeds.angular.z)
+        print "max_v: %f, max_w: %f" % (v_max,w_max)
         print "accel_limit: %f, decel_limit: %f" % (currSeg.accel_limit, currSeg.decel_limit)
         print "sWAccel: %f, sWDecel: %f" % (sWAccel,sWDecel)    
+        print "sVAccel: %f, sVDecel: %f" % (sVAccel,sVDecel)
         print "segDistDone: %f" % (currState.segDistDone)    
         # figure out the w_cmd
         if(segDistDone < sWDecel):
