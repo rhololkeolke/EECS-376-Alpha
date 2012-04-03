@@ -8,6 +8,12 @@ uint64 distance
 uint64 left_dist
 uint64 rt_dist
 
+#redundant but necessary for compilation in the branch
+uint64 wall_dist_rt
+uint64 wall_dist_lt
+
+
+
 #Tells the angle at which the closest ping is, should there be one.
 uint64 ping_angle
 

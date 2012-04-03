@@ -50,7 +50,14 @@ def laserCallback(data):
 
     #find distance to closest objects on left and right and publish distances
     obsData.left_dist = data.ranges[0]   #left distance
-    obsData.rt_dist = data.ranges[180]   #right distance
+    obsData.rt_dist = data.ranges[180]   #right dista 
+
+    #redundant but necessary for compilation
+    obsData.wall_dist_lt = data.ranges[0]   #left distance
+    obsData.wall_dist_rt = data.ranges[180]   #right distance
+
+
+
     obsPub.publish(obsData)     
     
     #Run function to run based on the path segment type
