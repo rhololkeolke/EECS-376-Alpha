@@ -11,7 +11,7 @@ from msg_alpha.msg._Obstacles import Obstacles
 
 scanData=[]
 BOX_WIDTH = 0.5
-BOX_HEIGHT = 1.0
+BOX_HEIGHT = 1.25
 angleSwitch = math.atanh(BOX_WIDTH) * 180/math.pi
 ping_angle = None #the angle at which the lidar scanner picks up an obstacle
 

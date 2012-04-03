@@ -132,7 +132,7 @@ def stopForObs(desVelPub,segStatusPub):
 
     print "Obstacle detected!"
     dt = 1.0/RATE
-    decel_rate = pow(currState.v,2)/(2*(obsDist-1.0))
+    decel_rate = pow(currState.v,2)/(2*(obsDist-1.2))
 
     
     naptime = rospy.Rate(RATE)
@@ -628,7 +628,7 @@ def main():
             if(currSeg.seg_type == PathSegmentMsg.LINE):
                 # if there is an obstacle and the obstacle is within the segment length
                 print ping_angle
-                if(obsExists and obsDist/currSeg.seg_length < 1.0 and ping_angle > 55 and ping_angle < 135):
+                if(obsExists and obsDist/currSeg.seg_length < 1.0 and ping_angle > 60 and ping_angle < 140):
                     stopForObs(desVelPub,segStatusPub)
                     continue
             
