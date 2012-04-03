@@ -12,10 +12,10 @@ from geometry_msgs.msg._Quaternion import Quaternion as QuaternionMsg
 
 from tf.transformations import quaternion_from_euler,euler_from_quaternion
 
-from math import cos,sin,pi
+from math import cos,sin,pi,sqrt
 from collections import deque
 
-RATE = 30.0
+RATE = 20.0
 
 obs = ObstaclesMsg()
 
@@ -43,11 +43,12 @@ def segStatusCallback(data):
     global segComplete
     global segAbort
     global last_seg
-    if(segComplete != True):
+    if(segComplete is not True):
         segComplete = data.segComplete
-    if(segAbort != True):
+    if(segAbort is not True):
         segAbort = data.abort
-    last_seg = data.seg_number
+    if(data.seg_number != 0.0): 
+        last_seg = data.seg_number
 
 def poseCallback(poseData):
     global pose
@@ -63,8 +64,10 @@ def yawToQuat(angle):
     return quat
 
 def quatToYaw(quat):
-    yawList = euler_from_quaternion(quat)
-    return yawList[2]
+    try:
+        return euler_from_quaternion([quat.x,quat.y,quat.z, quat.w])[2]
+    except AttributeError:
+        return euler_from_quaternion(quat)[2]
     
 def publishSegBlank(pathPub):
     global seg_number
@@ -189,56 +192,137 @@ def publishSeg5(pathPub):
 
     naptime.sleep()
 
-def publishRightArc(pathPub, radius):
+def leftRightArc(pathPub,radius):
     global RATE
     global last_seg
     global pose
+    global segComplete
 
     naptime = rospy.Rate(RATE)
+    print "left right arc"
+    print "\tradius %f" % (radius)
+    print "\tquatToYaw %f" % (quatToYaw(pose.pose.orientation))
+    print "\tposition %s" % (pose.pose.position)
 
-    pathSeg = PathSegmentMsg()
-    pathSeg.seg_type = PathSegmentMsg.ARC
-    pathSeg.seg_number = last_seg
-    pathSeg.seg_length = (pi/2)*radius
-    pathSeg.ref_point.x = pose.pose.position.x + radius*cos(quatToYaw(pose.pose.orientation))
-    pathSeg.ref_point.y = pose.pose.position.y + radius*sin(quatToYaw(pose.pose.orientation))
-    pathSeg.init_tan_angle = pose.pose.orientation
-    pathSeg.curvature = -1.0/radius
-    pathSeg.max_speeds.linear.x = .25
-    pathSeg.max_speeds.angular.z = .25
-    pathSeg.accel_limit = .25
-    pathSeg.decel_limit = .25
+    rightArc = PathSegmentMsg()
+    rightArc.seg_type = PathSegmentMsg.ARC
+    rightArc.seg_number = last_seg
+    rightArc.seg_length = .5
+    rightArc.init_tan_angle = pose.pose.orientation
+    rightArc.curvature = -1.0/.6
+    rightArc.max_speeds.linear.x = .25
+    rightArc.max_speeds.angular.z = .25
+    rightArc.accel_limit = .25
+    rightArc.decel_limit = .25
 
-    pathPub.publish(pathSeg)
+    if(last_seg == 1):
+        rightArc.ref_point.x = pose.pose.position.x - .3 #radius*cos(46*pi/180.0)
+        rightArc.ref_point.y = pose.pose.position.y + .3 #radius*sin(46*pi/180.0)
+    elif(last_seg == 3):
+        rightArc.ref_point.x = pose.pose.position.x + .1 #radius*cos(46*pi/180.0)
+        rightArc.ref_point.y = pose.pose.position.y + .1 #radius*sin(46*pi/180.0)
 
-    naptime.sleep()
+    print "\tright arc ref_point %s" % rightArc.ref_point
+    pathPub.publish(rightArc)
+    while not rospy.is_shutdown() and not segComplete:
+        naptime.sleep()
 
+    straight = PathSegmentMsg()
+    straight.seg_type = PathSegmentMsg.LINE
+    straight.seg_number = last_seg
+    straight.seg_length = .7
+    straight.ref_point.x = pose.pose.position.x
+    straight.ref_point.y = pose.pose.position.y
+    straight.init_tan_angle = yawToQuat(quatToYaw(pose.pose.orientation) + 5)
+    straight.curvature = 0.0
+    straight.max_speeds.linear.x = .25
+    straight.accel_limit = .25
+    straight.decel_limit = .25
+
+    pathPub.publish(straight)
+
+    while not rospy.is_shutdown() and not segComplete:
+        naptime.sleep()
+
+    print "position: %s" % pose.pose.position
     
+    leftArc = PathSegmentMsg()
+    leftArc.seg_type = PathSegmentMsg.ARC
+    leftArc.seg_number = last_seg
+    leftArc.seg_length = .3
+    leftArc.init_tan_angle = pose.pose.orientation
+    leftArc.curvature = 1.0/.4
+    leftArc.max_speeds.linear.x = .25
+    leftArc.max_speeds.angular.z = .25
+    leftArc.accel_limit = .25
+    leftArc.decel_limit = .25
 
-def publishLeftArc(pathPub, radius):
+    if(last_seg == 1):
+        leftArc.ref_point.x = pose.pose.position.x + .3 #(pose.pose.position.x + radius*cos(quatToYaw(pose.pose.orientation))) - radius*cos(46*pi/180.0)
+        leftArc.ref_point.y = pose.pose.position.y - .3 #(pose.pose.position.y + radius*sin(quatToYaw(pose.pose.orientation))) + radius*sin(46*pi/180.0)
+    elif(last_seg == 3):
+        leftArc.ref_point.x = (pose.pose.position.x + radius*cos(quatToYaw(pose.pose.orientation))) + radius*cos(46*pi/180.0)
+        leftArc.ref_point.y = (pose.pose.position.y + radius*sin(quatToYaw(pose.pose.orientation))) + radius*sin(46*pi/180.0)
+
+
+    pathPub.publish(leftArc)
+    naptime.sleep()
+
+
+def rightLeftArc(pathPub,radius):
     global RATE
     global last_seg
     global pose
 
     naptime = rospy.Rate(RATE)
 
-    pathSeg = PathSegmentMsg()
-    pathSeg.seg_type = PathSegmentMsg.ARC
-    pathSeg.seg_number = last_seg
-    pathSeg.seg_length = (pi/2)*radius
-    pathSeg.ref_point.x = pose.pose.position.x + radius*cos(quatToYaw(pose.pose.orientation))
-    pathSeg.ref_point.y = pose.pose.position.y + radius*sin(quatToYaw(pose.pose.orientation))
-    pathSeg.init_tan_angle = pose.pose.orientation
-    pathSeg.curvature = 1.0/radius
-    pathSeg.max_speeds.linear.x = .25
-    pathSeg.max_speeds.angular.z = .25
-    pathSeg.accel_limit = .25
-    pathSeg.decel_limit = .25
+    print "rightLeftArc"
+    print "\tradius %f" % (radius)
+    print "\tquatToYaw %f" % (quatToYaw(pose.pose.orientation))
+    print "\tposition %s" % (pose.pose.position)
 
-    pathPub.publish(pathSeg)
+    rightArc = PathSegmentMsg()
+    rightArc.seg_type = PathSegmentMsg.ARC
+    rightArc.seg_number = last_seg
+    rightArc.seg_length = (pi/4.0)*radius
+    rightArc.init_tan_angle = pose.pose.orientation
+    rightArc.curvature = 1.0/radius
+    rightArc.max_speeds.linear.x = .25
+    rightArc.max_speeds.angular.z = .25
+    rightArc.accel_limit = .25
+    rightArc.decel_limit = .25
 
+    if(last_seg == 1):
+        rightArc.ref_point.x = pose.pose.position.x + radius*cos(46*pi/180.0) 
+        rightArc.ref_point.y = pose.pose.position.y - radius*sin(46*pi/180.0)
+    elif(last_seg == 3):
+        rightArc.ref_point.x = pose.pose.position.x - radius*cos(46*pi/180.0)
+        rightArc.ref_point.y = pose.pose.position.y - radius*sin(46*pi/180.0)
+
+
+    leftArc = PathSegmentMsg()
+    leftArc.seg_type = PathSegmentMsg.ARC
+    leftArc.seg_number = last_seg
+    leftArc.seg_length = (pi/4)*radius
+    leftArc.init_tan_angle = pose.pose.orientation
+    leftArc.curvature = -1.0/radius
+    leftArc.max_speeds.linear.x = .25
+    leftArc.max_speeds.angular.z = .25
+    leftArc.accel_limit = .25
+    leftArc.decel_limit = .25
+
+    if(last_seg == 1):
+        rightArc.ref_point.x = (pose.pose.position.x + radius*cos(quatToYaw(pose.pose.orientation))) + radius*cos(46*pi/180.0)
+        rightArc.ref_point.y = (pose.pose.position.y + radius*sin(quatToYaw(pose.pose.orientation))) + radius*sin(46*pi/180.0)
+    elif(last_seg == 3):
+        rightArc.ref_point.x = (pose.pose.position.x + radius*cos(quatToYaw(pose.pose.orientation))) - radius*cos(46*pi/180.0)
+        rightArc.ref_point.y = (pose.pose.position.y + radius*sin(quatToYaw(pose.pose.orientation)))- radius*sin(46*pi/180.0)
+
+
+    pathPub.publish(leftArc)
     naptime.sleep()
-
+    pathPub.publish(rightArc)
+    naptime.sleep()
 
 def goStraight(pathPub):
     global last_seg
@@ -246,6 +330,7 @@ def goStraight(pathPub):
     global pose
 
     naptime = rospy.Rate(RATE)
+    print "In the go straight method"
 
     pathSeg = PathSegmentMsg()
     pathSeg.seg_type = PathSegmentMsg.LINE
@@ -254,20 +339,24 @@ def goStraight(pathPub):
     pathSeg.ref_point.x = pose.pose.position.x
     pathSeg.ref_point.y = pose.pose.position.y
     pathSeg.init_tan_angle = pose.pose.orientation
-    
+    pathSeg.max_speeds.linear.x = .25
+    pathSeg.max_speeds.angular.z = .25
+    pathSeg.accel_limit = .25
+    pathSeg.decel_limit = .25
+
     pathPub.publish(pathSeg)
 
     naptime.sleep()
 
 
-def checkSide(cutOff,dist):
+def checkSide(cutoff,dist):
     if(dist > cutoff):
         return True
     else:
         return False
 
 def detour(pathPub):
-    global pathStack
+    global obs
     global segAbort
 
     # publish an arc based on obstacle data
@@ -276,21 +365,20 @@ def detour(pathPub):
     segAbort = False
 
     if(obs.ping_angle < 90):
-        arcRadius = obs.wall_dist_right/2.0 - 20.0
-        publishLeftArc(pathPub,arcRadius)
-        publishRightArc(pathPub,arcRadius)
-        while not rospy.is_shutdown() and not checkSide(.6,obs.wall_dist_right):
-            goStraight()
-        publishRightArc(pathPub,arcRadius)
-        publishLeftArc(pathPub, arcRadius)
-    else:
-        arcRadius = obs.wall_dist_left/2.0 - 20.0
-        publishRightArc(pathPub,arcRadius)
-        publishLeftArc(pathPub,arcRadius)
+        print "ping less than 90"
+        arcRadius = .6 #obs.wall_dist_left/2.0 - .20
+        print "arcRadius: %f" % (arcRadius)
+        rightLeftArc(pathPub,arcRadius)
         while not rospy.is_shutdown() and not checkSide(.6,obs.wall_dist_left):
-            goStraight()
-        publishLeftArc(pathPub,arcRadius)
-        publishRightArc(pathPub,arcRadius)
+            goStraight(pathPub)
+        leftRightArc(pathPub,arcRadius)
+    else:
+        print "ping greater than 90"
+        arcRadius = .6 #obs.wall_dist_right/2.0 -.2
+        leftRightArc(pathPub,arcRadius)
+        while not rospy.is_shutdown() and not checkSide(.6,obs.wall_dist_right):
+            goStraight(pathPub)
+        rightLeftArc(pathPub,arcRadius)
 
     
 
@@ -326,12 +414,14 @@ def main():
         if segAbort:
             detour(pathSegPub)
             if last_seg == 1:
+                print "last_seg == 1"
                 publishSeg1(pathSegPub)
                 publishSeg2(pathSegPub)
                 publishSeg3(pathSegPub)
                 publishSeg4(pathSegPub)
                 publishSeg5(pathSegPub)
             elif last_seg == 2:
+                print "last_seg == 2"
                 publishSeg2(pathSegPub)
                 publishSeg3(pathSegPub)
                 publishSeg4(pathSegPub)
@@ -345,6 +435,7 @@ def main():
                 publishSeg5(pathSegPub)
             elif last_seg == 5:
                 publishSeg5(pathSegPub)
+        naptime.sleep()
             
     
 

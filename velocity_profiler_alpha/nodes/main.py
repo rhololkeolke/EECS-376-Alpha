@@ -63,6 +63,10 @@ def obstaclesCallback(obsData):
 
 def pathSegmentCallback(seg):
     global segments
+    print "received new segment"
+    print "\ttype: %i" % seg.seg_type
+    print "\tref_point: %s" % seg.ref_point
+    print "\t curvature: %s" % seg.curvature
     segments.put(seg,True)
 
 def velCmdCallback(vel):
@@ -118,13 +122,14 @@ def stopForObs(desVelPub,segStatusPub):
     global currSeg
     global nextSeg
     global RATE
+    global segments
     # calculate the stopping acceleration
     # this is allowed to override the segment constraints, because its more important
     # to not crash than to follow the speed limit
 
     print "Obstacle detected!"
     dt = 1.0/RATE
-    decel_rate = pow(currState.v,2)/(2*(obsDist-.7))
+    decel_rate = pow(currState.v,2)/(2*(obsDist-1.0))
 
     
     naptime = rospy.Rate(RATE)
@@ -145,10 +150,14 @@ def stopForObs(desVelPub,segStatusPub):
             
             publishSegStatus(segStatusPub) # let everyone else know the status of the segment
             naptime.sleep()
-        else: # should already be stopped
-            currState.stop()
-            publishSegStatus(segStatusPub)
-            naptime.sleep()
+        des_vel.linear.x = 0.0
+        desVelPub.publish(des_vel)
+        currState.stop()
+    else: # should already be stopped
+        desVelPub.publish(des_vel)
+        currState.stop()
+        publishSegStatus(segStatusPub)
+        naptime.sleep()
     
     print "Waiting for obstacle to move..."
     startTime = rospy.Time.now()
@@ -239,7 +248,7 @@ def computeTrajectory(currSeg,nextSeg=None):
             tWDecel = abs(currSeg.max_speeds.angular.z/currSeg.decel_limit)
             distWDecel = 0.5*abs(currSeg.decel_limit)*pow(tWDecel,2)
             sWDecel = 1.0-distWDecel/currSeg.seg_length # spin seg lengths are in radians, so no need to divide by the curvature
-            print "dW: %f" % (dW)
+            #print "dW: %f" % (dW)
         else:
             return (0.0,0.0,0.0,0.0)
     elif(currSeg.seg_type == PathSegmentMsg.LINE and nextSeg.seg_type == PathSegmentMsg.LINE):
@@ -421,42 +430,52 @@ def getVelCmd(sVAccel, sVDecel, sWAccel, sWDecel):
         if(currState is None):
             return des_vel
         
+        #print "seg_type: %i" % (currState.pathSeg.seg_type)
         if(currState.pathSeg.seg_type == PathSegmentMsg.ARC):
-            print "This is an arc"
+            #print "This is an arc"
             (v_max,w_max) = max_v_w(v_max,w_max,currState.pathSeg.curvature)
             
         # figure out the v_cmd
         if(segDistDone < sVDecel):
+            #print "V is accelerating or const"
             if(currState.v < v_max):
+                #print "V is less than max"
                 v_test = currState.v + a_max*dt
                 des_vel.linear.x = min(v_test,v_max)
             elif(currState.v > v_max):
+                #print "V is greater than max"
                 v_test = currState.v - d_max*dt # NOTE: This assumes the d_max is opposite sign of velocity
                 des_vel.linear.x = max(v_test,v_max)
             else:
+                #print "V is same as max"
                 des_vel.linear.x = currState.v
         else:
+            #print "V is decelerating"
             v_i = currSeg.max_speeds.linear.x - dV
             v_scheduled = sqrt(2*(1.0-segDistDone)*segLength*d_max + pow(v_i,2))
             if(currState.v > v_scheduled):
+                #print "V is greater than scheduled"
                 v_test = currState.v - d_max*dt
-                des_vel.linear.x = min(v_test,v_max)
-            elif(currState.v < v_scheduled):
-                v_test = currState.v + a_max*dt
                 des_vel.linear.x = max(v_test,v_max)
+            elif(currState.v < v_scheduled):
+                #print "v is less than scheduled"
+                v_test = currState.v + a_max*dt
+                des_vel.linear.x = min(v_test,v_max)
             else:
+                #print "v is same as scheduled"
                 des_vel.linear.x = currState.v
                 
-        print "max_v: %f, max_w: %f" % (v_max,w_max)
-        print "accel_limit: %f, decel_limit: %f" % (currSeg.accel_limit, currSeg.decel_limit)
-        print "sWAccel: %f, sWDecel: %f" % (sWAccel,sWDecel)    
-        print "sVAccel: %f, sVDecel: %f" % (sVAccel,sVDecel)
-        print "segDistDone: %f" % (currState.segDistDone)    
+        #print "max_v: %f, max_w: %f" % (v_max,w_max)
+        #print "accel_limit: %f, decel_limit: %f" % (currSeg.accel_limit, currSeg.decel_limit)
+        #print "sWAccel: %f, sWDecel: %f" % (sWAccel,sWDecel)    
+        #print "sVAccel: %f, sVDecel: %f" % (sVAccel,sVDecel)
+        #print "segDistDone: %f" % (currState.segDistDone)   
+        #print "curvature: %f" % (currSeg.curvature) 
         # figure out the w_cmd
         if(segDistDone < sWDecel):
-            print "Accelerating or Const Velocity"
+            #print "Accelerating or Const Velocity"
             if(currSeg.curvature >=0):
-                print "Curvature is positive"
+                #print "Curvature is positive"
                 if(currState.w < w_max):
                     w_test = currState.w + a_max*dt
                     des_vel.angular.z = min(w_test,w_max)
@@ -466,51 +485,51 @@ def getVelCmd(sVAccel, sVDecel, sWAccel, sWDecel):
                 else:
                     des_vel.angular.z = currState.w
             else:
-                print "Curvature is negative"
+                #print "Curvature is negative"
                 if(currState.w > -w_max):
-                    print "Going slower than maximum"
+                    #print "Going slower than maximum"
                     w_test = currState.w - a_max*dt
                     des_vel.angular.z = max(w_test,-w_max)
                 elif(currState.w < -w_max):
-                    print "Going faster than maximum"
+                    #print "Going faster than maximum"
                     w_test = currState.w + d_max*dt
                     des_vel.angular.z = min(w_test,-w_max)
                 else:
-                    print "Going same speed as maximum"
+                    #print "Going same speed as maximum"
                     des_vel.angular.z = currState.w
                     
         else:
-            print "Decelerating"
+            #print "Decelerating"
             w_scheduled = sqrt(2*(1.0-segDistDone)*(abs(currState.pathSeg.curvature)/segLength)*d_max)
             if(currSeg.curvature >= 0):
-                print "Curvature is positive"
+                #print "Curvature is positive"
                 if(currState.w > w_scheduled):
-                    print "Going faster than w_scheduled"
+                    #print "Going faster than w_scheduled"
                     w_test = currState.w - d_max*dt
                     des_vel.angular.z = min(w_test,w_max)
                 elif(currState.w < w_scheduled):
-                    print "Going slower than w_scheduled"
+                    #print "Going slower than w_scheduled"
                     w_test = currState.w + a_max*dt
                     des_vel.angular.z = max(w_test,w_max)
                 else:
-                    print "Going same speed as w_scheduled"
+                    #print "Going same speed as w_scheduled"
                     des_vel.angular.z = currState.w
             else:
-                print "Curvature is negative"
+                #print "Curvature is negative"
                 w_scheduled = -w_scheduled
                 if(currState.w < w_scheduled):
-                    print "Going faster than w_scheduled"
+                    #print "Going faster than w_scheduled"
                     w_test = currState.w - a_max*dt
                     des_vel.angular.z = max(w_test,w_scheduled)
                 elif(currState.w > w_scheduled):
-                    print "Going slower than w_scheduled"
+                    #print "Going slower than w_scheduled"
                     w_test = currState.w + d_max*dt
                     des_vel.angular.z = min(w_test,w_scheduled)
                 else:
-                    print "Going same speed as w_scheduled"
+                    #print "Going same speed as w_scheduled"
                     des_vel.angular.z = currState.w
 
-    print des_vel
+    #print des_vel
     return des_vel
         
 
@@ -591,6 +610,11 @@ def main():
     print "Entering main loop"
     
     while not rospy.is_shutdown():
+        if(currSeg is not None):
+         #   print "seg type %i " % currSeg.seg_type
+          #  print "ref_point %s " % currSeg.ref_point
+           # print "curv %f" % currSeg.curvature
+           print "dist done %f" % currState.segDistDone
         if stopped:
             stopForEstop(desVelPub,segStatusPub)
             continue
@@ -614,7 +638,7 @@ def main():
             (sVAccel, sVDecel, sWAccel, sWDecel) = computeTrajectory(currSeg,nextSeg) # figure out the switching points in the trajectory
             
             #print "sVAccel: %f sVDecel: %f" % (sVAccel,sVDecel)
-            print "sWAccel: %f, sWDecel: %f" % (sWAccel,sWDecel)
+            #print "sWAccel: %f, sWDecel: %f" % (sWAccel,sWDecel)
             
             des_vel = getVelCmd(sVAccel, sVDecel, sWAccel, sWDecel) # figure out the robot commands given the current state and the desired trajectory
             desVelPub.publish(des_vel) # publish the commands
@@ -623,6 +647,8 @@ def main():
             
             # see if its time to switch segments yet
             if(currState.segDistDone > 1.0):
+                print "Finished segment type %i" % (currState.pathSeg.seg_type)
+                print "currState.segDistDone %f" % (currState.segDistDone)
                 currSeg = None
         else:
             # try and get new segments
@@ -649,6 +675,10 @@ def main():
             des_vel = TwistMsg()
             desVelPub.publish(des_vel) # publish all zeros for the des_vel
             publishSegStatus(segStatusPub) # publish that there is no segment
+            if(currSeg is not None):
+                rospy.logwarn("Starting a new segment, type %i" %currSeg.seg_type)
+                rospy.logwarn("\tcurvature: %f" % currSeg.curvature)
+                rospy.logwarn("\tref_point: %s" % currSeg.ref_point)
         naptime.sleep()
         continue
 
