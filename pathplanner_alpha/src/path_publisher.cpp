@@ -83,7 +83,7 @@ int calculateNewX(int initX, int distanceTraveled, int angle)
 {
 
   //  int newX = cos(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled; 
-  int newX = initX + cos(tf::getYaw(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled; 
+  int newX = initX + cos(angle*PI/180.0)*distanceTraveled; 
 
   return newX;
 }
@@ -92,7 +92,7 @@ int calculateNewY(int initY, int distanceTraveled, int angle)
 {
 
   //  int newY = (sin(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled;
-  int newY = initY + sin(tf::getYaw(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled; 
+  int newY = initY + sin(angle*PI/180.0)*distanceTraveled; 
   return newY;
 }
 
@@ -100,8 +100,18 @@ int calculateNewY(int initY, int distanceTraveled, int angle)
 void initStack()
 {
 
-	msg_alpha::PathSegment Seg;		
+	msg_alpha::PathSegment Seg;
 
+
+	Seg.max_speeds.linear.x = .25;
+	Seg.max_speeds.angular.z = .25;
+	Seg.min_speeds.linear.x = 0;
+	Seg.min_speeds.angular.z = 0;
+	Seg.accel_limit = .25;
+	Seg.decel_limit = .25;
+
+
+	Seg.curvature = 0; //Sets the curvature to 0 for the straight
 	//To the Coffee Machine
 	Seg.seg_number = 5;
 	Seg.seg_type = 1;
@@ -121,12 +131,14 @@ void initStack()
 
 	//Second turn
 	Seg.seg_number = 4;
+	Seg.curvature = -1; //sets the curvature ot -1 for just the turn
 	Seg.seg_type = 3;
 	Seg.seg_length = -PI/2;
 	Seg.ref_point.x = 14.84;
 	Seg.ref_point.y = 3.91;
 	pathStack.push(Seg);
 
+	Seg.curvature = 0; //sets the curvature to 0 for the entire straight
 	//Long straight away from the lab
 	Seg.seg_number = 3;
 	Seg.seg_type = 1;
@@ -242,12 +254,15 @@ void initStack()
 
 	//Initial Turn
 	Seg.seg_number = 2;
+	Seg.curvature = -1; //Sets the curvature to -1 for the turn
 	Seg.seg_type = 3;
 	Seg.seg_length = -PI/2;
 	Seg.ref_point.x = 5.23;
 	Seg.ref_point.y = 11.92;		
 	pathStack.push(Seg);
 
+	
+	Seg.curvature = 0; //Sets the curvature to 0 for the straight
 	//Initial Straight, toward lab
 	Seg.seg_number = 1;
 	Seg.seg_type = 1;
@@ -289,7 +304,7 @@ void initStack()
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
 	pathStack.push(Seg);
 
-	Seg.seg_number = 1;
+	Seg.seg_number = 0;
 	Seg.seg_type = 1;
 	Seg.seg_length = 0;
 	Seg.ref_point.x = 8.27;
@@ -300,6 +315,8 @@ void initStack()
 
 void publishSeg() 
 {
+	ros::Rate naptime = ros::Rate(10);
+
 	if (pathStack.empty())
 		return;
 	//update currseg,pop,then pub. all in ros::ok loop
@@ -315,7 +332,8 @@ void publishSeg()
 			segComplete = false;
 			ROS_INFO("I published another node! Be proud... Seg number was %d", currSeg.seg_number);
 		}
-	} while(!segComplete);
+		naptime.sleep();
+	} while(!segComplete && ros::ok());
 }
 
 void arcRight()
@@ -326,6 +344,7 @@ void arcRight()
 	Seg.seg_number = currSeg.seg_number+1;
 	Seg.seg_type = 2;
 	Seg.seg_length = (PI/2)*arcRadius;
+	ROS_INFO("arcRight Hit");
 	Seg.ref_point.x = last_map_pose.pose.position.x + arcRadius*cos(tf::getYaw(last_map_pose.pose.orientation));
 	Seg.ref_point.y = last_map_pose.pose.position.y + arcRadius*sin(tf::getYaw(last_map_pose.pose.orientation));
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-PI/2);	
@@ -342,6 +361,7 @@ void arcLeft()
 	Seg.seg_number = currSeg.seg_number+1;
 	Seg.seg_type = 2;
 	Seg.seg_length = (PI/2)*arcRadius;
+	ROS_INFO("arcLeft Hit");
 	Seg.ref_point.x = last_map_pose.pose.position.x + arcRadius*cos(tf::getYaw(last_map_pose.pose.orientation));
 	Seg.ref_point.y = last_map_pose.pose.position.y + arcRadius*sin(tf::getYaw(last_map_pose.pose.orientation));
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(PI/2);	
@@ -370,7 +390,7 @@ void calcHalfSeg()
   double dAng; //
   double arcAng; //
   double rho; //curvature
-  //double tanAngle = tf::getYaw(temp_pose_out_.pose.orientation);
+  //double tanAngle = ::getYaw(temp_pose_out_.pose.orientation);
 	
   msg_alpha::PathSegment finalSeg;
   finalSeg = pathStack.top();
@@ -402,6 +422,7 @@ void calcHalfSeg()
 	newSeg.seg_length = distance;
 	newSeg.ref_point.x = xDes;
 	newSeg.ref_point.y = yDes;
+	ROS_INFO("calcHalfSeg Hit");
 	newSeg.init_tan_angle = tf::createQuaternionMsgFromYaw(psiDes);
 	pathStack.push(newSeg);
 
@@ -418,6 +439,7 @@ void goStraight()
 	smallGoStraight.seg_length = 0.5;
 	smallGoStraight.ref_point.x = 0;//need to recalculate every time
 	smallGoStraight.ref_point.y = 0;//same
+	ROS_INFO("goStraight Hit");
 	smallGoStraight.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);//should be constant and same as pre obs angle
 	pathStack.push(smallGoStraight);
 	publishSeg();
@@ -430,7 +452,7 @@ void detour()
 
 	//First thing we need to do is 
 	int arcRadius;
-	int obst_angle;
+	//int obst_angle;
 	int obst_side = 0; //left is 1, right is 2. this should be an enum
 
 
@@ -480,13 +502,17 @@ int main(int argc, char **argv)
 
 	ros::Rate naptime(10);
 
+	pathPub.publish(pathStack.top());
+	pathStack.pop();
+
 	while(!ros::Time::isValid()) {}	
 
 	while(ros::ok() && !pathStack.empty())
 	{
 		//While seg status is ok.
-		if(!abort)
+		if(!bAbort)
 		{
+			naptime.sleep();
 			publishSeg();
 		}
 		else {
