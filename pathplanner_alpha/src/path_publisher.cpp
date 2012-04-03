@@ -55,18 +55,16 @@ void segStatusCallback(const msg_alpha::SegStatus::ConstPtr& status)
 	// segComplete is only true once and we only care about when segComplete transitions to true
 	// so only update if the segment is currently not completed
 	if(!segComplete)
-
-	{
-	  segComplete = status->segComplete;
-	}
-	
-	bAbort = status->abort;
-	
-	  {
 		segComplete = status->segComplete;
-		progressMade = status-> progress_made;
-		
-	  }
+
+	if(status->segComplete == false)
+		ROS_INFO("CallBack false");
+	else
+		ROS_INFO("CallBack true");
+	
+	if(!bAbort)
+		bAbort = status->abort;
+	
 }
 
 void obstaclesCallback(const msg_alpha::Obstacles::ConstPtr& obstacles)
@@ -109,7 +107,6 @@ void initStack()
 	Seg.min_speeds.angular.z = 0;
 	Seg.accel_limit = .25;
 	Seg.decel_limit = .25;
-
 
 	Seg.curvature = 0; //Sets the curvature to 0 for the straight
 	//To the Coffee Machine
@@ -315,7 +312,7 @@ void initStack()
 
 void publishSeg() 
 {
-	ros::Rate naptime = ros::Rate(10);
+	ros::Rate naptime = ros::Rate(30);
 
 	if (pathStack.empty())
 		return;
@@ -325,6 +322,7 @@ void publishSeg()
 	currSeg.seg_number = temp + 1;
 	do {
 		ros::spinOnce();
+		ROS_INFO("Publish Seg "+segComplete);
 		if (segComplete == true)
 		{
 			pathStack.pop();
@@ -333,7 +331,7 @@ void publishSeg()
 			ROS_INFO("I published another node! Be proud... Seg number was %d", currSeg.seg_number);
 		}
 		naptime.sleep();
-	} while(!segComplete && ros::ok());
+	} while((!segComplete || bAbort) && ros::ok());
 }
 
 void arcRight()
@@ -380,7 +378,7 @@ bool checkSide(int arcRadius, int dist)
 }
 
 //Summary: Place a new segment on the stack after obstacle avoidance
-
+/*
 void calcHalfSeg()
 {
   
@@ -428,7 +426,7 @@ void calcHalfSeg()
 
 	pathStack.push(newFinalSeg); 
 }
-
+*/
 
 void goStraight()
 {
@@ -449,7 +447,7 @@ void detour()
 {
 	//this method assumes that the lidar node will wait three seconds
 	//before publishing a segStatus of !OK
-
+	bAbort = false;
 	//First thing we need to do is 
 	int arcRadius;
 	//int obst_angle;
@@ -497,10 +495,10 @@ int main(int argc, char **argv)
 
 	pathPub = n.advertise<msg_alpha::PathSegment>("path_seg",1);
 	ros::Subscriber sub = n.subscribe<nav_msgs::Odometry>("odom", 1, odomCallback); 
-	ros::Subscriber segSub = n.subscribe<msg_alpha::SegStatus>("seg_status",1,segStatusCallback);
+	ros::Subscriber segSub = n.subscribe<msg_alpha::SegStatus>("seg_status",10,segStatusCallback);
 	ros::Subscriber obst_angle = n.subscribe<msg_alpha::Obstacles>("obstacles",1,obstaclesCallback);
 
-	ros::Rate naptime(10);
+	ros::Rate naptime(30);
 
 	pathPub.publish(pathStack.top());
 	pathStack.pop();
