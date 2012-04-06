@@ -13,11 +13,12 @@ angleSwitch = math.atanh(BOX_WIDTH) * 180/math.pi  #angle to switch distance for
 ping_angle = None #the angle at which the lidar scanner picks up an obstacle
 
 #Globals are only temporary for testing of logic if path segment is arc(2)
-segType = None  #segment type
+segType = 2  #segment type
 curvature = None  #curvature of the path
 segLenth = None  #length of the segment
 initTanAngle = None  #inital tangent angle of the path segment
-refPoint = None  #reference point
+refPointX = None  #reference point
+refPointY = None
 
 
 #Receives path segment information from the path_seg topic
@@ -29,13 +30,15 @@ def pathSegCallback(segData):
     global curvature
     global segLenth
     global initTanAngle
-    global refPoint
+    global refPointX
+    global refPointY
 
     segType = segData.seg_type
     curvature  = segData.curvature
     segLength = segData.seg_length
     initTanAngle = segData.init_tan_angle
-    refPoint = segData.ref_point
+    refPointX = segData.ref_point.x
+    refPointY = segData.ref_point.y
 
 #Receives laser data from the base_scan topic and places the data into an array
 #@param laserScan data
@@ -67,9 +70,9 @@ def laserCallback(data):
     elif(segType == 3):
         spin(data.ranges)
     elif(segType == None):
-        print "Segment Type is Null therefore I will simply check for obstacles as if it were an arc"
+        print "Segment Type is Null. I don't know what to do"
     else:
-        print "Invalid Segment Type passed into Look Ahead"
+        print "Invalid Segment Type passed into Look Ahead. I don't know what to do."
 
 #Determine if there are obstacles along a straight path        
 #@param laserScan data
@@ -134,9 +137,59 @@ def arc(scanData):
     global initTanAngle
     global refPoint
 
+    radius = 0.5 #radius of the circle to be made around each lidar ping
+    theta = 0.0 #angle measure of circle
+    circles = [] #a list of each circle, each circle will be compared to the path circle.
 
 
+    #The center of the path segment circle
+    pathCentX = refPointX
+    pathCentY = refPointY
+    pathCircle = [refPointX,refPointY]
+    
+    #since curvature is 1/radius the radius should be 1/curvature
+    #if the curvature is positive simply do the recpricoal
+    if(curvature > 0):
+        pathRadius = 1/curvature 
 
+    #if the curvature is negative do the negative reciprocal
+    elif(curvature < 0): 
+        pathRadius = -1/curvature
+    
+
+    #make each lidar ping is the midpoint of a circle with a radius of 0.5
+    #
+        for i in range(len(scanData)):
+
+
+            #Do not turn lidar pings within the path segment circle or along the path segment into circles                                                                        #works under the premise that all points are within the radius of the circle and therefore                                                                            #dx = xCenter - x;                                                                                                                                                    #dy = yCenter - y;                                                                                                                                                    #dx*dx + dy+dy < radius * radius                                                                                                                                      #j is always within range of the lidar pings                                                                                                               
+            for j in range(len(scanData)):
+                    
+                dx = pathCentX - j
+                dy = PathCentY- scanData(j)
+                
+                if(dx * dx + dy * dy < pathRadius * pathRadius):
+                    
+                    pass
+
+                else:
+
+                    centX = i
+                    centY = scanData(i)
+                    circle = [centX,centY]
+                    circles.append(circle)
+            
+                        
+        #if the euclidean distance between a circle and the radii of the path segment circle is less than the sum of the radii then an obstacle exists else it does not
+        for c in ranges(circles):
+            if(math.sqrt(math.pow(circles[c][0] - pathCircle[0],2.0) + math.pow(circles[c][1] - pathCircle[1],2.0))  < radius + pathRadius):
+            
+                obsData.exists = True   #an obstacle exists
+            
+            else:
+                obsData.exists = False  #an obstacle does not exists
+                
+        obsPub.publish(obsData)  #publish the obstacle information
 
 def spin(scanData):
     global BOX_WIDTH #width of the bounded box for checkAhead
