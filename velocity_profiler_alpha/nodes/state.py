@@ -12,7 +12,7 @@ from geometry_msgs.msg._Quaternion import Quaternion as QuaternionMsg
 from geometry_msgs.msg._Vector3 import Vector3 as Vector3Msg
 
 from tf.transformations import quaternion_from_euler,euler_from_quaternion # used to convert between the two representations
-from math import cos,sin,tan,sqrt,pi,acos,asin
+from math import cos,sin,tan,sqrt,pi,acos,asin,atan2
 
 class State:
     """
@@ -91,11 +91,6 @@ class State:
         if(pathSeg is not None): # as long as a path is specified
             self.pathPoint=pathSeg.ref_point # a pathPoint can be assumed
         self.segDistDone = 0.0 # new segment so completion is 0 
-        
-        print "self.pathSeg: " + str(self.pathSeg)
-        print "self.point: " + str(self.point)
-        print "self.psi: " + str(self.psi)
-        
     
     def updateState(self, vel_cmd, point, psi):
         """
@@ -112,138 +107,131 @@ class State:
         True if everything went okay
         False if an error occurred
         """
-        
+        dt = 1.0/20.0
         if(self.pathSeg.seg_type == PathSegmentMsg.LINE):
-            # find the normal vector to the line segment
+            # grab the angle of the path
             angle = State.getYaw(self.pathSeg.init_tan_angle)
-            normVec = Vector3Msg()
-            normVec.x = cos(angle+pi/2.0)
-            normVec.y = sin(angle+pi/2.0)
-            
-            tanVec = Vector3Msg()
-            tanVec.x = cos(angle)
-            tanVec.y = sin(angle)
-            
-            # using the point and the normal vector find the intersection of the line through the point and the line
-            p0 = self.pathSeg.ref_point
-            
-            if(normVec.y != 0.0):
-                normRatio = normVec.x/normVec.y
-                numerator = p0.x - point.y - normRatio*p0.y + normRatio*point.y
-                denominator = normRatio*tanVec.y - tanVec.x
-                s = numerator/denominator
-            else:
-                normRatio = normVec.y/normVec.x
-                numerator = p0.y - point.y + normRatio*point.x - normRatio*p0.x
-                denominator = normRatio*tanVec.x - tanVec.y
-                s = numerator/denominator
-            
-            self.pathPoint = PointMsg()
-            self.pathPoint.x = p0.x + tanVec.x*s
-            self.pathPoint.y = p0.y + tanVec.y*s
-            self.pathPoint.z = 0.0
-            
-            # using the intersection find the segDistDone
-            if(angle % pi != pi/2 or angle % pi != 0.0):
-                d1 = (self.pathPoint.x - p0.x)/cos(angle)
-                d2 = (self.pathPoint.y - p0.y)/sin(angle)
-            elif(angle % pi != pi/2):
-                d2 = (self.pathPoint.y - p0.y)/sin(angle)
-                d1 = d2
-            else:
-                d1 = (self.pathPoint.x - p0.x)/cos(angle)
-                d2 = d1
 
-            d = (d1+d2)/2.0
-                        
-            self.segDistDone = d/self.pathSeg.seg_length
-       
-        # need to redo these
-        elif(self.pathSeg.seg_type == PathSegmentMsg.ARC):
-            p = point
-            rhoDes = self.pathSeg.curvature
-            r = 1/abs(rhoDes) # turn radius is inverse of curvature
-            angle = State.getYaw(self.pathSeg.init_tan_angle)
-            center = PointMsg()
-            if(rhoDes >= 0):
-                if(angle > 0.0 and angle <= pi/2.0):
-                    center.x = -r*cos(angle) + self.pathSeg.ref_point.x
-                    center.y = -r*sin(angle) + self.pathSeg.ref_point.y
-                elif(angle > pi/2.0 and angle <= pi):
-                    center.x = r*cos(angle) + self.pathSeg.ref_point.x
-                    center.y = -r*sin(angle) + self.pathSeg.ref_point.y
-                elif(angle > pi and angle <= 3.0*pi/2.0):
-                    center.x = r*cos(angle) + self.pathSeg.ref_point.x
-                    center.y = r*sin(angle) + self.pathSeg.ref_point.y
-                else:
-                    center.x = -r*cos(angle) + self.pathSeg.ref_point.x
-                    center.y = r*sin(angle) + self.pathSeg.ref_point.y
-            else:
-                if(angle > 0.0 and angle <= pi/2.0):
-                    center.x = r*cos(angle) + self.pathSeg.ref_point.x
-                    center.y = r*sin(angle) + self.pathSeg.ref_point.y
-                elif(angle > pi/2.0 and angle <= pi):
-                    center.x = -r*cos(angle) + self.pathSeg.ref_point.x
-                    center.y = r*sin(angle) + self.pathSeg.ref_point.y
-                elif(angle > pi and angle <= 3.0*pi/2.0):
-                    center.x = -r*cos(angle) + self.pathSeg.ref_point.x
-                    center.y = -r*sin(angle) + self.pathSeg.ref_point.y
-                else:
-                    center.x = -r*cos(angle) + self.pathSeg.ref_point.x
-                    center.y = r*sin(angle) + self.pathSeg.ref_point.y
-                
-            # calculate the terms of the quadratic
-            a = pow(center.x,2) - 2.0*center.x*p.x + pow(p.x,2) + pow(center.y,2) - 2.0*center.y*p.y + pow(p.y,2)
-            b = 2.0*pow(center.x,2) - 4.0*center.x*p.x + 2.0*pow(p.x,2) + 2.0*pow(center.y,2) - 4.0*center.y*p.y + 2.0*pow(p.y,2)
-            c = pow(center.x,2) - 2.0*center.x*p.x + pow(p.x,2) + pow(center.y,2) - 2.0*center.y*p.y + pow(p.y,2) - pow(r,2)
-            
-            # get the two solutions using the quadratic formula
-            s1 = (-b + sqrt(pow(b,2) - 4*a*c))/(2*a)
-            s2 = (-b - sqrt(pow(b,2) - 4*a*c))/(2*a)
-            
-            # calculate the point using s1
+            # grab the starting point                        
+            p0 = self.pathSeg.ref_point
+
+            # calculate another point along the line
             p1 = PointMsg()
-            p1.x = (p.x - center.x)*s1 + p.x
-            p1.y = (p.y - center.y)*s1 + p.y
+            p1.x = p0.x + cos(angle)
+            p1.y = p0.y + sin(angle)
             
-            # calculate the point using s2
-            p2 = PointMsg()
-            p2.x = (p.x - center.x)*s2 + p.x
-            p2.y = (p.y - center.y)*s2 + p.y
+            # line segment
+            tanVecMag = pow(p0.x-p1.x,2) + pow(p0.y-p1.y,2)
+
+            # intersection point
+            u = ((point.x - p0.x)*(p1.x-p0.x) + (point.y-p0.y)*(p1.y-p0.y))/tanVecMag
+
+            intersect = PointMsg()
+            intersect.x = point.x + u*cos(angle)
+            intersect.y = point.y + u*sin(angle)
             
-            # calculate the distance from the point on the circle to the robot position
-            s1Dist = sqrt(pow(p1.x-p.x,2) + pow(p1.y-p.y,2))
-            s2Dist = sqrt(pow(p2.x-p.x,2) + pow(p2.y-p.y,2))
-            
-            # set the parameter to the one that minimizes the distance between the circle and the robot position
-            if(s1Dist < s2Dist):
-                s = s1
-                p = p1
+            d = sqrt(pow(point.x-intersect.x,2)+pow(point.y-intersect.y,2))
+
+            self.segDistDone = d/self.pathSeg.seg_length            
+        elif(self.pathSeg.seg_type == PathSegmentMsg.ARC):
+            self.segDistDone += abs((vel_cmd.angular.z*dt)/(self.pathSeg.seg_length/abs(self.pathSeg.curvature)))
+            """
+            tanAngStart = State.getYaw(self.pathSeg.init_tan_angle)
+            rho = self.pathSeg.curvature
+            r = 1/abs(rho)
+            if(rho >= 0):
+                startAngle = tanAngStart - pi/2
             else:
-                s = s2
-                p = p2
+                startAngle = tanAngStart + pi/2
+            
+            ref_point = self.pathSeg.ref_point
+            
+            rVec = State.createVector(ref_point, point)
+            theta = atan2(rVec.y,rVec.x)
+            
+            phi = startAngle % (2*pi)
+            
+            if(abs(phi-2*pi) < phi):
+                phi = phi - 2*pi
                 
-            if(rhoDes >= 0):
-                arcAngStart = angle-pi/2
+            posPhi = phi % (2*pi)
+            posTheta = theta % (2*pi)
+                
+            # figure out angle halfway between end and start angle
+            if(rho >= 0):
+                halfAngle = self.pathSeg.seg_length/(2*r)
+                finAngle = self.pathSeg.seg_length/r
             else:
-                arcAngStart = angle+pi/2
+                halfAngle = self.pathSeg.seg_length/(2*r)
+                finAngle = -self.pathSeg.seg_length/r
+            
+            # find theta in terms of starting angle
+            if(rho >= 0):
+                if(posTheta > posPhi):
+                    beta = posTheta - posPhi
+                else:
+                    beta = 2*pi-posPhi+posTheta
+            else:
+                if(posTheta < posPhi):
+                    beta = posTheta - posPhi
+                else:
+                    beta = posTheta-posPhi-(2*pi)
+                    
                 
-            d1 = (acos((p.x - self.pathSeg.ref_point.x)/r) - arcAngStart)/rhoDes
-            d2 = (asin((p.y - self.pathSeg.ref_point.y)/r) - arcAngStart)/rhoDes
-            
-            d = (d1+d2)/2.0
-            
-            self.segDistDone = d/self.pathSeg.seg_length
-            
+            # figure out what region the angle is in
+            if(rho >= 0):
+                if(beta >= 0 and beta <= halfAngle+pi): # beta is in the specified arc
+                    alpha = beta
+                else:
+                    alpha = -(2*pi-beta)
+            else:
+                if(beta >= halfAngle-pi and beta <= 0):
+                    alpha = beta;
+                else:
+                    alpha = beta + (2*pi)
+                    
+            if(rho >= 0):
+                self.segDistDone = r*alpha/self.pathSeg.seg_length
+            else:
+                self.segDistDone = -r*alpha/self.pathSeg.seg_length
+            """
+
         elif(self.pathSeg.seg_type == PathSegmentMsg.SPIN_IN_PLACE):
-            yaw = State.getYaw(self.pathSeg.init_tan_angle)
-            self.segDistDone = psi - yaw # distance done is the current heading minus the starting heading
+            rho = self.pathSeg.curvature
+            phi = State.getYaw(self.pathSeg.init_tan_angle)
+                
+            posPhi = phi % (2*pi)
+            posPsi = psi % (2*pi)
+            
+            if(rho >=0):
+                halfAngle = self.pathSeg.seg_length/2.0
+            else:
+                halfAngle = self.pathSeg.seg_length/2.0-pi
+            
+            
+            # find beta in terms of starting angle
+
+            if(posPsi > posPhi):
+                beta = posPsi - posPhi
+            else:
+                beta = 2*pi-posPhi+posPsi
+                    
+                
+            # figure out what region the angle is in
+            if(beta >= 0 and beta <= halfAngle+pi): # beta is in the specified arc
+                alpha = beta
+            else:
+                alpha = 2*pi - beta
+                    
+            alpha = alpha % (2*pi)
+                
+            self.segDistDone = alpha/self.pathSeg.seg_length
         else:
             pass # should probably throw an unknown segment type error
         
         # update the current velocity
         self.v = vel_cmd.linear.x
-        self.o = vel_cmd.angular.z
+        self.w = vel_cmd.angular.z
         
         # update the current point and heading
         self.point= point
@@ -262,7 +250,7 @@ class State:
         Nothing
         """
         self.v = 0.0
-        self.o = 0.0
+        self.w = 0.0
     
     @staticmethod
     def getYaw(quat):
@@ -284,9 +272,9 @@ class State:
     @staticmethod
     def createVector(p0,p1):
         vector = Vector3Msg()
-        vector.x = p1[0] - p0[0]
-        vector.y = p1[1] - p0[1]
-        vector.z = p1[2] - p0[2]
+        vector.x = p1.x - p0.x
+        vector.y = p1.y - p0.y
+        vector.z = p1.z - p0.z
         return vector
     
     @staticmethod

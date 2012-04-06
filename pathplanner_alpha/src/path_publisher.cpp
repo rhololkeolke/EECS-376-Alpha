@@ -22,12 +22,31 @@ int seg_number = 0;
 msg_alpha::Obstacles lastObs;
 int numSegs = 5;
 msg_alpha::PathSegment currSeg;
+geometry_msgs::PoseStamped last_map_pose;
+tf::TransformListener *tfl;
+nav_msgs::Odometry last_odom;
 
 //Stack is created
 stack <msg_alpha::PathSegment> pathStack;
 
 ros::Publisher pathPub;
 double progressMade;
+
+geometry_msgs::PoseStamped temp;
+
+void odomCallback(const nav_msgs::Odometry::ConstPtr& odom) 
+{
+        last_odom = *odom;
+        temp.pose = last_odom.pose.pose;
+        temp.header = last_odom.header;
+
+        try {
+        	tfl->transformPose("map", temp, last_map_pose); // given most recent odometry and most recent coord-frame transform, compute
+                                                          // estimate of most recent pose in map coordinates..."last_map_pose"
+        }catch (tf::TransformException ex) {
+        	ROS_ERROR("%s", ex.what());
+        }
+}
 
 
 void segStatusCallback(const msg_alpha::SegStatus::ConstPtr& status)
@@ -36,20 +55,16 @@ void segStatusCallback(const msg_alpha::SegStatus::ConstPtr& status)
 	// segComplete is only true once and we only care about when segComplete transitions to true
 	// so only update if the segment is currently not completed
 	if(!segComplete)
-
-	{
-	  segComplete = status->segComplete;
-	}
-	
-	bAbort = status->abort;
-	
-	  {
 		segComplete = status->segComplete;
-		progressMade = status-> progress_made;
-		
-	  }
-	
 
+	if(status->segComplete == false)
+		ROS_INFO("CallBack false");
+	else
+		ROS_INFO("CallBack true");
+	
+	if(!bAbort)
+		bAbort = status->abort;
+	
 }
 
 void obstaclesCallback(const msg_alpha::Obstacles::ConstPtr& obstacles)
@@ -58,7 +73,7 @@ void obstaclesCallback(const msg_alpha::Obstacles::ConstPtr& obstacles)
 	{
 		lastObs.exists = obstacles->exists;
 		lastObs.distance = obstacles->distance;
-		 
+		lastObs.ping_angle = obstacles->ping_angle;
 	}
 }
 
@@ -66,52 +81,78 @@ int calculateNewX(int initX, int distanceTraveled, int angle)
 {
 
   //  int newX = cos(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled; 
-  int newX = cos(tf::getYaw(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled; 
+  int newX = initX + cos(angle*PI/180.0)*distanceTraveled; 
 
   return newX;
-
 }
 
 int calculateNewY(int initY, int distanceTraveled, int angle)
 {
 
   //  int newY = (sin(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled;
-  int newY = sin(tf::getYaw(tf::createQuaternionMsgFromYaw(angle*PI/180.0)))*distanceTraveled; 
+  int newY = initY + sin(angle*PI/180.0)*distanceTraveled; 
   return newY;
-
 }
 
 
 void initStack()
 {
+	msg_alpha::PathSegment Seg1;
+	Seg1.curvature = 0; //Sets the curvature to 0 for the straight
+	Seg1.max_speeds.linear.x = .25;
+	Seg1.max_speeds.angular.z = .25;
+	Seg1.min_speeds.linear.x = 0;
+	Seg1.min_speeds.angular.z = 0;
+	Seg1.accel_limit = .25;
+	Seg1.decel_limit = .25;
+	Seg1.seg_number = 5;
+	Seg1.seg_type = 1;
+	Seg1.seg_length = 1;
+	Seg1.ref_point.x = calculateNewX(-3.28,1,45.22);
+	Seg1.ref_point.y = calculateNewY(20.8,1,45.22);
+	Seg1.init_tan_angle = tf::createQuaternionMsgFromYaw(45.22*PI/180.0);
+	pathStack.push(Seg1);
 
-	msg_alpha::PathSegment Seg;		
-
-	//To the Coffee Machine
-	Seg.seg_number = 5;
-	Seg.seg_type = 1;
-	Seg.seg_length = 1;
-	Seg.ref_point.x = calculateNewX(-3.28,1,45.22);
-	Seg.ref_point.y = calculateNewY(20.8,1,45.22);
-	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(45.22*PI/180.0);
-	pathStack.push(Seg);
-
-	Seg.seg_number = 5;
-	Seg.seg_type = 1;
-	Seg.seg_length = 1;
-	Seg.ref_point.x = -3.28;
-	Seg.ref_point.y = 20.8;
-	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(45.22*PI/180.0);
-	pathStack.push(Seg);
+	msg_alpha::PathSegment Seg2;
+	Seg2.curvature = 0; //Sets the curvature to 0 for the straight
+	Seg2.max_speeds.linear.x = .25;
+	Seg2.max_speeds.angular.z = .25;
+	Seg2.min_speeds.linear.x = 0;
+	Seg2.min_speeds.angular.z = 0;
+	Seg2.accel_limit = .25;
+	Seg2.decel_limit = .25;
+	Seg2.seg_number = 5;
+	Seg2.seg_type = 1;
+	Seg2.seg_length = 1;
+	Seg2.ref_point.x = -3.28;
+	Seg2.ref_point.y = 20.8;
+	Seg2.init_tan_angle = tf::createQuaternionMsgFromYaw(45.22*PI/180.0);
+	pathStack.push(Seg2);
 
 	//Second turn
-	Seg.seg_number = 4;
-	Seg.seg_type = 3;
-	Seg.seg_length = -PI/2;
-	Seg.ref_point.x = 14.84;
-	Seg.ref_point.y = 3.91;
-	pathStack.push(Seg);
+	msg_alpha::PathSegment Seg3;
+	Seg3.max_speeds.linear.x = .25;
+	Seg3.max_speeds.angular.z = .25;
+	Seg3.min_speeds.linear.x = 0;
+	Seg3.min_speeds.angular.z = 0;
+	Seg3.accel_limit = .25;
+	Seg3.decel_limit = .25;
+	Seg3.seg_number = 5;
+	Seg3.curvature = -1; //sets the curvature ot -1 for just the turn
+	Seg3.seg_type = 3;
+	Seg3.seg_length = -PI/2;
+	Seg3.ref_point.x = 14.84;
+	Seg3.ref_point.y = 3.91;
+	pathStack.push(Seg3);
 
+	msg_alpha::PathSegment Seg;
+	Seg.max_speeds.linear.x = .25;
+	Seg.max_speeds.angular.z = .25;
+	Seg.min_speeds.linear.x = 0;
+	Seg.min_speeds.angular.z = 0;
+	Seg.accel_limit = .25;
+	Seg.decel_limit = .25;
+	Seg.curvature = 0; //sets the curvature to 0 for the entire straight
 	//Long straight away from the lab
 	Seg.seg_number = 3;
 	Seg.seg_type = 1;
@@ -227,12 +268,15 @@ void initStack()
 
 	//Initial Turn
 	Seg.seg_number = 2;
+	Seg.curvature = -1; //Sets the curvature to -1 for the turn
 	Seg.seg_type = 3;
 	Seg.seg_length = -PI/2;
 	Seg.ref_point.x = 5.23;
 	Seg.ref_point.y = 11.92;		
 	pathStack.push(Seg);
 
+	
+	Seg.curvature = 0; //Sets the curvature to 0 for the straight
 	//Initial Straight, toward lab
 	Seg.seg_number = 1;
 	Seg.seg_type = 1;
@@ -273,10 +317,20 @@ void initStack()
 	Seg.ref_point.y = 14.74;
 	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
 	pathStack.push(Seg);
+
+	Seg.seg_number = 0;
+	Seg.seg_type = 1;
+	Seg.seg_length = 0;
+	Seg.ref_point.x = 8.27;
+	Seg.ref_point.y = 14.74;
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);
+	pathStack.push(Seg);
 }
 
 void publishSeg() 
 {
+	ros::Rate naptime = ros::Rate(30);
+
 	if (pathStack.empty())
 		return;
 	//update currseg,pop,then pub. all in ros::ok loop
@@ -285,51 +339,55 @@ void publishSeg()
 	currSeg.seg_number = temp + 1;
 	do {
 		ros::spinOnce();
+		ROS_INFO("Publish Seg "+segComplete);
 		if (segComplete == true)
 		{
 			pathStack.pop();
 			pathPub.publish(currSeg);
 			segComplete = false;
-			ROS_INFO("I published another node! Be proud...");
+			ROS_INFO("I published another node! Be proud... Seg number was %d", currSeg.seg_number);
 		}
-	} while(!segComplete);
+		naptime.sleep();
+	} while((!segComplete || bAbort) && ros::ok());
 }
 
-
-void arcRight(int angle)
+void arcRight()
 {
+	int arcRadius = lastObs.wall_dist_right/2 - 20;
+
 	msg_alpha::PathSegment Seg;
-	//fix me
 	Seg.seg_number = currSeg.seg_number+1;
-	Seg.seg_type = 1;
-	Seg.seg_length = 4.2;
-	Seg.ref_point.x = 8.27;
-	Seg.ref_point.y = 14.74;
-	//This needs attention
-	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(angle);
+	Seg.seg_type = 2;
+	Seg.seg_length = (PI/2)*arcRadius;
+	ROS_INFO("arcRight Hit");
+	Seg.ref_point.x = last_map_pose.pose.position.x + arcRadius*cos(tf::getYaw(last_map_pose.pose.orientation));
+	Seg.ref_point.y = last_map_pose.pose.position.y + arcRadius*sin(tf::getYaw(last_map_pose.pose.orientation));
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(-PI/2);	
 	pathStack.push(Seg);
 	publishSeg();
 
 }
 
-void arcLeft(int angle)
+void arcLeft()
 {
-	msg_alpha::PathSegment Seg;	
-	//fix me
+	int arcRadius = lastObs.wall_dist_left/2 - 20;
+
+	msg_alpha::PathSegment Seg;
 	Seg.seg_number = currSeg.seg_number+1;
-	Seg.seg_type = 1;
-	Seg.seg_length = 4.2;
-	Seg.ref_point.x = 8.27;
-	Seg.ref_point.y = 14.74;
-	//this needs attention
-	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(angle);
+	Seg.seg_type = 2;
+	Seg.seg_length = (PI/2)*arcRadius;
+	ROS_INFO("arcLeft Hit");
+	Seg.ref_point.x = last_map_pose.pose.position.x + arcRadius*cos(tf::getYaw(last_map_pose.pose.orientation));
+	Seg.ref_point.y = last_map_pose.pose.position.y + arcRadius*sin(tf::getYaw(last_map_pose.pose.orientation));
+	Seg.init_tan_angle = tf::createQuaternionMsgFromYaw(PI/2);	
 	pathStack.push(Seg);
 	publishSeg();
+
 }
 
-bool checkSide(int arcAngle, int dist)
+bool checkSide(int arcRadius, int dist)
 {
-	if (dist > arcAngle) {
+	if (dist > arcRadius) {
 		return true;
 	} else {
 		return false;
@@ -337,7 +395,7 @@ bool checkSide(int arcAngle, int dist)
 }
 
 //Summary: Place a new segment on the stack after obstacle avoidance
-
+/*
 void calcHalfSeg()
 {
   
@@ -347,7 +405,7 @@ void calcHalfSeg()
   double dAng; //
   double arcAng; //
   double rho; //curvature
-  //double tanAngle = tf::getYaw(temp_pose_out_.pose.orientation);
+  //double tanAngle = ::getYaw(temp_pose_out_.pose.orientation);
 	
   msg_alpha::PathSegment finalSeg;
   finalSeg = pathStack.top();
@@ -366,16 +424,7 @@ void calcHalfSeg()
 	double xDes = finalSeg.ref_point.x; //update desired x pos
 	double yDes = finalSeg.ref_point.y; //update desired y pos
 	double psiDes = tangentAngStart + dAng;
-/*
-	msg_alpha::PathSegment seg;
-	seg.seg_number = 2;//need to increment from before obs                                                                                                 
-	seg.seg_type = 1; //straight                                                                                                                           
-	seg.seg_length = ?;
-	seg.ref_point.x = xDes;
-	seg.ref_point.y = yDes;
-	seg.init_tan_angle = tf::createQuaternionMsgFromYaw(psiDes);
-	pathStack.push(seg);
-*/
+
 	msg_alpha::PathSegment newFinalSeg;
 	newFinalSeg = pathStack.top();
 
@@ -388,13 +437,13 @@ void calcHalfSeg()
 	newSeg.seg_length = distance;
 	newSeg.ref_point.x = xDes;
 	newSeg.ref_point.y = yDes;
+	ROS_INFO("calcHalfSeg Hit");
 	newSeg.init_tan_angle = tf::createQuaternionMsgFromYaw(psiDes);
 	pathStack.push(newSeg);
 
 	pathStack.push(newFinalSeg); 
-
 }
-
+*/
 
 void goStraight()
 {
@@ -405,6 +454,7 @@ void goStraight()
 	smallGoStraight.seg_length = 0.5;
 	smallGoStraight.ref_point.x = 0;//need to recalculate every time
 	smallGoStraight.ref_point.y = 0;//same
+	ROS_INFO("goStraight Hit");
 	smallGoStraight.init_tan_angle = tf::createQuaternionMsgFromYaw(-135.7*PI/180.0);//should be constant and same as pre obs angle
 	pathStack.push(smallGoStraight);
 	publishSeg();
@@ -414,59 +464,70 @@ void detour()
 {
 	//this method assumes that the lidar node will wait three seconds
 	//before publishing a segStatus of !OK
-
+	bAbort = false;
 	//First thing we need to do is 
-	int arcAngle;
-	int obst_angle;
+	int arcRadius;
+	//int obst_angle;
 	int obst_side = 0; //left is 1, right is 2. this should be an enum
 
 
 
 	//figure out which way to turn
-	if (lastObs.left_dist == 0) { //only called on abort so one should be zero and one should be distance
+	//Is called on right turn
+	if (lastObs.ping_angle < 90) { //only called on abort so one should be zero and one should be distance
 		obst_side = 2; //right
-		arcAngle = lastObs.wall_dist_rt/2;
-		arcLeft(arcAngle);
-		arcRight(arcAngle);
-		while(!checkSide(0.6,lastObs.rt_dist)){
+		arcRadius = lastObs.wall_dist_right/2 + 20;
+		arcLeft();
+		arcRight();
+		while(!checkSide(0.6,lastObs.wall_dist_right)){
 			goStraight();
 		}
-		arcRight(arcAngle);
-		arcLeft(arcAngle);
-
+		arcRight();
+		arcLeft();
+	//Is called on a left turn
 	} else {
 		obst_side = 1; //left
-		arcAngle = lastObs.wall_dist_lt/2;
-		arcRight(arcAngle);
-		arcLeft(arcAngle);
-		while(!checkSide(.6,lastObs.left_dist)){
+		arcRadius = lastObs.wall_dist_left/2;
+		arcRight();
+		arcLeft();
+		while(!checkSide(.6,lastObs.wall_dist_left)){
 			goStraight();
 		}
-		arcLeft(arcAngle);
-		arcRight(arcAngle);
+		arcLeft();
+		arcRight();
 	}
 }
+
 
 int main(int argc, char **argv)
 {
 	ros::init(argc,argv,"path_publisher");
 	ros::NodeHandle n;
 
+	tfl = new tf::TransformListener();
+
 	msg_alpha::PathSegment Seg;
 
+	initStack();
+
 	pathPub = n.advertise<msg_alpha::PathSegment>("path_seg",1);
-	ros::Subscriber segSub = n.subscribe<msg_alpha::SegStatus>("seg_status",1,segStatusCallback);
+	ros::Subscriber sub = n.subscribe<nav_msgs::Odometry>("odom", 1, odomCallback); 
+	ros::Subscriber segSub = n.subscribe<msg_alpha::SegStatus>("seg_status",10,segStatusCallback);
 	ros::Subscriber obst_angle = n.subscribe<msg_alpha::Obstacles>("obstacles",1,obstaclesCallback);
 
-	ros::Rate naptime(10);
+	ros::Rate naptime(30);
+
+	pathPub.publish(pathStack.top());
+	pathStack.pop();
 
 	while(!ros::Time::isValid()) {}	
 
 	while(ros::ok() && !pathStack.empty())
 	{
 		//While seg status is ok.
-		if(!abort)
+		if(!bAbort)
 		{
+			naptime.sleep();
 			publishSeg();
 		}
 		else {
