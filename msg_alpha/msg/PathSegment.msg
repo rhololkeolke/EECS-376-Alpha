@@ -9,6 +9,10 @@ int8 SPIN_IN_PLACE = 3
 #Segment type
 int8 seg_type
 
+#If set to true the path will be taken in the robot's coordinate frame
+#If set to false the path will be taken in the map coordinate frame
+bool relative
+
 #Segment number
 uint32 seg_number
 
