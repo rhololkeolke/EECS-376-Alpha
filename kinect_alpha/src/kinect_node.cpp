@@ -1,7 +1,7 @@
 #include <ros/ros.h>
 #include <image_transport/image_transport.h>
-#include <opencv/cv.h>
-#include <opencv/highgui.h>
+#include <opencv2/cv.h>
+#include <opencv2/highgui.h>
 #include <cv_bridge/CvBridge.h>
 #include <geometry_msgs/Twist.h>
 
