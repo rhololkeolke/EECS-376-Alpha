@@ -9,6 +9,7 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/kinect_alpha</url>
   <depend package="rospy"/>
+  <depend package="msg_alpha"/>
 
 </package>
 
