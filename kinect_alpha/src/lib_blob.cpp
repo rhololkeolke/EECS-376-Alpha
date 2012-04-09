@@ -4,7 +4,6 @@
 #include <cv_bridge/CvBridge.h>
 
 #include <kinect_alpha/lib_blob.h>
-
 #include <kinect_alpha/cvblob.h>
 
 #include <time.h>

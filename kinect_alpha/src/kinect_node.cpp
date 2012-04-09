@@ -9,13 +9,7 @@
 
 #include <boost/format.hpp>
 
-// PCL includes
-#include "pcl_ros/point_cloud.h"
-#include <pcl/ros/conversions.h>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-
-// OpenCV includes
+/n/ OpenCV includes
 #include <image_transport/image_transport.h>
 #include <image_transport/subscriber_filter.h>
 #include <cv_bridge/cv_bridge.h>
@@ -24,10 +18,6 @@
 #include <opencv2/opencv.hpp>
 
 using std::string;
-using sensor_msgs::PointCloud2;
-
-// Shorthand for our point cloud type
-typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudXYZRGB;
 
 // Global variables here
 ros::Publisher             cloud_pub_;
@@ -52,13 +42,6 @@ void allCB(const sensor_msgs::ImageConstPtr& image_msg,
 	ROS_INFO_STREAM(boost::format("Callback got an image in format %s, size %dx%d")
 		%cv_ptr->encoding %cv_ptr->image.size().width %cv_ptr->image.size().height );
 
-	// Convert the image from ROS format to PCL format
-	PointCloudXYZRGB cloud;
-	pcl::fromROSMsg(*cloud_msg, cloud);
-
-	ROS_INFO_STREAM(boost::format("Cloud has size %dx%d. organized=%s")
-		%cloud.width %cloud.height %(cloud.isOrganized() ? "true" : "false") );
-	
 	// Show the image.  The window does not update without the cvWaitKey.
 	cv::imshow(window_name_.c_str(), cv_ptr->image);
 	cvWaitKey(5);
@@ -97,8 +80,8 @@ void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& msg)
     ROS_ERROR("Could not convert from '%s' to 'bgr8'. E was %s", msg->encoding.c_str(), e.what());
   }
   try {
-    //normalizeColors(image, output);
-    //blobfind(image, output);
+    normalizeColors(image, output);
+    blobfind(image, output);
     findLines(image, output);
     //cv::imshow("view", output);
     IplImage temp = output;
