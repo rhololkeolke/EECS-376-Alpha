@@ -1,0 +1,18 @@
+<package>
+  <description brief="pos_publisher_alpha">
+
+     pos_publisher_alpha
+
+  </description>
+  <author>Devin Schwab</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/pos_publisher_alpha</url>
+  <depend package="roscpp"/>
+  <depend package="rospy"/>
+  <depend package="msg_alpha"/>
+  <depend package="cwru_base"/>
+
+</package>
+
+
