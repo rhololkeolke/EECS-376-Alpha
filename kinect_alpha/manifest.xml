@@ -1,0 +1,15 @@
+<package>
+  <description brief="kinect_alpha">
+
+     kinect_alpha
+
+  </description>
+  <author>mark</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/kinect_alpha</url>
+  <depend package="rospy"/>
+
+</package>
+
+
