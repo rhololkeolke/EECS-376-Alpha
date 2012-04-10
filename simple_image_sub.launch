@@ -10,8 +10,10 @@
 	</node>
 	
 
-	<!-- 
+	
 	<!-- A node to view the output of simple_image_sub -->
+	
+	<!-- 
 	<node pkg="kinect_alpha" type="i" name="rgb_image_viewer" output="screen">
 		<remap from="image" to="/simple_image_sub/out_image"/>
 	</node>
