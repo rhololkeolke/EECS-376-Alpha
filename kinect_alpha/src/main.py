@@ -18,6 +18,8 @@ def main()
 	rospy.init_node('kinect_move_alpha')
 	desVelPub = rospy.Publisher('cmd_vel', TwistMsg)
 
+	rospy.Subscriber("blob_dist", BlobDistance, distanceCallback)
+
 	vel_cmd = TwistMsg()
 	
 	while(not rospy.is_shutdown()):
