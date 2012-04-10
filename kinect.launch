@@ -6,7 +6,7 @@
 
 
 	<!-- Simple image subscriber/publisher -->
-	<node pkg="kinect_alpha" type="kinect_node" name="simple_image_sub" output="screen" >	
+	<node pkg="kinect_alpha" type="kinect_alpha" name="simple_image_sub" output="screen" >	
 		<remap from="in_image" to="/camera/rgb/image_rect_color"/>
 	
 		<!--<param name="test"  type="string" value="hello123"/>-->
