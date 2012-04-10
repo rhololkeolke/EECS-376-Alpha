@@ -5,8 +5,8 @@
 	<node pkg="kinect_alpha" type="kinect_node" name="simple_image_sub" output="screen" >	
 		<remap from="in_image" to="/camera/rgb/image_rect_color"/>
 	
-		<param name="test"  type="string" value="hello123"/>
-		<param name="test2" type="double" value="3.141"   />
+		<!--<param name="test"  type="string" value="hello123"/>-->
+		<!--<param name="test2" type="double" value="3.141"   />-->
 	</node>
 	
 
