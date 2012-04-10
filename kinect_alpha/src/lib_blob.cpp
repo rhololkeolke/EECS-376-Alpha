@@ -3,7 +3,7 @@
 #include <opencv/highgui.h>
 #include <cv_bridge/CvBridge.h>
 
-#include <kinect_alpha/lib_blob.h>
+#include "lib_blob.h"
 #include <kinect_alpha/cvblob.h>
 
 #include <time.h>
@@ -50,7 +50,7 @@ void findLines(const cv::Mat& src, cv::Mat& out) {
   out = color_temp;
 }
 
-void blobfind(const cv::Mat& src, cv::Mat& out)
+void blobfind(const cv::Mat& src, cv::Mat& out, int point)
 {
   Mat temp;
 
@@ -99,4 +99,5 @@ void blobfind(const cv::Mat& src, cv::Mat& out)
 
   out = temp;
   cvReleaseImage(&labelImg);
+  point = center.x;
 }
