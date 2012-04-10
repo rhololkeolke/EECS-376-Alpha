@@ -86,6 +86,7 @@ def publishSeg1(pathPub):
 
     naptime = rospy.Rate(RATE)
 
+    '''
     pathSeg = PathSegmentMsg()
     pathSeg.seg_type = PathSegmentMsg.LINE
     pathSeg.seg_number = 1
@@ -99,7 +100,25 @@ def publishSeg1(pathPub):
     pathSeg.decel_limit = .25
     pathPub.publish(pathSeg)
     seg_number += 1
+    '''
 
+
+    rightArc = PathSegmentMsg()
+    rightArc.seg_type = PathSegmentMsg.ARC
+    rightArc.seg_number = 1
+    rightArc.seg_length = 1.2
+    rightArc.init_tan_angle = pose.pose.orientation
+    rightArc.curvature = -1.0/.8
+    rightArc.max_speeds.linear.x = .25
+    rightArc.max_speeds.angular.z = .25
+    rightArc.accel_limit = .25
+    rightArc.decel_limit = .25
+    pathPub.publish(rightArc)
+
+    print "Published the right arc"
+    seg_number += 1
+
+    
     naptime.sleep()
 
 def publishSeg2(pathPub):
@@ -435,8 +454,10 @@ def main():
     publishSeg3(pathSegPub)
     publishSeg4(pathSegPub)
     publishSeg5(pathSegPub)
+    
 
     while not rospy.is_shutdown():
+        
         if segAbort:
             detour(pathSegPub)
             if last_seg == 1:
@@ -452,17 +473,22 @@ def main():
                 publishSeg3(pathSegPub)
                 publishSeg4(pathSegPub)
                 publishSeg5(pathSegPub)
+            
+                
             elif last_seg == 3:
-                publishSeg3(pathSegPub)
-                publishSeg4(pathSegPub)
-                publishSeg5(pathSegPub)
+               publishSeg3(pathSegPub)
+               publishSeg4(pathSegPub)
+               publishSeg5(pathSegPub)
             elif last_seg == 4:
                 publishSeg4(pathSegPub)
                 publishSeg5(pathSegPub)
             elif last_seg == 5:
                 publishSeg5(pathSegPub)
-        naptime.sleep()
-            
+        
+
+
+            naptime.sleep()
+           
     
 
 if __name__ == "__main__":

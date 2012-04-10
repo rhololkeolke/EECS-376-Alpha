@@ -12,8 +12,8 @@
 <node name="laser_listener" pkg="look_ahead" type="look_ahead.py" respawn="true" /> 
 <node name="velocity_profiler" pkg="velocity_profiler_alpha" type="main.py" respawn="true"/>
 <node name="steering" pkg="steering_alpha" type="steering_example" respawn="true" />
-<node name="pathpub" pkg="pathplanner_alpha" type="path_publisher" respawn="true" />
-<node name="pospub" pkg="pos_publisher_alpha" type="main" respawn="true" />
+<!--<node name="pathpub" pkg="pathplanner_alpha" type="path_publisher" respawn="true" />-->
+<node name="pospub" pkg="pos_publisher_alpha" type="main" respawn="true" />--
 
 
 </launch>
