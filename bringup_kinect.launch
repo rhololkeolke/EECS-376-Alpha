@@ -1,4 +1,4 @@
-<!-- Starts the OpenNI Kinect driver and sets up static transforms -->
+<!-- Starts the OpenNI Kinect driver and sets up static transform -->
 <launch>
 	<!-- Kinect driver -->
 	<include file="$(find openni_launch)/launch/openni.launch" />
