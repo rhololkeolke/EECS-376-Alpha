@@ -1,4 +1,5 @@
 #include <ros/ros.h>
+#include <iostream>
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
 #include <cv_bridge/CvBridge.h>
@@ -50,7 +51,7 @@ void findLines(const cv::Mat& src, cv::Mat& out) {
   out = color_temp;
 }
 
-void blobfind(int vals[], const cv::Mat& src, cv::Mat& out, int point)
+void blobfind(int vals[], const cv::Mat& src, cv::Mat& out, int& point)
 {
   Mat temp;
 
@@ -97,6 +98,7 @@ void blobfind(int vals[], const cv::Mat& src, cv::Mat& out, int point)
     center = cvCentroid(blobs[greatestBlob]);
   }
 
+  std::cout << center.x << std::endl;
 //  out = temp;
   cvReleaseImage(&labelImg);
   point = center.x;

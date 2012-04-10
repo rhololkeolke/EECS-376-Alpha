@@ -70,17 +70,20 @@ void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
 		return;
 	}
 	
-	ROS_INFO_STREAM(boost::format("Callback got an image in format %s, size %dx%d")
-		%cv_ptr->encoding %cv_ptr->image.size().width %cv_ptr->image.size().height );
+//	ROS_INFO_STREAM(boost::format("Callback got an image in format %s, size %dx%d")
+//		%cv_ptr->encoding %cv_ptr->image.size().width %cv_ptr->image.size().height );
 
   cv::Mat output;
   try {
     //normalizeColors(cv_ptr->image, output);
-    blobfind(params, cv_ptr->image, output, blobDist.dist);
+	int tempInt;
+    blobfind(params, cv_ptr->image, output, tempInt);
     //findLines(cv_ptr->image, output);
     cv::imshow("view", output);
     cvWaitKey(5);
     IplImage temp = output;
+	blobDist.dist = tempInt;
+	std::cout << blobDist << std::endl;
     KinectNode::blobPub.publish(blobDist);
     //image_pub_.publish(bridge.cvToImgMsg(&temp, "bgr8"));
   }
