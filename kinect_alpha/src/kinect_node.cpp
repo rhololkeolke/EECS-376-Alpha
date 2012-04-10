@@ -38,11 +38,19 @@ class KinectNode {
     //image_transport::Publisher image_pub_;
     msg_alpha::BlobDistance blobDist;
     ros::Publisher blobPub;
+    int params[6];
 };
 
 KinectNode::KinectNode():
   it_(nh_)
 {
+  ros::NodeHandle private_nh("~");
+  private_nh.param("rh",params[0], 200);
+  private_nh.param("rl",params[1], 200);
+  private_nh.param("bh",params[2], 200);
+  private_nh.param("bl",params[3], 200);
+  private_nh.param("gh",params[4], 200);
+  private_nh.param("gl",params[5], 200);
   sub_ = it_.subscribe("in_image", 1, &KinectNode::imageCallback, this);
   //image_pub_ = it_.advertise("out_image", 1);
   blobPub = nh_.advertise<msg_alpha::BlobDistance>("blob_dist",1);
@@ -66,7 +74,7 @@ void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
   cv::Mat output, output1, output2;
   try {
     //normalizeColors(cv_ptr->image, output);
-    blobfind(cv_ptr->image, output, blobDist.dist);
+    blobfind(params, cv_ptr->image, output, blobDist.dist);
     //findLines(cv_ptr->image, output);
     cv::imshow("view", output);
     IplImage temp = output;
