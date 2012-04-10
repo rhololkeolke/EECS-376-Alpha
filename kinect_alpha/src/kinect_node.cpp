@@ -82,9 +82,9 @@ void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "kinect_alpha");
+  cv::namedWindow("view"); //these cv* calls are need if you want to use cv::imshow anywhere in your program
+  cvStartWindowThread();
   KinectNode motion_tracker;
-  cv::NamedWindow("view"); //these cv* calls are need if you want to use cv::imshow anywhere in your program
-  cv::StartWindowThread();
   ros::spin();
-  cv::DestroyWindow("view");
+  cvDestroyWindow("view");
 }
