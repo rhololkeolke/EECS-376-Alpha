@@ -37,6 +37,7 @@ class KinectNode {
     image_transport::Subscriber sub_;
     image_transport::Publisher image_pub_;
     msg_alpha::BlobDistance blobDist;
+    ros::Publisher blobPub;
 };
 
 KinectNode::KinectNode():
@@ -44,7 +45,7 @@ KinectNode::KinectNode():
 {
   sub_ = it_.subscribe("in_image", 1, &KinectNode::imageCallback, this);
   image_pub_ = it_.advertise("out_image", 1);
-  ros::Publisher blobPub = n.advertise<msg_alpha::BlobDistance>("blob_dist");
+  blobPub = nh_.advertise<msg_alpha::BlobDistance>("blob_dist",1);
 }
 
 void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
@@ -62,14 +63,14 @@ void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
 	ROS_INFO_STREAM(boost::format("Callback got an image in format %s, size %dx%d")
 		%cv_ptr->encoding %cv_ptr->image.size().width %cv_ptr->image.size().height );
 
-  cv::Mat output1, output2;
+  cv::Mat output, output1, output2;
   try {
     //normalizeColors(cv_ptr->image, output);
     blobfind(cv_ptr->image, output, blobDist.dist);
     //findLines(cv_ptr->image, output);
     //cv::imshow("view", output);
     IplImage temp = output;
-    blobPub.publish();
+    KinectNode::blobPub.publish(blobDist);
     //image_pub_.publish(bridge.cvToImgMsg(&temp, "bgr8"));
   }
   catch (cv_bridge::Exception& e) {
