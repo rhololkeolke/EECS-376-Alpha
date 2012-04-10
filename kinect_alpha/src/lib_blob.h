@@ -3,7 +3,7 @@
 
 #include <opencv2/opencv.hpp>
 
-void blobfind(const cv::Mat& src, cv::Mat& out, int point);
+void blobfind(int vars[], const cv::Mat& src, cv::Mat& out, int point);
 
 void normalizeColors(const cv::Mat& src, cv::Mat& out);
 

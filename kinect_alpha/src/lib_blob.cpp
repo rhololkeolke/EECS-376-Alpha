@@ -97,7 +97,7 @@ void blobfind(int vals[], const cv::Mat& src, cv::Mat& out, int point)
     center = cvCentroid(blobs[greatestBlob]);
   }
 
-  out = temp;
+//  out = temp;
   cvReleaseImage(&labelImg);
   point = center.x;
 }
