@@ -35,7 +35,7 @@ class KinectNode {
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;
     image_transport::Subscriber sub_;
-    image_transport::Publisher image_pub_;
+    //image_transport::Publisher image_pub_;
     msg_alpha::BlobDistance blobDist;
     ros::Publisher blobPub;
 };
@@ -44,7 +44,7 @@ KinectNode::KinectNode():
   it_(nh_)
 {
   sub_ = it_.subscribe("in_image", 1, &KinectNode::imageCallback, this);
-  image_pub_ = it_.advertise("out_image", 1);
+  //image_pub_ = it_.advertise("out_image", 1);
   blobPub = nh_.advertise<msg_alpha::BlobDistance>("blob_dist",1);
 }
 
@@ -68,7 +68,7 @@ void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
     //normalizeColors(cv_ptr->image, output);
     blobfind(cv_ptr->image, output, blobDist.dist);
     //findLines(cv_ptr->image, output);
-    //cv::imshow("view", output);
+    cv::imshow("view", output);
     IplImage temp = output;
     KinectNode::blobPub.publish(blobDist);
     //image_pub_.publish(bridge.cvToImgMsg(&temp, "bgr8"));
@@ -83,8 +83,8 @@ int main(int argc, char **argv)
 {
   ros::init(argc, argv, "kinect_alpha");
   KinectNode motion_tracker;
-  //cvNamedWindow("view"); //these cv* calls are need if you want to use cv::imshow anywhere in your program
-  //cvStartWindowThread();
+  cvNamedWindow("view"); //these cv* calls are need if you want to use cv::imshow anywhere in your program
+  cvStartWindowThread();
   ros::spin();
-  //cvDestroyWindow("view");
+  cvDestroyWindow("view");
 }
