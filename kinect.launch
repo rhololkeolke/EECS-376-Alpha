@@ -1,0 +1,43 @@
+<!---->
+<launch>
+
+	<!-- Kinect driver -->
+        <include file="$(find openni_launch)/launch/openni.launch" />
+
+
+	<!-- Simple image subscriber/publisher -->
+	<node pkg="kinect_alpha" type="kinect_node" name="simple_image_sub" output="screen" >	
+		<remap from="in_image" to="/camera/rgb/image_rect_color"/>
+	
+		<!--<param name="test"  type="string" value="hello123"/>-->
+		<!--<param name="test2" type="double" value="3.141"   />-->
+	</node>
+
+	
+	
+        <!-- Static transform from Harlie's base to the pan mount 
+        <node pkg="tf" type="in_image" name="kinect_static_tf_pub" respawn="true"
+         args="-0.00 0 1.5572 0.017453 0.1047198 -0.017453 base_link camera_link 100" />
+	-->
+	
+        <!-- Image viewers.  To save an image, right-click on the window.  Images will be saved to the .ros directory by default 
+        <node pkg="image_view" type="image_view" name="depth_image_viewer" output="screen">
+                <remap from="image" to="/camera/depth/image_rect"/>
+        </node>
+
+        <node pkg="image_view" type="image_view" name="rgb_image_viewer" output="screen">
+                <remap from="image" to="/camera/rgb/image_rect_color"/>
+        </node>
+	-->
+
+
+	
+	<!-- A node to view the output of simple_image_sub -->
+	
+	<!-- 
+	<node pkg="kinect_alpha" type="i" name="rgb_image_viewer" output="screen">
+		<remap from="image" to="/simple_image_sub/out_image"/>
+	</node>
+	-->
+
+</launch>
