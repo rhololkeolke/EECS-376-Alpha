@@ -3,10 +3,11 @@
 #include <math.h>
 #include <std_msgs/Bool.h>
 #include <cwru_base/cRIOSensors.h>
-#include <eecs_376_alpha/PathSegment.h>
-#include <eecs_376_alpha/SegStatus.h>
-#include <eecs_376_alpha/Obstacles.h>
-#include "state.h"
+#include <msg_alpha/PathSegment.h>
+#include <msg_alpha/SegStatus.h>
+#include <msg_alpha/Obstacles.h>
+#include <iostream>
+#include <tf/transform_datatypes.h>
 #include "lockedQueue.h"
 
 using namespace std;
@@ -16,142 +17,136 @@ const double RATE = 20.0; // set the rate of refresh
 
 bool stopped = false; // stores the value of the estop
 
-lockedQueue<eecs_376_alpha::PathSegment*> segments;
+// stores the values of the obstacles in the way
+bool obs = false;
+double obs_dist = 0.0;
 
-void pathSegmentCallback(const eecs_376_alpha::PathSegment::ConstPtr& segment)
+double lastVCmd = 0;
+double lastOCmd = 0;
+
+int seg_number = 0;
+
+//lockedQueue<msg_alpha::PathSegment*> segments;
+
+// true when currSeg and nextSeg have actual values we want to follow
+bool currSegExists = false;
+bool nextSegExists = false;
+msg_alpha::PathSegment nextSeg;
+msg_alpha::PathSegment currSeg;
+
+class State
 {
-  eecs_376_alpha::PathSegment *newSeg = new eecs_376_alpha::PathSegment();
-  // copy all of the values over
-  newSeg->seg_number = segment->seg_number;
-  newSeg->seg_type = segment->seg_type;
-  newSeg->curvature = segment->curvature;
-  newSeg->seg_length = segment->seg_length;
-  newSeg->ref_point = segment->ref_point;
-  newSeg->init_tan_angle = segment->init_tan_angle;
-  newSeg->max_speeds = segment->max_speeds;
-  newSeg->accel_limit = segment->accel_limit;
-  newSeg->decel_limit = segment->decel_limit;
+public:
+  State();
+  void updateState(double v_cmd, double omega_cmd, double dt);
+  void stop();
+  // getters
+  double getX();
+  double getY();
+  double getPhi();
+  double getVCmd();
+  double getOCmd();
+  double getDistDone();
+  double getAngDone();
+private:
+  double x,y,phi,v,omega,segDistDone,spinAngDone;
+};
 
-  segments.push(newSeg);
+State::State() {
+  x = 0.0;
+  y = 0.0;
+  phi = 0.0;
+  v = 0.0; // assume start from rest
+  omega = 0.0; // assume start from rest
+  segDistDone = 0.0;
+  spinAngDone = 0.0;
+};
+
+void State::updateState(double v_cmd, double omega_cmd, double dt) {
+  double avg_v = (v+v_cmd)/2; // average the velocity over this time step
+  double avg_omega = (omega+omega_cmd)/2; // average angular velocity over this time step
+  double avg_phi = phi + avg_omega*dt/2; // average heading over time step
+  
+  x = x+avg_v*dt*cos(avg_phi); // advance x coordinate
+  y = y+avg_v*dt*sin(avg_phi); // advance y coordinate
+  phi = phi + avg_omega*dt; // advance the heading
+  segDistDone = segDistDone+fabs(avg_v)*dt; // update the distance traveled
+  spinAngDone = spinAngDone+fabs(avg_omega)*dt; // update the sin-in-place angle done
+
+  v = v_cmd;
+  omega = omega_cmd;
 }
 
-// processes updates from the eStop
+void State::stop()
+{
+  v = 0.0;
+  omega = 0.0;
+}
+
+double State::getX() {
+  return x;
+}
+
+double State::getY() {
+  return y;
+}
+
+double State::getPhi() {
+  return phi;
+}
+
+double State::getVCmd() {
+  return v;
+}
+
+double State::getOCmd() {
+  return omega;
+}
+
+double State::getDistDone() {
+  return segDistDone;
+}
+
+double State::getAngDone() {
+  return spinAngDone;
+}
+
 void estopCallback(const std_msgs::Bool::ConstPtr& estop)
 {
   stopped = !(estop->data);
 }
-void obstaclesCallback(const eecs_376_alpha::Obstacles::ConstPtr& obstacle){
-	stopped = obstacle->exists;
-}
 
-void straight(ros::Publisher& velocityPub, ros::Publisher& segStatusPub, State& currState)
+void obstaclesCallback(const msg_alpha::Obstacles::ConstPtr& obsData)
 {
-	// compute initial path profile
-	geometry_msgs::Twist vel_object;
-
-	ros::Rate naptime(RATE);
-
-	double v_cmd = 0.0;
-	double o_cmd = 0.0;
-
-	double dt = 1/RATE;
-	eecs_376_alpha::PathSegment *currSeg = segments.front(); // this method is responsible for deleting this memory
-	segments.pop(); // no longer needed in the queue
-
-	double v_max = currSeg->max_speeds.linear.x; // the maximum speed in m/s
-	double accel_max = currSeg->accel_limit; // the maximum acceleration in m/s^2
-	double decel_max = currSeg->decel_limit; // the maximum deceleration in m/s^2
-
-	double segLength = currSeg->seg_length; // the distance of this straight line segment
-
-	double final_vel; // this will be used to determine if the robot should ever decelerate
-	if(segments.size() > 0) // if there is a next segment
-	{
-		eecs_376_alpha::PathSegment *nextSeg = segments.front(); // take a peek at the next segment
-
-		if(nextSeg->seg_type == 1 || nextSeg->seg_type == 2) // still a straight line or an arc
-		{
-			if(nextSeg->max_speeds.linear.x >= v_max) // the next segment is bigger or the same
-			{
-				final_vel = v_max; // don't decelerate; also can't accelerate till next seg or the robot would break this segments speed limit
-			}
-			else if(nextSeg->max_speeds.linear.x >= 0) // the next segment is smaller but positive
-			{
-				final_vel = nextSeg->max_speeds.linear.x; // decelerate to the max speed of the next segment
-			}
-			else // this is just in case the next segment says to go backwards
-			{
-				final_vel = 0; // don't want to turn around before the path is finished, so goal velocity should be 0
-			}
-		}
-		else if(nextSeg->seg_type == 3)
-		{
-			final_vel = 0; // to spin in place the robot must come to a complete halt
-		}
-
-		nextSeg = NULL; // all done peeking at next seg, probably not necessary to do this as it goes out of scope, but can still be referenced by the queue
-	}
-	else // no more new segments after this so assume stop
-	{
-		final_vel = 0;
-	}
-
-	ros::Duration T_accel((v_max-currState.getVCmd())/accel_max); // if the last command was higher than the max then the robot will never accelerate
-
-	ros::Duration T_decel((final_vel-v_max)/decel_max); // calculate the deceleration
-
-	double dist_accel = 0.5*fabs(accel_max)*pow(T_accel.toSec(),2);
-	double dist_decel = 0.5*fabs(decel_max)*pow(T_decel.toSec(),2);
-	double dist_const_v = segLength - dist_accel - dist_decel;
-
-	bool lastStopped = stopped; // keeps track of the last state of stopped
-	double segDistDone = 0.0;
-
-	while(segDistDone < currSeg->seg_length && ros::ok())
-	{
-
-		if(stopped)
-		{
-			lastStopped = stopped;
-			ROS_INFO("STOPPED!");
-			v_cmd = 0; // don't want the robot to move
-			o_cmd = 0;
-			currState.stop(); // set the internal state to no velocity
-
-			vel_object.linear.x = 0.0;
-			vel_object.angular.z = 0.0;
-
-			velocityPub.publish(vel_object);
-			naptime.sleep();
-			continue;
-		}
-		else if(lastStopped) // the last iteration was stopped but this one isn't
-		{
-			ROS_INFO("Sleeping for 2.0 seconds");
-			lastStopped = 0; // set lastStoppped to false
-			ros::Duration(2.0).sleep(); // this is so the motor controllers have time to come back online
-		}
-
-		// check for an obstacle in the way
-		// if there is an obstacle then look at the new path distance from lookahead and come to a stop by that distance
-		//else if(ros::obstacles()){}
-
-		// If no obstacle update the acceleration, constant velocity and deceleration time based on next time in queue and current segment (pretty much like initialization code above.  This is so that when resuming from an obstacle the robot will accelerate again and continue.  Also if a new segment is added to the queue when there was no segment before this will take that into account
-	}
-	delete currSeg;
+  obs = obsData->exists;
+  obs_dist = obsData->distance;
 }
 
-void arc(ros::Publisher& velocityPub, ros::Publisher& segStatusPub, State& currState)
+void pathSegCallback(const msg_alpha::PathSegment::ConstPtr& seg)
 {
-
+  //ROS_INFO("SegCallback: Started callback");
+  if(seg->seg_number != nextSeg.seg_number)
+  {
+    nextSegExists = true;
+  }
+  nextSeg.seg_number = seg->seg_number;
+  nextSeg.seg_type = seg->seg_type;
+  nextSeg.curvature = seg->curvature;
+  nextSeg.seg_length = seg->seg_length;
+  nextSeg.ref_point = seg->ref_point;
+  nextSeg.init_tan_angle = seg->init_tan_angle;
+  nextSeg.max_speeds = seg->max_speeds;
+  nextSeg.accel_limit = seg->accel_limit;
+  nextSeg.decel_limit = seg->decel_limit;
 }
 
-void spin(ros::Publisher& velocityPub, ros::Publisher& segStatusPub, State& currState)
+void velCallback(const geometry_msgs::Twist::ConstPtr& vel)
 {
-
+  lastVCmd = vel->linear.x;
+  lastOCmd = vel->angular.z;
 }
-/*
-void straight(ros::Publisher& pub, double distance)
+    
+void straight(ros::Publisher& pub, ros::Publisher& segStatusPub, double distance)
 {
 
   geometry_msgs::Twist vel_object;
@@ -163,12 +158,12 @@ void straight(ros::Publisher& pub, double distance)
   double a_max; // the maximum accelration in m/s^2
   double segLength;
   if(distance < 0.0){ // this function assumes the the sign of distance determines the direction
-    v_max = -1.0;
+    v_max = -0.5;
     a_max = -0.25;
     segLength = -1*distance;
   }
   else{
-    v_max = 1.0;
+    v_max = 0.5;
     a_max = 0.25;
     segLength = distance;
   }
@@ -187,8 +182,8 @@ void straight(ros::Publisher& pub, double distance)
   State currentState = State();
 
   // these will store the values for the command
-  double v_cmd = 0.0;
-  double omega_cmd = 0.0; // this should never change in the case of a straight line
+  double v_cmd = lastVCmd;
+  double omega_cmd = lastOCmd; // this should never change in the case of a straight line
   double v_scheduled = 0.0;
 
   if(a_max < 0.0)
@@ -197,9 +192,15 @@ void straight(ros::Publisher& pub, double distance)
     ROS_INFO("Started a straight line segment for %f meters in the positive x direction", segLength);
 
   bool lastStopped = stopped; // keeps track of the last state of stopped
+  bool lastobs = false;
+  double startingPos = 0.0;
+  double obsDist = 0.0;
+  double decel_rate = 0.0;
 
   while(segDistDone < segLength && ros::ok()) {
     
+    v_cmd = lastVCmd;
+    omega_cmd = lastOCmd;
     if(stopped) // stopped is updated by the estopCallback function asynchronously
     {
       lastStopped = stopped;
@@ -207,6 +208,14 @@ void straight(ros::Publisher& pub, double distance)
       v_cmd = 0; // we don't want the robot to move
       omega_cmd = 0;
       currentState.stop(); // set the internal state to no velocity
+
+      msg_alpha::SegStatus status;
+      status.segComplete = false;
+      status.seg_number = seg_number;
+      status.progress_made = currentState.getDistDone();
+
+      segStatusPub.publish(status);      
+
 
       vel_object.linear.x = 0.0; // this is so the simulator acts correctly when using our estopPublisher program
       vel_object.angular.z = 0.0;
@@ -220,6 +229,51 @@ void straight(ros::Publisher& pub, double distance)
       ROS_INFO("Sleeping for 2.0 seconds");
       lastStopped = 0; // set lastStopped to false
       ros::Duration(2.0).sleep(); // this is so the motor controllers have time to come back online
+    }
+
+    if(obs && !lastobs)
+    {
+      //ROS_INFO("Initializing obstacles");
+      startingPos = currentState.getDistDone();
+      obsDist = obs_dist;
+      lastobs = true;
+      decel_rate = pow(v_cmd,2)/(obs_dist-.1);
+      cout << "obs_dist: " << obs_dist << ", decel_rate: " << decel_rate << ", startingPos: " << startingPos << endl; 
+    }
+
+    if(lastobs && obs && fabs(distance)-startingPos >= obs_dist) // there is an obstacle in the way
+    {
+      //ROS_INFO("Running obstacle code");
+      // calculate the deceleration rate
+            
+      if(v_cmd > .001)
+      {
+	v_cmd = v_cmd - decel_rate*dt;
+	currentState.updateState(v_cmd, omega_cmd, dt);
+	vel_object.linear.x = v_cmd;
+      }
+      else
+      {
+	vel_object.linear.x = 0.0;
+	currentState.stop();
+      }
+
+      msg_alpha::SegStatus status;
+      status.segComplete = false;
+      status.seg_number = seg_number;
+      status.progress_made = currentState.getDistDone();
+
+      segStatusPub.publish(status);      
+
+      vel_object.angular.z = 0.0;
+      pub.publish(vel_object);
+
+      naptime.sleep();
+      continue;
+    }
+    else
+    {
+      lastobs = false;
     }
       
     currentState.updateState(v_cmd, omega_cmd, dt); // advance where the robot thinks its at
@@ -267,18 +321,34 @@ void straight(ros::Publisher& pub, double distance)
       }
     }
 
+    msg_alpha::SegStatus status;
+    status.segComplete = false;
+    status.seg_number = seg_number;
+    status.progress_made = currentState.getDistDone();
+
+    segStatusPub.publish(status);
+
     vel_object.linear.x = v_cmd;
     vel_object.angular.z = 0.0;
     pub.publish(vel_object);
 
     naptime.sleep();
   }
+  currSegExists = false;
+
+  msg_alpha::SegStatus status;
+  status.segComplete = true;
+  status.seg_number = seg_number;
+  status.progress_made = currentState.getDistDone();
+
+  segStatusPub.publish(status);
+
   vel_object.linear.x = 0.0;
   vel_object.angular.z = 0.0;
   pub.publish(vel_object);
 }
      
-void turn(ros::Publisher& pub, double angle)
+void turn(ros::Publisher& pub, ros::Publisher& segStatusPub, double angle)
 {
  
   geometry_msgs::Twist vel_object;
@@ -326,6 +396,8 @@ void turn(ros::Publisher& pub, double angle)
   bool lastStopped = stopped;
 
   while(segRadsDone < segRads && ros::ok()) {
+    v_cmd = lastVCmd;
+    o_cmd = lastOCmd;
 
     if(stopped) // see straight for how this works
     {
@@ -338,6 +410,14 @@ void turn(ros::Publisher& pub, double angle)
 
       vel_object.linear.x = 0.0;
       vel_object.angular.z = 0.0;
+
+  msg_alpha::SegStatus status;
+  status.segComplete = false;
+  status.seg_number = seg_number;
+  status.progress_made = currentState.getDistDone();
+
+  segStatusPub.publish(status);
+
 
       pub.publish(vel_object);
       naptime.sleep();
@@ -399,28 +479,47 @@ void turn(ros::Publisher& pub, double angle)
       }
     }
 
+  msg_alpha::SegStatus status;
+  status.segComplete = false;
+  status.seg_number = seg_number;
+  status.progress_made = currentState.getDistDone();
+
+  segStatusPub.publish(status);
+
     vel_object.linear.x = 0.0;
     vel_object.angular.z = o_cmd;
     pub.publish(vel_object);
       
     naptime.sleep(); // wait until its time to publish.  This keeps publisher at rate specified by RATE
   }
+  currSegExists = false;
+
+  msg_alpha::SegStatus status;
+  status.segComplete = true;
+  status.seg_number = seg_number;
+  status.progress_made = currentState.getDistDone();
+
+  segStatusPub.publish(status);
+
 
   vel_object.linear.x = 0.0;
   vel_object.angular.z = 0.0;
   pub.publish(vel_object);
-}*/
+}
 
 int main(int argc, char **argv)
 {
-  ros::init(argc,argv,"velocity_profiler"); // name of this node
+  ros::init(argc,argv,"msg_alpha"); // name of this node
   ros::NodeHandle n;
 
-  ros::Publisher velocityPub = n.advertise<geometry_msgs::Twist>("cmd_vel",1);
-  ros::Publisher segStatusPub = n.advertise<eecs_376_alpha::SegStatus>("seg_status",1);
+  ros::Publisher desVelPub = n.advertise<geometry_msgs::Twist>("des_vel",1);
+  ros::Publisher segStatusPub = n.advertise<msg_alpha::SegStatus>("seg_status",1);
   ros::Subscriber estopSub = n.subscribe("motors_enabled",1,estopCallback); // listen for estop values
-  ros::Subscriber segmentSub = n.subscribe("path_segs",1,pathSegmentCallback);
-  ros::Subscriber obstaclesSub = n.subscribe("exists",1,obstaclesCallback); //listen for possible obstacles in the way
+  ros::Subscriber obsSub = n.subscribe("obstacles",1,obstaclesCallback);
+  ros::Subscriber velSub = n.subscribe("cmd_vel",1,velCallback);
+  ros::Subscriber pathSub = n.subscribe("path_seg",10,pathSegCallback);
+
+  ros::Rate naptime(RATE);
 
   // this is necessary or callbacks will never be processed.
   // AsyncSpinner lets them run in the background
@@ -429,64 +528,67 @@ int main(int argc, char **argv)
  
   while(!ros::Time::isValid()) {} // wait for simulator
 
-  ros::Rate naptime(RATE);
-
-  State currState = State();
-
+  double dist = 0.0;
   while(ros::ok())
   {
-    if(segments.size() <= 0) // if there are no more segments
+    if(!currSegExists) // while there is nothing to do
     {
-      geometry_msgs::Twist vel_object;
-
-      // make sure the robot is stopped
-      vel_object.linear.x = 0.0; 
-      vel_object.angular.z = 0.0; 
-
-      velocityPub.publish(vel_object);
-      naptime.sleep(); // there is no more work so take a nap
-    }
-    else
-    {
-      int seg_type = segments.front()->seg_type;
-
-      cout << "New segment! Type " << seg_type << endl;
-
-      if(seg_type == 1)
+      if(nextSegExists) // see if something new was added to the queue
       {
-    	  straight(velocityPub, segStatusPub, currState);
-      }
-      else if(seg_type == 2)
-      {
-    	  arc(velocityPub, segStatusPub, currState);
-      }
-      else if(seg_type ==3)
-      {
-    	  spin(velocityPub, segStatusPub, currState);
+	currSegExists = true;
+	nextSegExists = false;
+	currSeg = nextSeg;
+
+	if(currSeg.seg_type == 1)
+	{
+	  double xs = currSeg.ref_point.x;
+	  double ys = currSeg.ref_point.y;
+	
+	  double desired_heading = tf::getYaw(currSeg.init_tan_angle);
+
+	  double xf = xs + currSeg.seg_length*cos(desired_heading);
+	  double yf = ys + currSeg.seg_length*sin(desired_heading);
+
+	  dist = sqrt(pow(xf-xs,2)+pow(yf-ys,2));
+	  seg_number = currSeg.seg_number;
+	  ROS_INFO("#%i distance: %f",seg_number,dist);
+	  straight(desVelPub,segStatusPub,dist);
+	  currSegExists = false;
+	}
+	else if(currSeg.seg_type == 3)
+	{
+	  seg_number = currSeg.seg_number;
+	  dist = currSeg.seg_length;	  
+	  ROS_INFO("#%i distance: %f", seg_number, dist);
+	  turn(desVelPub,segStatusPub,dist);
+	  currSegExists = false;
+	}
+	else
+	{
+	  currSegExists = false;
+	}
       }
       else
       {
-    	  cout << "Unknown segment type " << 3 << "." << endl;
-    	  cout << "Removing segment from queue without executing." << endl;
-    	  eecs_376_alpha::PathSegment *temp = segments.front();
-    	  segments.pop();
-    	  delete temp;
-    	  temp = NULL;
+	/*msg_alpha::SegStatus status;
+	status.seg_number = seg_number;
+	status.segComplete = true;
+	
+	segStatusPub.publish(status);*/
+
+	currSegExists = false;
+	geometry_msgs::Twist vel_object;
+	vel_object.linear.x = 0.0;
+	vel_object.angular.z = 0.0;
+	desVelPub.publish(vel_object);
+	naptime.sleep();
+	continue; // nothing to do start again
       }
     }
   }
-  /*    if(segments.size() > 0)
-      {
-	currSeg = segments.front();
-	cout << "queue size: " << segments.size() << " segment number: " << currSeg->seg_number << endl;
-	cout << "\tmax_speed.linear.x: " << currSeg->max_speeds.linear.x << endl;
-	segments.pop();
-	naptime.sleep();
-      }
-      }*/
   // this is the set of hard coded directions that will make the robot drive to the vending
   // machines
-  /*straight(pub,4.2);
+  /*  straight(pub,4.2);
   turn(pub,-PI/2);
   straight(pub,12.5);
   turn(pub,-PI/2);

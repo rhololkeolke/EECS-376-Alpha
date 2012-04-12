@@ -3,7 +3,13 @@
 #will be sent by the Velocity Node
 
 #Requests a new path segment from the Path Planner Node
-bool segComplete
+uint64 lastSegComplete
+
+#path has been aborted and robot is stopped
+bool abort
+
+#incrementing segment number
+uint64 seg_number
 
 #Distance made (Progress made thus far)
 float64 progress_made

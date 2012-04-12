@@ -8,7 +8,7 @@
 #ifndef STATE_H_
 #define STATE_H_
 
-#include <eecs_376_alpha/PathSegment.h>
+#include <msg_alpha/PathSegment.h>
 #include <tf/transform_datatypes.h>
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/Quaternion.h>
