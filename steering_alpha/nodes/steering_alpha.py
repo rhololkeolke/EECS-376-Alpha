@@ -5,7 +5,7 @@ import roslib; roslib.load_manifest('steering_alpha')
 import rospy
 import numpy as np
 import tf
-import math
+import m as m
 
 from msg_alpha.msg._PathSegment import PathSegment as PathSegmentMsg
 from msg_alpha.msg._Obstacles import Obstacles as ObstaclesMsg
@@ -66,54 +66,81 @@ def segStatusCallback(statusData):
 if __name__ == '__main__':
     main()
 
-def normalizeAngle(offset, threshold, angle):
-    # left of path, point to path
-    if offset > threshold:
-        return angle-math.pi/2
-    # too far right, point to path
-    else if offset < -threshold:
-        return angle+math.pi/2
-    #offset is small, gradually parallelize
-    else:
-        return angle-(math.pi/2)*offset/threshold
+def normalizeToPi(inAng):
+    if inAng > m.pi:
+        return inAng-2*m.pi
+    else if inAng < -m.pi:
+        return inAng+2*m.pi
 
 def main():
-    global RATE, lastMapPose, nextSeg
+    global RATE, lastMapPose, nextSeg, desVel
     rospy.init_node('steering_alpha')
-    rospy.Publisher('cmd_vel',TwistMsg)
+    cmdPub = rospy.Publisher('cmd_vel',TwistMsg)
     rospy.Subscriber('obstacles',ObstaclesMsg,obstaclesCallback)
     rospy.Subscriber('odom',OdometryMsg,odomCallback)
     rospy.Subscriber('des_vel',TwistMsg,velCallback)
     rospy.Subscriber('path_seg',PathSegmentMsg,pathSegCallback)
     rospy.Subscriber('seg_status',SegStatusMsg,segStatusCallback)
     naptime = rospy.Rate(RATE)
+    cmdVel = TwistMsg()
+    xyRobotCoords = np.array([lastMapPose.pose.position.x, 
+                              lastMapPose.pose.position.y])
+    xyStartCoords = np.array([1,0])
+
+    #control params
+    #TODO: tune these
+    dThreshold = 1.0 # threshold before we correct
+    kOmega = 30.0
+    omegaSat = 2.0 # max omega
+    dt = 0.01 #timestep
 
     while not rospy.is_shutdown():
         while not tfl.canTransform("map", "odom", rospy.Time.now()):
             pass # spin till we have some map data
 
-        #control params
-        #TODO: tune these
-        dThreshold = 1.0
-        kOmega = 30.0
-        omegaSat = 2.0
 
+        vel = 1 #1m/s this should probably change
         curSeg = nextSeg
-        xyStartCoords = np.array([1,0])
-        xyRobotCoords = np.array([lastMapPose.pose.position.x, 
-                               lastMapPose.pose.position.y])
         psiRobot = tf.getYaw(lastMapPose.pose.orientation)
         psiPathSeg = tf.getYaw(curSeg.init_tan_angle)
-        tHat = np.array([math.cos(psiPathSeg),math.sin(PsiPathSeg)])
+        tHat = np.array([m.cos(psiPathSeg),m.sin(PsiPathSeg)])
         #tranform rot around z pi/2 * tHat
         nHat = np.dot(np.array([[0,-1],[1,0]]), tHat)
-        
 
         d = np.subtract(xyRobotCoords, xyStartCoords)
         #convert to matrix transpose then convert back
         d = np.array(np.matrix(d).T) # the code was mat'*n_hat. I think this works
         d = np.dot(d,nHat)
-        psiDes = normalizeAngle(d,dThreshold,psiPathSeg)
-        psiError = psiRobot-psiDes
+        # left of path, point to path
+        if d > dThreshold:
+            psiDes = psiPathSeg-m.pi/2
+        # too far right, point to path
+        else if d < -dThreshold:
+            psiDes = psiPathSeg+m.pi/2
+        #offset is small, gradually parallelize
+        else:
+            psiDes = psiPathSeg-(m.pi/2)*d/dThreshold
+
+        #normalize to [-pi,pi]
+        psiError = normalizeToPi(psiRobot-psiDes)
+        omegaCmd = -kOmega*psiError
+        if omegaCmd > omegaSat
+            omegaCmd = omegaSat
+        else if omegaCmd < -omegaSat
+            omegaCmd = -omegaSat
+
+        psiDot = omegaCmd
+        xdot = vel*m.cos(psiRobot)
+        xdot = vel*m.sin(psiRobot)
+
+        #integration
+        psiRobot = psiRobot+psiDot*dt
+        #normalize to [-pi,pi]
+        psiRobot = normalizeToPi(psiRobot)
+        xyRobotCoords = xyRobotCoords+np.array([xdot,ydot])*dt
+        cmdVel = desVel
+        cmdVel.angular.z = omegaCmd
+        cmdPub.publish(cmdVel)
+        naptime.sleep()
 
 
