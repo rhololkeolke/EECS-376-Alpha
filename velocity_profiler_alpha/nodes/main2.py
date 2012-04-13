@@ -48,6 +48,9 @@ orientation = QuaternionMsg()
 vTrajectory = deque()
 wTrajectory = deque()
 
+# keeps track of the percent complete of the current path segment
+currSeg = None
+
 def eStopCallback(motors_enabled):
     global stopped
     stopped = not motors_enabled.data
@@ -83,8 +86,8 @@ def velCmdCallback(velocity):
     '''
     global lastVCmd
     global lastWCmd
-    lastVCmd = vel.linear.x
-    lastWCmd = vel.angular.z
+    lastVCmd = velocity.linear.x
+    lastWCmd = velocity.angular.z
 
 def poseCallback(pose):
     '''
@@ -284,12 +287,27 @@ def getDesiredVelocity():
     vTrajSeg = None
     wTrajSeg = None
     
-    if(len(vTrajSeg) > 0):
+    # this next if block removes completed vTrajectory segments and keeps wTrajectory and
+    # currSeg in sync
+    print "len(vTrajectory): %i" % len(vTrajectory)
+    print "len(wTrajectory): %i" % len(wTrajectory)
+    
+    print "currSeg is not None: %s" % (currSeg is not None)
+    
+    if(len(vTrajectory) > 0):
+        if(currSeg is None):
+            currSeg = State()
+            currSeg.newPathSegment(pathSegments.get(vTrajSeg.segNumber),position,State.getYaw(orientation)) # update currSeg to track the right path
+            vel_cmd = TwistMsg()
+            vel_cmd.linear.x = lastVCmd
+            vel_cmd.angular.z = lastWCmd
+            currSeg.updateState(vel_cmd,position,State.getYaw(orientation))
+
         vTrajSeg = vTrajectory[0]
 
         while(currSeg.segDistDone >= vTrajSeg.endS and not rospy.is_shutdown()): # added is_shutdown to prevent this function from locking up the program
             vTrajectory.popleft()
-            if(len(vTrajSeg) <= 0): # there are still segments left
+            if(len(vTrajectory) <= 0): # there are still segments left
                 wTrajectory.clear() # if one is empty the other always should be
                 pathSegments.clear()
                 return TwistMsg()
@@ -310,12 +328,22 @@ def getDesiredVelocity():
                     vTrajectory.clear() # then clear vTrajectory because velocity profiler no longer knows how to execute the path
                     return TwistMsg()
 
-    if(len(wTrajSeg) > 0):
+    if(len(wTrajectory) > 0):
+        if(currSeg is None):
+            currSeg = State()
+            currSeg.newPathSegment(pathSegments.get(vTrajSeg.segNumber),position,State.getYaw(orientation)) # update currSeg to track the right path
+            vel_cmd = TwistMsg()
+            vel_cmd.linear.x = lastVCmd
+            vel_cmd.angular.z = lastWCmd
+            currSeg.updateState(vel_cmd,position,State.getYaw(orientation))
+
+
         wTrajSeg = wTrajectory[0]
-        
+
+        # pretty much the same as above. Just swap wTrajectory with vTrajectory
         while(currSeg.segDistDone >= wTrajSeg.endS and not rospy.is_shutdown()): # added is_shutdown to prevent this function from locking up the program
             wTrajectory.popleft()
-            if(len(wTrajSeg) <= 0):
+            if(len(wTrajectory) <= 0):
                 vTrajectory.clear()
                 pathSegments.clear()
                 return TwistMsg()
@@ -334,27 +362,42 @@ def getDesiredVelocity():
                 if(len(vTrajectory) == 0):
                     wTrajectory.clear()
                     return TwistMsg()
-        
-    if(vTrajSeg is not None):
+    
+    print "vTrajSeg is not None: %s" % vTrajSeg is not None
+    print "wTrajSeg is not None: %s" % wTrajSeg is not None
+    if(vTrajSeg is not None and wTrajSeg is not None):
+        if(currSeg.pathSeg is None):
+            currSeg.newPathSegment(pathSegments.get(vTrajSeg.segNumber),position,State.getYaw(orientation))
+        else:
+            vel_cmd = TwistMsg()
+            vel_cmd.linear.x = lastVCmd
+            vel_cmd.angular.z = lastWCmd
+            currSeg.updateState(vel_cmd,position,State.getYaw(orientation))            
+            
         if(vTrajSeg.segType == TrajSeg.ACCEL):
+            print "Using velocity acceleration segment"
             vCmd = getDesiredVelAccel(vTrajSeg, currSeg.segDistDone)
         elif(vTrajSeg.segType == TrajSeg.CONST):
+            print "Using constant velocity segment"
             vCmd = getDesiredVelConst(vTrajSeg, currSeg.segDistDone)
         elif(vTrajSeg.segType == TrajSeg.DECEL):
+            print "Using velocity deceleration segment"
             vCmd = getDesiredVelDecel(vTrajSeg, currSeg.segDistDone)
-    else:
-        vCmd = 0.0
-
-    if(wTrajSeg is not None):
+   
         wTrajSeg = wTrajectory[0]
 
         if(wTrajSeg.segType == TrajSeg.ACCEL):
+            print "Using omega acceleration segment"
             wCmd = getDesiredVelAccel(wTrajSeg, currSeg.segDistDone)
         elif(wTrajSeg.segType == TrajSeg.CONST):
+            print "Using constant omega segment"
             wCmd = getDesiredVelConst(wTrajSeg, currSeg.segDistDone)
         elif(wTrajSeg.segType == TrajSeg.DECEL):
+            print "Using omega deceleration segment"
             wCmd = getDesiredVelDecel(wTrajSeg, currSeg.segDistDone)
     else:
+        print "Defaulting to 0 for vCmd and wCmd"
+        vCmd = 0.0
         wCmd = 0.0
 
     vel_cmd = TwistMsg()
@@ -363,44 +406,56 @@ def getDesiredVelocity():
 
     return vel_cmd
         
-def getDesiredVelAccel(seg, segDistDone):
+def getDesiredVelAccel(seg, segDistDone, cmdType=0):
     pathSeg = pathSegments.get(seg.segNumber)
     a_max = pathSeg.accel_limit
     d_max = pathSeg.decel_limit
+    if(cmdType == 1):
+        lastCmd = lastWCmd
+    else:
+        lastCmd = lastVCmd
+
     if(a_max < 0.0):
         vScheduled = -1*sqrt(pow(seg.v_i,2) + 2*pathSeg.seg_length*segDistDone*abs(a_max))
     else:
         vScheduled = sqrt(pow(seg.v_i,2) + 2*pathSeg.seg_length*segDistDone*a_max)
-    if(abs(v_scheduled) < abs(a_max)*1/RATE):
-        vScheduled = a_max*dt
+    if(abs(vScheduled) < abs(a_max)*1/RATE):
+        vScheduled = a_max*1/RATE
 
-    if(abs(lastVCmd) < abs(vScheduled)):
-        vTest = lastVCmd + a_max*1/RATE
+    if(abs(lastCmd) < abs(vScheduled)):
+        vTest = lastCmd + a_max*1/RATE
         if(abs(vTest) < abs(vScheduled)):
             vCmd = vTest
         else:
             vCmd = vScheduled
-    elif(abs(lastVCmd) > abs(vScheduled)):
-        vTest = lastVCmd + (1.2*d_max*dt)
+    elif(abs(lastCmd) > abs(vScheduled)):
+        vTest = lastCmd + (1.2*d_max*1/RATE)
         if(abs(vTest) > abs(vScheduled)):
             vCmd = vTest
         else:
             vCmd = vScheduled
     return vCmd
 
-def getDesiredVelConst(seg, segDistDone):
+def getDesiredVelConst(seg, segDistDone, cmdType=0):
     pathSeg = pathSegments.get(seg.segNumber)
     a_max = pathSeg.accel_limit
     d_max = pathSeg.decel_limit
     vScheduled = seg.v_i
-    if(abs(lastVCmd) < abs(vScheduled)):
-        vTest = vCmd + a_max*1/RATE
+    # to enable the use of this method for both omega and velocity
+    # simply set lastCmd to whichever variable is appropriate
+    if(cmdType == 1):
+        lastCmd = lastWCmd
+    else:
+        lastCmd = lastVCmd
+
+    if(abs(lastCmd) < abs(vScheduled)):
+        vTest = lastCmd + a_max*1/RATE
         if(abs(vTest) < abs(vScheduled)):
             vCmd = vTest
         else:
             vCmd = vScheduled
-    elif(abs(lastVCmd) > abs(vScheduled)):
-        vTest = lastVCmd + (1.2*d_max*dt)
+    elif(abs(lastCmd) > abs(vScheduled)):
+        vTest = lastCmd + (1.2*d_max*1/RATE)
         if(abs(vTest) > abs(vScheduled)):
             vCmd = vTest
         else:
@@ -409,23 +464,28 @@ def getDesiredVelConst(seg, segDistDone):
         vCmd = vScheduled
     return vCmd
 
-def getDesiredVelDecel(seg, currSeg):
+def getDesiredVelDecel(seg, currSeg, cmdType=0):
     pathSeg = pathSegments.get(seg.segNumber)
     a_max = pathSeg.accel_limit
     d_max = pathSeg.decel_limit
+    if(cmdType == 1):
+        lastCmd = lastWCmd
+    else:
+        lastCmd = lastVCmd
+
     if(a_max <0.0):
         vScheduled = sqrt(pow(seg.v_f,2)+2*(1-segDistDone)*pathSeg.seg_length*abs(d_max))
     else:
         vScheduled = -1*sqrt(pow(seg.v_f,2)+2*(1-segDistDone)*pathSeg.seg_length*abs(d_max))
 
-    if(abs(lastVCmd) < abs(vScheduled)):
-        vTest = vCmd + a_max*1/RATE
+    if(abs(lastCmd) < abs(vScheduled)):
+        vTest = lastCmd + a_max*1/RATE
         if(abs(vTest) < abs(vScheduled)):
             vCmd = vTest
         else:
             vCmd = seg.vScheduled
-    elif(abs(lastVCmd) > abs(vScheduled)):
-        vTest = lastVCmd + (1.2*d_max*dt)
+    elif(abs(lastCmd) > abs(vScheduled)):
+        vTest = lastCmd + (1.2*d_max*1/RATE)
         if(abs(vTest) > abs(vScheduled)):
             vCmd = vTest
         else:
@@ -437,6 +497,7 @@ def getDesiredVelDecel(seg, currSeg):
 
 def main():
     global naptime
+    global currSeg
 
     rospy.init_node('velocity_profiler_alpha')
     naptime = rospy.Rate(RATE) # this will be used globally by all functions that need to loop
@@ -452,12 +513,12 @@ def main():
     
     currSeg = State(dt=1/RATE)
     while not rospy.is_shutdown():
-        vel_cmd = TwistMsg()
-        vel_cmd.linear.x = lastVCmd
-        vel_cmd.anguarl.z = lastWCmd
-        currSeg.updateState(vel_cmd,position,State.getYaw(orientation))
-        des_vel = getDesiredVelocity(currSeg)
+        print "getDesiredVelocity()"
+        des_vel = getDesiredVelocity()
+        print "desVelPub.publish(des_vel)"
         desVelPub.publish(des_vel)
+        if(currSeg is not None):
+            print "segDistDone %f" % currSeg.segDistDone
         naptime.sleep()
         """ print "stopped:"
         print stopped
