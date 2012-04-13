@@ -73,6 +73,11 @@ def normalizeToPi(inAng):
         return inAng+2*m.pi
 
 def main():
+    '''
+    I assume that the velocity profiler will take care of making the velocity 0
+    when there is an obstacle. This steering only changes the heading, not the
+    speed
+    '''
     global RATE, lastMapPose, nextSeg, desVel
     rospy.init_node('steering_alpha')
     cmdPub = rospy.Publisher('cmd_vel',TwistMsg)
@@ -96,10 +101,10 @@ def main():
 
     while not rospy.is_shutdown():
         while not tfl.canTransform("map", "odom", rospy.Time.now()):
-            pass # spin till we have some map data
+            naptime.sleep() # spin till we have some map data
 
 
-        vel = 1 #1m/s this should probably change
+        vel = desVel.linear.x #m/s
         curSeg = nextSeg
         psiRobot = tf.getYaw(lastMapPose.pose.orientation)
         psiPathSeg = tf.getYaw(curSeg.init_tan_angle)
