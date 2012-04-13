@@ -6,7 +6,7 @@
 
 <!--Include necessary premade launch files-->
 <include file="$(find cwru_nav)/start_amcl_2ndfloor.launch" />
-<include file="$(find cwru_semi_stable)/cwru_bringup_no_tele.launch" />
+<!--<include file="$(find cwru_semi_stable)/cwru_bringup_no_tele.launch" />-->
 <!--<include file="home/jinx/ROSCode/cwru-ros-pkg/cwru_semi_stable/cwru_bringup_no_tele.launch" />-->
 
 <!--Launch our nodes-->
@@ -17,5 +17,26 @@
 <node name="pathpub" pkg="pathplanner_alpha" type="path_publisher" respawn="true" />
 <node name="pospub" pkg="pos_publisher_alpha" type="main" respawn="true" />
 
+<!--Kinect driver -->
+<include file="$(find openni_launch)/launch/openni.launch" />
+	
+<!-- Simple image subscriber/publisher -->
+<node pkg="kinect_alpha" type="kinect_alpha" name="kinect" output="screen" >	
+  <remap from="in_image" to="/camera/rgb/image_rect_color"/>
+	       <param name="rh" type="int" value="255"/>
+               <param name="rl" type="int" value="220"/>
+	       <param name="gh" type="int" value="255"/>
+	       <param name="gl" type="int" value="0"/>
+	       <param name="bh" type="int" value="25"/>
+	       <param name="bl" type="int" value="0"/>
+</node>
+<node pkg="kinect_alpha" type="main.py" name="kinect_py" />
+</node>
 
+	     
+             <!-- Static transform from Harlie's base to the pan mount 
+        <node pkg="tf" type="in_image" name="kinect_static_tf_pub" respawn="true"
+              args="-0.00 0 1.5572 0.017453 0.1047198 -0.017453 base_link camera_link 100" />
+	 -->
+	     
 </launch>

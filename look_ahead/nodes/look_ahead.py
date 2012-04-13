@@ -3,6 +3,7 @@ import roslib; roslib.load_manifest('look_ahead')
 import math
 import rospy
 from sensor_msgs.msg import LaserScan
+from msg_alpha.msg._PathSegment import PathSegment 
 from msg_alpha.msg._Obstacles import Obstacles
 
 
@@ -14,7 +15,7 @@ angleSwitch = math.atanh(BOX_WIDTH) * 180/math.pi  #angle to switch distance for
 ping_angle = None #the angle at which the lidar scanner picks up an obstacle
 
 #Globals are only temporary for testing of logic if path segment is arc(2)
-segType = 2  #segment type
+segType = None  #segment type
 curvature = None  #curvature of the path
 segLenth = None  #length of the segment
 initTanAngle = None  #inital tangent angle of the path segment
@@ -34,15 +35,12 @@ def pathSegCallback(segData):
     global refPointX
     global refPointY
 
-    #segType = segData.seg_type
+    segType = segData.seg_type
     curvature  = segData.curvature
     segLength = segData.seg_length
     initTanAngle = segData.init_tan_angle
     refPointX = segData.ref_point.x
     refPointY = segData.ref_point.y
-
-
-
 
 
 scanData=[]
@@ -168,12 +166,6 @@ def arc(scanData):
     global refPoint
 
 
-
-
-
-
-
-
     radius = 0.5 #radius of the circle to be made around each lidar ping
     theta = 0.0 #angle measure of circle
     circles = [] #a list of each circle, each circle will be compared to the path circle.
@@ -286,7 +278,12 @@ def spin(scanData):
 
     #if there is an obstacle on the Left, Right or infront then an obstalce exists otherwise, there is no obstacle
     if(checkAhead == True or checkRight == True or checkLeft == True):
+        #publish than an obstacle exists
         obsData.exists = True
+
+        #trick velocity profiler into stoppoing by taking the robots current location and saying it is less than the path
+        distAlongPath = segLenth - initTanAngle  #the distance the robot is along the current path segment
+        obsData.distance = distAlongPath - 0.1
     else:
         obsData.exists = False
 
@@ -297,6 +294,7 @@ def spin(scanData):
 def main():
     rospy.init_node('n')  #initialize node with the name n
     rospy.Subscriber("base_scan",LaserScan,laserCallback) #node subscribes to base_scan topic which is of type LaserScan which invokes the laserCallback with the msg as first arg
+    rospy.Subscriber("path_seg", PathSegmentMsg, pathSegCallback) #subscribe to path_seg topic of type PathSegmentMsg using PathSegCallback
     rospy.spin()       
     
 if __name__ == '__main__':
