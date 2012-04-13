@@ -8,7 +8,9 @@ from geometry_msgs.msg._Point import Point as PointMsg
 from msg_alpha.msg._PathSegment import PathSegment as PathSegmentMsg
 from msg_alpha.msg._PathList import PathList as PathListMsg
 
-RATE = 20.0
+import random
+
+RATE = 1.0
 naptime = None
 
 def main():
@@ -30,6 +32,9 @@ def main():
             newSeg = PathSegmentMsg()
             newSeg.seg_number = count
             newSeg.seg_length = count*10.0
+            newSeg.seg_type = (count % 3) + 1
+            newSeg.max_speeds.linear.x = random.uniform(0,10)
+            newSeg.max_speeds.angular.z = random.uniform(0,10)
             path.append(newSeg)
         if(count % 8 == 0): # on multiples of 8 remove a segment from the list
             print "Deleting a segment"
