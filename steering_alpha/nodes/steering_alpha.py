@@ -77,8 +77,10 @@ def main():
     '''
     I assume that the velocity profiler will take care of making the velocity 0
     when there is an obstacle. If not then uncomment callback subscriber,
-    import etc. and make a check before publishing. This steering only changes
-    the heading, not the speed
+    import etc. and make a check before publishing. I also assume that we wont
+    need to keep track of how far we are in the segment. I'm not sure if this
+    will mess up arcs. If arcs are messed up then set psiPathSeg = current
+    desired omega. This steering only changes the heading, not the speed.
     '''
     global RATE, lastMapPose, nextSeg, desVel
     rospy.init_node('steering_alpha')
