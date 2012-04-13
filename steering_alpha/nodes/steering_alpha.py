@@ -17,6 +17,9 @@ obsDist = 0
 lastOdom = OdometryMsg()
 lastMapPose = PoseStampedMsg()
 tfl = tf.TransformListener()
+desVel = TwistMsg()
+nextSegExists = False
+nextSeg = PathSegmentMsg()
 
 def obstaclesCallback(obsData):
     global obsExists, obsDist
@@ -35,13 +38,23 @@ except tf.TransformException:
         rospy.roserror("Transform Error")
 
 def velCallback(velData):
-
+    global desVel
+    desVel.linear.x = velData.linear.x
+    desVel.angular.z = velData.angular.z
 
 def pathSegCallback(pathData):
-
+    global nextSegExists, nextSeg
+    if pathData.seg_number > nextSeg.seg_number:
+        nextSegExists = True
+        nextSeg = pathData
 
 def segStatusCallback(statusData):
-
+    global segNumber, segComplete, curSegExists,progressMade
+    segNumber = statusData.seg_number
+    if !segComplete:
+        segComplete = statusData.segComplete
+        curSegExists = False
+        progressMade = statusData.progress_made
 
 if __name__ == '__main__':
     main()
