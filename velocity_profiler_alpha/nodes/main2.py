@@ -178,7 +178,7 @@ def computeLineTrajectory(seg,v_i,v_f):
     # with the maximum velocity. if v_i >= maximum velocity then
     # sAccel <= 0
     # Otherwise sAccel > 0
-    sAccel = (seg.max_speeds.linear.x - v_i)/(seg.accel_limit*seg.seg_length)
+    sAccel = (pow(seg.max_speeds.linear.x,2) - pow(v_i,2))/(2*seg.accel_limit*seg.seg_length)
     
     # Compute Deceleration segment
     # Essentially finding the intersection of the line passing through the point (1,v_f)
@@ -186,9 +186,9 @@ def computeLineTrajectory(seg,v_i,v_f):
     # sDecel >= 1
     # Otherwise sDecel < 1
     if(v_f < seg.min_speeds.linear.x):
-        sDecel = (seg.max_speeds.linear.x-seg.min_speeds.linear.x)/(seg.decel_limit*seg.seg_length)
+        sDecel = (pow(seg.max_speeds.linear.x,2)-pow(seg.min_speeds.linear.x,2))/(2*seg.decel_limit*seg.seg_length)
     else:
-        sDecel = (seg.max_speeds.linear.x-v_f)/(seg.decel_limit*seg.seg_length)
+        sDecel = (pow(seg.max_speeds.linear.x,2)-pow(v_f,2))/(2*seg.decel_limit*seg.seg_length)
 
     # Determine where accel and decel lines intersect.
     # if intersect at x < 0 then should only be decelerating and potentially const
@@ -209,7 +209,7 @@ def computeLineTrajectory(seg,v_i,v_f):
             vTrajSegs.append(temp)
     elif(xIntersect > 1.0): # No deceleration
         if(sAccel < 0.0): # actually have to start by decelerating
-            sAccel = (seg.max_speeds.linear.x-v_i)/(seg.decel_limit*seg.seg_length)
+            sAccel = (pow(seg.max_speeds.linear.x,2)-pow(v_i,2))/(2*seg.decel_limit*seg.seg_length)
             if(sAccel >= 1.0): # There is no constant velocity
                 temp = TrajSeg(TrajSeg.DECEL,1.0,v_i,seg.max_speeds.linear.x,seg.seg_number)
                 vTrajSegs.append(temp)
@@ -229,7 +229,7 @@ def computeLineTrajectory(seg,v_i,v_f):
     else: # both acceleration and deceleration
         sLeft = 1.0 # whatever is left is the amount of time spent in constant velocity
         if(sAccel < 0.0): # should actually start with a deceleration
-            sAccel = (seg.max_speeds.linear.x-v_i)/(seg.decel_limit*seg.seg_length)
+            sAccel = (pow(seg.max_speeds.linear.x,2)-pow(v_i,2))/(2*seg.decel_limit*seg.seg_length)
             if(sAccel > 1.0): # decelerating the entire time
                 sAccel = 1.0
             temp = TrajSeg(TrajSeg.DECEL,sAccel,v_i,seg.max_speeds.linear.x,seg.seg_number)
@@ -247,7 +247,7 @@ def computeLineTrajectory(seg,v_i,v_f):
                 sLeft -= 1-sDecel
         
         if(sLeft > 0.0): # there is anything left in s then that is how long to do constant velocity for
-            sAccel = (seg.max_speeds.linear.x-v_i)/(seg.decel_limit*seg.seg_length)
+            sAccel = (pow(seg.max_speeds.linear.x,2)-pow(v_i,2))/(2*seg.decel_limit*seg.seg_length)
             temp = TrajSeg(TrajSeg.CONST,sAccel+sLeft,seg.max_speeds.linear.x,seg.max_speeds.linear.x,seg.seg_number)
             vTrajSegs.append(temp)
 
@@ -337,11 +337,11 @@ def getDesiredVelocity():
         
     if(vTrajSeg is not None):
         if(vTrajSeg.segType == TrajSeg.ACCEL):
-            vCmd = getDesiredVelAccel(currSeg.segDistDone)
+            vCmd = getDesiredVelAccel(vTrajSeg, currSeg.segDistDone)
         elif(vTrajSeg.segType == TrajSeg.CONST):
-            vCmd = getDesiredVelConst(currSeg.segDistDone)
+            vCmd = getDesiredVelConst(vTrajSeg, currSeg.segDistDone)
         elif(vTrajSeg.segType == TrajSeg.DECEL):
-            vCmd = getDesiredVelDecel(currSeg.segDistDone)
+            vCmd = getDesiredVelDecel(vTrajSeg, currSeg.segDistDone)
     else:
         vCmd = 0.0
 
@@ -349,11 +349,11 @@ def getDesiredVelocity():
         wTrajSeg = wTrajectory[0]
 
         if(wTrajSeg.segType == TrajSeg.ACCEL):
-            wCmd = getDesiredVelAccel(currSeg.segDistDone)
+            wCmd = getDesiredVelAccel(wTrajSeg, currSeg.segDistDone)
         elif(wTrajSeg.segType == TrajSeg.CONST):
-            wCmd = getDesiredVelConst(currSeg.segDistDone)
+            wCmd = getDesiredVelConst(wTrajSeg, currSeg.segDistDone)
         elif(wTrajSeg.segType == TrajSeg.DECEL):
-            wCmd = getDesiredVelDecel(currSeg.segDistDone)
+            wCmd = getDesiredVelDecel(wTrajSeg, currSeg.segDistDone)
     else:
         wCmd = 0.0
 
@@ -363,14 +363,77 @@ def getDesiredVelocity():
 
     return vel_cmd
         
-def getDesiredVelAccel(currSeg):
-    pass
+def getDesiredVelAccel(seg, segDistDone):
+    pathSeg = pathSegments.get(seg.segNumber)
+    a_max = pathSeg.accel_limit
+    d_max = pathSeg.decel_limit
+    if(a_max < 0.0):
+        vScheduled = -1*sqrt(pow(seg.v_i,2) + 2*pathSeg.seg_length*segDistDone*abs(a_max))
+    else:
+        vScheduled = sqrt(pow(seg.v_i,2) + 2*pathSeg.seg_length*segDistDone*a_max)
+    if(abs(v_scheduled) < abs(a_max)*1/RATE):
+        vScheduled = a_max*dt
 
-def getDesiredVelConst(currSeg):
-    pass
+    if(abs(lastVCmd) < abs(vScheduled)):
+        vTest = lastVCmd + a_max*1/RATE
+        if(abs(vTest) < abs(vScheduled)):
+            vCmd = vTest
+        else:
+            vCmd = vScheduled
+    elif(abs(lastVCmd) > abs(vScheduled)):
+        vTest = lastVCmd + (1.2*d_max*dt)
+        if(abs(vTest) > abs(vScheduled)):
+            vCmd = vTest
+        else:
+            vCmd = vScheduled
+    return vCmd
 
-def getDesiredVelDecel(currSeg):
-    pass
+def getDesiredVelConst(seg, segDistDone):
+    pathSeg = pathSegments.get(seg.segNumber)
+    a_max = pathSeg.accel_limit
+    d_max = pathSeg.decel_limit
+    vScheduled = seg.v_i
+    if(abs(lastVCmd) < abs(vScheduled)):
+        vTest = vCmd + a_max*1/RATE
+        if(abs(vTest) < abs(vScheduled)):
+            vCmd = vTest
+        else:
+            vCmd = vScheduled
+    elif(abs(lastVCmd) > abs(vScheduled)):
+        vTest = lastVCmd + (1.2*d_max*dt)
+        if(abs(vTest) > abs(vScheduled)):
+            vCmd = vTest
+        else:
+            vCmd = vScheduled
+    else:
+        vCmd = vScheduled
+    return vCmd
+
+def getDesiredVelDecel(seg, currSeg):
+    pathSeg = pathSegments.get(seg.segNumber)
+    a_max = pathSeg.accel_limit
+    d_max = pathSeg.decel_limit
+    if(a_max <0.0):
+        vScheduled = sqrt(pow(seg.v_f,2)+2*(1-segDistDone)*pathSeg.seg_length*abs(d_max))
+    else:
+        vScheduled = -1*sqrt(pow(seg.v_f,2)+2*(1-segDistDone)*pathSeg.seg_length*abs(d_max))
+
+    if(abs(lastVCmd) < abs(vScheduled)):
+        vTest = vCmd + a_max*1/RATE
+        if(abs(vTest) < abs(vScheduled)):
+            vCmd = vTest
+        else:
+            vCmd = seg.vScheduled
+    elif(abs(lastVCmd) > abs(vScheduled)):
+        vTest = lastVCmd + (1.2*d_max*dt)
+        if(abs(vTest) > abs(vScheduled)):
+            vCmd = vTest
+        else:
+            vCmd = vScheduled
+    else:
+        vCmd = vScheduled
+    return vCmd
+
 
 def main():
     global naptime
