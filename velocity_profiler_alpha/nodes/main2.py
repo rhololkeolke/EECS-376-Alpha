@@ -275,9 +275,106 @@ def computeSpinTrajectory(seg,w_i,w_f):
 
     return (vTrajSegs, wTrajSegs, w_f)
         
+def getDesiredVelocity():
+    global vTrajectory
+    global wTrajectory
+    global pathSegments
+    global currSeg
+
+    vTrajSeg = None
+    wTrajSeg = None
+    
+    if(len(vTrajSeg) > 0):
+        vTrajSeg = vTrajectory[0]
+
+        while(currSeg.segDistDone >= vTrajSeg.endS and not rospy.is_shutdown()): # added is_shutdown to prevent this function from locking up the program
+            vTrajectory.popleft()
+            if(len(vTrajSeg) <= 0): # there are still segments left
+                wTrajectory.clear() # if one is empty the other always should be
+                pathSegments.clear()
+                return TwistMsg()
+            # this won't be run if there weren't any more segments in vTrajectory
+            if(vTrajSeg.segNumber != vTrajectory[0]): # this is a new segment
+                pathSegments.pop(vTrajSeg.segNumber) # remove it from the dictionary
+                vTrajSeg = vTrajectory[0] # get the new velocity trajectory segment
+                currSeg.newPathSegment(pathSegments.get(vTrajSeg.segNumber),position,State.getYaw(orientation)) # update currSeg to track the right path
+                vel_cmd = TwistMsg()
+                vel_cmd.linear.x = lastVCmd
+                vel_cmd.angular.z = lastWCmd
+                currSeg.updateState(vel_cmd,position,State.getYaw(orientation))
+                while(len(wTrajectory) > 0): # sync up wTrajectory
+                    if(wTrajectory[0].segNumber != vTrajSeg.segNumber): # get rid of mismatched seg numbers
+                        wTrajectory.popleft()
+                        
+                if(len(wTrajectory) == 0): # if all of the values in wTrajectory were popped
+                    vTrajectory.clear() # then clear vTrajectory because velocity profiler no longer knows how to execute the path
+                    return TwistMsg()
+
+    if(len(wTrajSeg) > 0):
+        wTrajSeg = wTrajectory[0]
+        
+        while(currSeg.segDistDone >= wTrajSeg.endS and not rospy.is_shutdown()): # added is_shutdown to prevent this function from locking up the program
+            wTrajectory.popleft()
+            if(len(wTrajSeg) <= 0):
+                vTrajectory.clear()
+                pathSegments.clear()
+                return TwistMsg()
+            if(wTrajSeg.segNumber != wTrajectory[0]):
+                pastSegments.pop(wTrajSeg.segNumber)
+                wTrajSeg = wTrajectory[0]
+                currSeg.newPathSegment(pathSegments.get(wTrajSeg.segNumber),position,State.getYaw(orientation))
+                vel_cmd = TwistMsg()
+                vel_cmd.linear.x = lastVCmd
+                vel_cmd.angular.z = lastWCmd
+                currSeg.updateState(vel_cmd,position,State.getYaw(orientation))
+                while(len(vTrajectory) > 0):
+                    if(vTrajectory[0].segNumber != wTrajSeg.segNumber):
+                        vTrajectory.popleft()
+                
+                if(len(vTrajectory) == 0):
+                    wTrajectory.clear()
+                    return TwistMsg()
+        
+    if(vTrajSeg is not None):
+        if(vTrajSeg.segType == TrajSeg.ACCEL):
+            vCmd = getDesiredVelAccel(currSeg.segDistDone)
+        elif(vTrajSeg.segType == TrajSeg.CONST):
+            vCmd = getDesiredVelConst(currSeg.segDistDone)
+        elif(vTrajSeg.segType == TrajSeg.DECEL):
+            vCmd = getDesiredVelDecel(currSeg.segDistDone)
+    else:
+        vCmd = 0.0
+
+    if(wTrajSeg is not None):
+        wTrajSeg = wTrajectory[0]
+
+        if(wTrajSeg.segType == TrajSeg.ACCEL):
+            wCmd = getDesiredVelAccel(currSeg.segDistDone)
+        elif(wTrajSeg.segType == TrajSeg.CONST):
+            wCmd = getDesiredVelConst(currSeg.segDistDone)
+        elif(wTrajSeg.segType == TrajSeg.DECEL):
+            wCmd = getDesiredVelDecel(currSeg.segDistDone)
+    else:
+        wCmd = 0.0
+
+    vel_cmd = TwistMsg()
+    vel_cmd.linear.x = vCmd
+    vel_cmd.angular.z = wCmd
+
+    return vel_cmd
+        
+def getDesiredVelAccel(currSeg):
+    pass
+
+def getDesiredVelConst(currSeg):
+    pass
+
+def getDesiredVelDecel(currSeg):
+    pass
+
 def main():
     global naptime
-    
+
     rospy.init_node('velocity_profiler_alpha')
     naptime = rospy.Rate(RATE) # this will be used globally by all functions that need to loop
     desVelPub = rospy.Publisher('des_vel',TwistMsg) # Steering reads this and adds steering corrections on top of the desired velocities
@@ -290,7 +387,14 @@ def main():
     
     print "Entering main loop"
     
+    currSeg = State(dt=1/RATE)
     while not rospy.is_shutdown():
+        vel_cmd = TwistMsg()
+        vel_cmd.linear.x = lastVCmd
+        vel_cmd.anguarl.z = lastWCmd
+        currSeg.updateState(vel_cmd,position,State.getYaw(orientation))
+        des_vel = getDesiredVelocity(currSeg)
+        desVelPub.publish(des_vel)
         naptime.sleep()
         """ print "stopped:"
         print stopped
