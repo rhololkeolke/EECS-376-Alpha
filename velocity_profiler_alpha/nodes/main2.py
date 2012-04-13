@@ -173,7 +173,88 @@ def computeLineTrajectory(seg,v_i,v_f):
     vTrajSegs = []
     wTrajSegs = [TrajSeg(TrajSeg.CONST,1.0,0.0,0.0,seg.seg_number)]
 
-    return (vTrajSegs, wTrajSegs, v_f)
+    # Compute if acceleration segment is needed
+    # Essentially finding the intersection of the line passing through the point (0,v_i)
+    # with the maximum velocity. if v_i >= maximum velocity then
+    # sAccel <= 0
+    # Otherwise sAccel > 0
+    sAccel = (seg.max_speeds.linear.x - v_i)/(seg.accel_limit*seg.seg_length)
+    
+    # Compute Deceleration segment
+    # Essentially finding the intersection of the line passing through the point (1,v_f)
+    # with the maximum velocity.  If v_f >= maximum velocity then
+    # sDecel >= 1
+    # Otherwise sDecel < 1
+    if(v_f < seg.min_speeds.linear.x):
+        sDecel = (seg.max_speeds.linear.x-seg.min_speeds.linear.x)/(seg.decel_limit*seg.seg_length)
+    else:
+        sDecel = (seg.max_speeds.linear.x-v_f)/(seg.decel_limit*seg.seg_length)
+
+    # Determine where accel and decel lines intersect.
+    # if intersect at x < 0 then should only be decelerating and potentially const
+    # if intersect at x > 0 then should only be accelerating and potentially const
+    # if intersect in the middle then potentially should be doing all three
+    xIntersect = (v_f-v_i-seg.decel_limit)/((seg.accel_limit-seg.decel_limit)*seg.seg_length)
+    if(xIntersect < 0.0): # No acceleration
+        if(sDecel >= 1): # should be travelling at a const velocity the whole segment
+            temp = TrajSeg(TrajSeg.CONST,1.0,seg.max_speeds.linear.x,seg.max_speeds.linear.x,seg.seg_number)
+            vTrajSegs.append(temp)
+        if(sDecel < 0.0): # if this is less than 0 then decelerate the whole trip
+            temp = TrajSeg(TrajSeg.DECEL,1.0,seg.max_speeds.linear.x,v_f,seg.seg_number)
+            vTrajSegs.append(temp)
+        else: # there is some constant velocity during this segment
+            temp = TrajSeg(TrajSeg.CONST,sDecel,seg.max_speeds.linear.x,seg.max_speeds.linear.x,seg.seg_number)
+            vTrajSegs.append(temp)
+            temp = TrajSeg(TrajSeg.DECEL,1.0,seg.max_speeds.linear.x,v_f,seg.seg_number)
+            vTrajSegs.append(temp)
+    elif(xIntersect > 1.0): # No deceleration
+        if(sAccel < 0.0): # actually have to start by decelerating
+            sAccel = (seg.max_speeds.linear.x-v_i)/(seg.decel_limit*seg.seg_length)
+            if(sAccel >= 1.0): # There is no constant velocity
+                temp = TrajSeg(TrajSeg.DECEL,1.0,v_i,seg.max_speeds.linear.x,seg.seg_number)
+                vTrajSegs.append(temp)
+            else: # there is a section of constant velocity
+                temp = TrajSeg(TrajSeg.DECEL,sAccel,v_i,seg.max_speeds.linear.x,seg.seg_number)
+                vTrajSegs.append(temp)
+                temp = TrajSeg(TrajSeg.CONST,1.0,seg.max_speeds.linear.x,seg.max_speeds.linear.x,seg.seg_number)
+                vTrajSegs.append(temp)
+        elif(sAccel >= 1.0): # always accelerating
+            temp = TrajSeg(TrajSeg.ACCEL,1.0,v_i,seg.max_speeds.linear.x,seg.seg_number)
+            vTrajSegs.append(temp)
+        else: # some constant velocity
+            temp = TrajSeg(TrajSeg.ACCEL,sAccel,v_i,seg.max_speeds.linear.x,seg.seg_number)
+            vTrajSegs.append(temp)
+            temp = TrajSeg(TrajSeg.CONST,1.0,seg.max_speeds.linear.x,seg.max_speeds.linear.x,seg.seg_number)
+            vTrajSegs.append(temp)
+    else: # both acceleration and deceleration
+        sLeft = 1.0 # whatever is left is the amount of time spent in constant velocity
+        if(sAccel < 0.0): # should actually start with a deceleration
+            sAccel = (seg.max_speeds.linear.x-v_i)/(seg.decel_limit*seg.seg_length)
+            if(sAccel > 1.0): # decelerating the entire time
+                sAccel = 1.0
+            temp = TrajSeg(TrajSeg.DECEL,sAccel,v_i,seg.max_speeds.linear.x,seg.seg_number)
+            vTrajSegs.append(temp)
+        if(sAccel > 1.0): # will accelerate the whole time
+            temp = TrajSeg(TrajSeg.ACCEL,1.0,v_i,seg.max_speeds.linear.x,seg.seg_number)
+            vTrajSegs.append(temp)
+
+        sLeft -= sAccel
+        decelSeg = None # used to temporarily store the deceleration segment if needed, segments have to be added in order
+        # see if there is any s left
+        if(sLeft > 0.0):
+            if(sDecel < 1.0):
+                decelSeg = TrajSeg(TrajSeg.DECEL,1.0,seg.max_speeds.linear.x,v_f,seg.seg_number)
+                sLeft -= 1-sDecel
+        
+        if(sLeft > 0.0): # there is anything left in s then that is how long to do constant velocity for
+            sAccel = (seg.max_speeds.linear.x-v_i)/(seg.decel_limit*seg.seg_length)
+            temp = TrajSeg(TrajSeg.CONST,sAccel+sLeft,seg.max_speeds.linear.x,seg.max_speeds.linear.x,seg.seg_number)
+            vTrajSegs.append(temp)
+
+        if(decelSeg is not None): # if there was a decel segment defined then add it to the vTrajSeg list
+            vTrajSegs.append(decelSeg)
+                
+    return (vTrajSegs, wTrajSegs, max(v_f,seg.min_speeds.linear.x))
 
 def computeArcTrajectory(seg,v_i,v_f,w_i,w_f):
     '''

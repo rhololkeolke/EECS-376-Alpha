@@ -31,18 +31,20 @@ def main():
             print "Appending a new segment"
             newSeg = PathSegmentMsg()
             newSeg.seg_number = count
-            newSeg.seg_length = count*10.0
-            newSeg.seg_type = (count % 3) + 1
+            newSeg.seg_length = random.uniform(0,10)
+            newSeg.seg_type = 1 #(count % 3) + 1
             newSeg.max_speeds.linear.x = random.uniform(0,10)
             newSeg.max_speeds.angular.z = random.uniform(0,10)
+            newSeg.accel_limit = random.uniform(0,10)
+            newSeg.decel_limit = random.uniform(-10,0)
             path.append(newSeg)
-        if(count % 8 == 0): # on multiples of 8 remove a segment from the list
-            print "Deleting a segment"
-            if(len(path) != 0):
-                del path[count % len(path)]
-        if(count % 23 == 0): # on multiples of 23 remove all segments from the list
-            print "Deleting the list"
-            path = list()
+#        if(count % 8 == 0): # on multiples of 8 remove a segment from the list
+ #           print "Deleting a segment"
+  #          if(len(path) != 0):
+   #             del path[count % len(path)]
+    #    if(count % 23 == 0): # on multiples of 23 remove all segments from the list
+     #       print "Deleting the list"
+      #      path = list()
 
         pathList.segments = path
         pathListPub.publish(pathList)

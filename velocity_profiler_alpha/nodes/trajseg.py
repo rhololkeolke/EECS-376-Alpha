@@ -8,6 +8,7 @@ class TrajSeg:
     # segment types
     ACCEL = 0
     CONST = 1
+    DECEL = 2
 
     def __init__(self,segType,endS,v_i,v_f,segNumber):
         '''
@@ -18,7 +19,7 @@ class TrajSeg:
         segNumber is the path segment number this trajectory segment is associated with
         '''
 
-        if(segType < 0 or segType > 1):
+        if(segType < 0 or segType > 2):
             raise NameError('segment type must one of the values defined in TrajSeg class')
         self.segType = segType # segment type e.g. ACCEL
         self.v_i = v_i # initial velocity
