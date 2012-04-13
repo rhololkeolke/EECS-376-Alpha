@@ -15,23 +15,31 @@ from geometry_msgs.msg._Twist import Twist as TwistMsg
 from nav_msgs.msg._Odometry import Odometry as OdometryMsg
 
 RATE = 10
-# obsExists = False
-# obsDist = 0
 lastOdom = OdometryMsg()
 lastMapPose = PoseStampedMsg()
 tfl = tf.TransformListener()
 desVel = TwistMsg()
-nextSegExists = False
 nextSeg = PathSegmentMsg()
-segNumber = 0
-segComplete = False
-curSegExists = False
-progressMade = 0
+# obsExists = False
+# obsDist = 0
+# segNumber = 0
+# nextSegExists = False
+# segComplete = False
+# curSegExists = False
+# progressMade = 0
 
 # def obstaclesCallback(obsData):
 #     global obsExists, obsDist
 #     obsExists = obsData.exists
 #     obsDist = obsData.distance
+
+# def segStatusCallback(statusData):
+#     global segNumber, segComplete, curSegExists, progressMade
+#     segNumber = statusData.seg_number
+#     if !segComplete:
+#         segComplete = statusData.segComplete
+#         curSegExists = False
+#         progressMade = statusData.progress_made
 
 def odomCallback(odomData):
     global lastOdom,tfl,lastMapPose
@@ -40,28 +48,21 @@ def odomCallback(odomData):
     temp.pose = lastOdom.pose.pose
     temp.header = lastOdom.header
     try:
+        #now lastmappose has map coords
         tfl.transformPose("map",temp,lastMapPose)
     except tf.TransformException:
         rospy.roserror("Transform Error")
 
 def velCallback(velData):
     global desVel
+    #keep updating from velocity profiler
     desVel.linear.x = velData.linear.x
     desVel.angular.z = velData.angular.z
 
 def pathSegCallback(pathData):
-    global nextSegExists, nextSeg
-    if pathData.seg_number > nextSeg.seg_number:
-        nextSegExists = True
+    global nextSeg
+    # if pathData.seg_number > nextSeg.seg_number:
         nextSeg = pathData
-
-def segStatusCallback(statusData):
-    global segNumber, segComplete, curSegExists, progressMade
-    segNumber = statusData.seg_number
-    if !segComplete:
-        segComplete = statusData.segComplete
-        curSegExists = False
-        progressMade = statusData.progress_made
 
 if __name__ == '__main__':
     main()
@@ -82,11 +83,11 @@ def main():
     global RATE, lastMapPose, nextSeg, desVel
     rospy.init_node('steering_alpha')
     cmdPub = rospy.Publisher('cmd_vel',TwistMsg)
-    #rospy.Subscriber('obstacles',ObstaclesMsg,obstaclesCallback)
+    # rospy.Subscriber('obstacles',ObstaclesMsg,obstaclesCallback)
     rospy.Subscriber('odom',OdometryMsg,odomCallback)
     rospy.Subscriber('des_vel',TwistMsg,velCallback)
     rospy.Subscriber('path_seg',PathSegmentMsg,pathSegCallback)
-    rospy.Subscriber('seg_status',SegStatusMsg,segStatusCallback)
+    # rospy.Subscriber('seg_status',SegStatusMsg,segStatusCallback)
     naptime = rospy.Rate(RATE)
     cmdVel = TwistMsg()
     xyRobotCoords = np.array([lastMapPose.pose.position.x, 
