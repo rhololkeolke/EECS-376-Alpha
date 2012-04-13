@@ -8,15 +8,15 @@ import tf
 import math as m
 
 from msg_alpha.msg._PathSegment import PathSegment as PathSegmentMsg
-from msg_alpha.msg._Obstacles import Obstacles as ObstaclesMsg
+#from msg_alpha.msg._Obstacles import Obstacles as ObstaclesMsg
 from msg_alpha.msg._SegStatus import SegStatus as SegStatusMsg
 from geometry_msgs.msg._PoseStamped import PoseStamped as PoseStampedMsg
 from geometry_msgs.msg._Twist import Twist as TwistMsg
 from nav_msgs.msg._Odometry import Odometry as OdometryMsg
 
 RATE = 10
-obsExists = False
-obsDist = 0
+# obsExists = False
+# obsDist = 0
 lastOdom = OdometryMsg()
 lastMapPose = PoseStampedMsg()
 tfl = tf.TransformListener()
@@ -28,10 +28,10 @@ segComplete = False
 curSegExists = False
 progressMade = 0
 
-def obstaclesCallback(obsData):
-    global obsExists, obsDist
-    obsExists = obsData.exists
-    obsDist = obsData.distance
+# def obstaclesCallback(obsData):
+#     global obsExists, obsDist
+#     obsExists = obsData.exists
+#     obsDist = obsData.distance
 
 def odomCallback(odomData):
     global lastOdom,tfl,lastMapPose
@@ -75,13 +75,14 @@ def normalizeToPi(inAng):
 def main():
     '''
     I assume that the velocity profiler will take care of making the velocity 0
-    when there is an obstacle. This steering only changes the heading, not the
-    speed
+    when there is an obstacle. If not then uncomment callback subscriber,
+    import etc. and make a check before publishing. This steering only changes
+    the heading, not the speed
     '''
     global RATE, lastMapPose, nextSeg, desVel
     rospy.init_node('steering_alpha')
     cmdPub = rospy.Publisher('cmd_vel',TwistMsg)
-    rospy.Subscriber('obstacles',ObstaclesMsg,obstaclesCallback)
+    #rospy.Subscriber('obstacles',ObstaclesMsg,obstaclesCallback)
     rospy.Subscriber('odom',OdometryMsg,odomCallback)
     rospy.Subscriber('des_vel',TwistMsg,velCallback)
     rospy.Subscriber('path_seg',PathSegmentMsg,pathSegCallback)
