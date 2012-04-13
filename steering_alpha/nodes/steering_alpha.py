@@ -5,7 +5,7 @@ import roslib; roslib.load_manifest('steering_alpha')
 import rospy
 import numpy as np
 import tf
-import m as m
+import math as m
 
 from msg_alpha.msg._PathSegment import PathSegment as PathSegmentMsg
 from msg_alpha.msg._Obstacles import Obstacles as ObstaclesMsg
