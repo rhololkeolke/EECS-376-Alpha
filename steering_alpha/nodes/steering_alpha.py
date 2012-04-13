@@ -3,8 +3,9 @@
 
 import roslib; roslib.load_manifest('steering_alpha')
 import rospy
-import numpy
+import numpy as np
 import tf
+import math
 
 from msg_alpha.msg._PathSegment import PathSegment as PathSegmentMsg
 from msg_alpha.msg._Obstacles import Obstacles as ObstaclesMsg
@@ -87,9 +88,20 @@ def main():
         omegaSat = 2.0
 
         curSeg = nextSeg
-        xyStartCoords = array([1,0])
-        xyRobotCoords = array([lastMapPose.pose.position.x, 
+        xyStartCoords = np.array([1,0])
+        xyRobotCoords = np.array([lastMapPose.pose.position.x, 
                                lastMapPose.pose.position.y])
+        psiRobot = tf.getYaw(lastMapPose.pose.orientation)
         psiPathSeg = tf.getYaw(curSeg.init_tan_angle)
+        tHat = np.array([math.cos(psiPathSeg),math.sin(PsiPathSeg)])
+        #tranform rot around z pi/2 * tHat
+        nHat = np.dot(np.array([[0,-1],[1,0]]), tHat)
+        
+
+        d = np.subtract(xyRobotCoords, xyStartCoords)
+        #convert to matrix transpose then convert back
+        dtemp = np.matrix(d)
+        d = np.array(dtemp.T) # the code was mat'*n_hat. I think this works
+        d = np.dot(d,nHat)
 
 
