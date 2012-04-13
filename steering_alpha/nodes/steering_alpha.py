@@ -66,6 +66,17 @@ def segStatusCallback(statusData):
 if __name__ == '__main__':
     main()
 
+def normalizeAngle(offset, threshold, angle):
+    # left of path, point to path
+    if offset > threshold:
+        return angle-math.pi/2
+    # too far right, point to path
+    else if offset < -threshold:
+        return angle+math.pi/2
+    #offset is small, gradually parallelize
+    else:
+        return angle-(math.pi/2)*offset/threshold
+
 def main():
     global RATE, lastMapPose, nextSeg
     rospy.init_node('steering_alpha')
@@ -100,8 +111,9 @@ def main():
 
         d = np.subtract(xyRobotCoords, xyStartCoords)
         #convert to matrix transpose then convert back
-        dtemp = np.matrix(d)
-        d = np.array(dtemp.T) # the code was mat'*n_hat. I think this works
+        d = np.array(np.matrix(d).T) # the code was mat'*n_hat. I think this works
         d = np.dot(d,nHat)
+        psiDes = normalizeAngle(d,dThreshold,psiPathSeg)
+        psiError = psiRobot-psiDes
 
 
