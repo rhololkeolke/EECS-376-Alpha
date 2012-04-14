@@ -290,6 +290,7 @@ def getDesiredVelocity(vTrajSeg,wTrajSeg):
 
     if(vTrajSeg.segType == TrajSeg.ACCEL):
         print "Using velocity acceleration segment"
+        print "segDistDone: %f" % (currSeg.segDistDone)
         vCmd = getDesiredVelAccel(vTrajSeg, currSeg.segDistDone)
     elif(vTrajSeg.segType == TrajSeg.CONST):
         print "Using constant velocity segment"
@@ -300,134 +301,14 @@ def getDesiredVelocity(vTrajSeg,wTrajSeg):
    
     if(wTrajSeg.segType == TrajSeg.ACCEL):
         print "Using omega acceleration segment"
-        wCmd = getDesiredVelAccel(wTrajSeg, currSeg.segDistDone)
+        wCmd = getDesiredVelAccel(wTrajSeg, currSeg.segDistDone,1)
     elif(wTrajSeg.segType == TrajSeg.CONST):
         print "Using constant omega segment"
-        wCmd = getDesiredVelConst(wTrajSeg, currSeg.segDistDone)
+        wCmd = getDesiredVelConst(wTrajSeg, currSeg.segDistDone,1)
     elif(wTrajSeg.segType == TrajSeg.DECEL):
         print "Using omega deceleration segment"
-        wCmd = getDesiredVelDecel(wTrajSeg, currSeg.segDistDone)
+        wCmd = getDesiredVelDecel(wTrajSeg, currSeg.segDistDone,1)
     
-    vel_cmd = TwistMsg()
-    vel_cmd.linear.x = vCmd
-    vel_cmd.angular.z = wCmd
-
-    return vel_cmd
-
-
-    # this next if block removes completed vTrajectory segments and keeps wTrajectory and
-    # currSeg in sync
-    print "len(vTrajectory): %i" % len(vTrajectory)
-    print "len(wTrajectory): %i" % len(wTrajectory)
-    
-    print "currSeg is not None: %s" % (currSeg is not None)
-    
-    if(len(vTrajectory) > 0):
-        if(currSeg is None):
-            currSeg = State()
-            currSeg.newPathSegment(pathSegments.get(vTrajSeg.segNumber),position,State.getYaw(orientation)) # update currSeg to track the right path
-            vel_cmd = TwistMsg()
-            vel_cmd.linear.x = lastVCmd
-            vel_cmd.angular.z = lastWCmd
-            currSeg.updateState(vel_cmd,position,State.getYaw(orientation))
-
-        vTrajSeg = vTrajectory[0]
-
-        while(currSeg.segDistDone >= vTrajSeg.endS and not rospy.is_shutdown()): # added is_shutdown to prevent this function from locking up the program
-            vTrajectory.popleft()
-            if(len(vTrajectory) <= 0): # there are still segments left
-                wTrajectory.clear() # if one is empty the other always should be
-                pathSegments.clear()
-                return TwistMsg()
-            # this won't be run if there weren't any more segments in vTrajectory
-            if(vTrajSeg.segNumber != vTrajectory[0]): # this is a new segment
-                pathSegments.pop(vTrajSeg.segNumber) # remove it from the dictionary
-                vTrajSeg = vTrajectory[0] # get the new velocity trajectory segment
-                currSeg.newPathSegment(pathSegments.get(vTrajSeg.segNumber),position,State.getYaw(orientation)) # update currSeg to track the right path
-                vel_cmd = TwistMsg()
-                vel_cmd.linear.x = lastVCmd
-                vel_cmd.angular.z = lastWCmd
-                currSeg.updateState(vel_cmd,position,State.getYaw(orientation))
-                while(len(wTrajectory) > 0): # sync up wTrajectory
-                    if(wTrajectory[0].segNumber != vTrajSeg.segNumber): # get rid of mismatched seg numbers
-                        wTrajectory.popleft()
-                        
-                if(len(wTrajectory) == 0): # if all of the values in wTrajectory were popped
-                    vTrajectory.clear() # then clear vTrajectory because velocity profiler no longer knows how to execute the path
-                    return TwistMsg()
-
-    if(len(wTrajectory) > 0):
-        if(currSeg is None):
-            currSeg = State()
-            currSeg.newPathSegment(pathSegments.get(vTrajSeg.segNumber),position,State.getYaw(orientation)) # update currSeg to track the right path
-            vel_cmd = TwistMsg()
-            vel_cmd.linear.x = lastVCmd
-            vel_cmd.angular.z = lastWCmd
-            currSeg.updateState(vel_cmd,position,State.getYaw(orientation))
-
-
-        wTrajSeg = wTrajectory[0]
-
-        # pretty much the same as above. Just swap wTrajectory with vTrajectory
-        while(currSeg.segDistDone >= wTrajSeg.endS and not rospy.is_shutdown()): # added is_shutdown to prevent this function from locking up the program
-            wTrajectory.popleft()
-            if(len(wTrajectory) <= 0):
-                vTrajectory.clear()
-                pathSegments.clear()
-                return TwistMsg()
-            if(wTrajSeg.segNumber != wTrajectory[0]):
-                pastSegments.pop(wTrajSeg.segNumber)
-                wTrajSeg = wTrajectory[0]
-                currSeg.newPathSegment(pathSegments.get(wTrajSeg.segNumber),position,State.getYaw(orientation))
-                vel_cmd = TwistMsg()
-                vel_cmd.linear.x = lastVCmd
-                vel_cmd.angular.z = lastWCmd
-                currSeg.updateState(vel_cmd,position,State.getYaw(orientation))
-                while(len(vTrajectory) > 0):
-                    if(vTrajectory[0].segNumber != wTrajSeg.segNumber):
-                        vTrajectory.popleft()
-                
-                if(len(vTrajectory) == 0):
-                    wTrajectory.clear()
-                    return TwistMsg()
-    
-    print "vTrajSeg is not None: %s" % vTrajSeg is not None
-    print "wTrajSeg is not None: %s" % wTrajSeg is not None
-    if(vTrajSeg is not None and wTrajSeg is not None):
-        if(currSeg.pathSeg is None):
-            currSeg.newPathSegment(pathSegments.get(vTrajSeg.segNumber),position,State.getYaw(orientation))
-        else:
-            vel_cmd = TwistMsg()
-            vel_cmd.linear.x = lastVCmd
-            vel_cmd.angular.z = lastWCmd
-            currSeg.updateState(vel_cmd,position,State.getYaw(orientation))            
-            
-        if(vTrajSeg.segType == TrajSeg.ACCEL):
-            print "Using velocity acceleration segment"
-            vCmd = getDesiredVelAccel(vTrajSeg, currSeg.segDistDone)
-        elif(vTrajSeg.segType == TrajSeg.CONST):
-            print "Using constant velocity segment"
-            vCmd = getDesiredVelConst(vTrajSeg, currSeg.segDistDone)
-        elif(vTrajSeg.segType == TrajSeg.DECEL):
-            print "Using velocity deceleration segment"
-            vCmd = getDesiredVelDecel(vTrajSeg, currSeg.segDistDone)
-   
-        wTrajSeg = wTrajectory[0]
-
-        if(wTrajSeg.segType == TrajSeg.ACCEL):
-            print "Using omega acceleration segment"
-            wCmd = getDesiredVelAccel(wTrajSeg, currSeg.segDistDone)
-        elif(wTrajSeg.segType == TrajSeg.CONST):
-            print "Using constant omega segment"
-            wCmd = getDesiredVelConst(wTrajSeg, currSeg.segDistDone)
-        elif(wTrajSeg.segType == TrajSeg.DECEL):
-            print "Using omega deceleration segment"
-            wCmd = getDesiredVelDecel(wTrajSeg, currSeg.segDistDone)
-    else:
-        print "Defaulting to 0 for vCmd and wCmd"
-        vCmd = 0.0
-        wCmd = 0.0
-
     vel_cmd = TwistMsg()
     vel_cmd.linear.x = vCmd
     vel_cmd.angular.z = wCmd
@@ -450,6 +331,8 @@ def getDesiredVelAccel(seg, segDistDone, cmdType=0):
     if(abs(vScheduled) < abs(a_max)*1/RATE):
         vScheduled = a_max*1/RATE
 
+    print "vScheduled: %f" % vScheduled
+
     if(abs(lastCmd) < abs(vScheduled)):
         vTest = lastCmd + a_max*1/RATE
         if(abs(vTest) < abs(vScheduled)):
@@ -464,6 +347,7 @@ def getDesiredVelAccel(seg, segDistDone, cmdType=0):
             vCmd = vScheduled
     else:
         vCmd = vScheduled
+    
     return vCmd
 
 def getDesiredVelConst(seg, segDistDone, cmdType=0):
@@ -494,7 +378,7 @@ def getDesiredVelConst(seg, segDistDone, cmdType=0):
         vCmd = vScheduled
     return vCmd
 
-def getDesiredVelDecel(seg, currSeg, cmdType=0):
+def getDesiredVelDecel(seg, segDistDone, cmdType=0):
     pathSeg = pathSegments.get(seg.segNumber)
     a_max = pathSeg.accel_limit
     d_max = pathSeg.decel_limit
@@ -536,26 +420,37 @@ def update():
     oldVTraj = None
     oldWTraj = None
 
+
     if(len(vTrajectory) == 0 or len(wTrajectory) == 0):
         # Clear the deques because either they should both have elements or neither should
         vTrajectory.clear()
         wTrajectory.clear()
         pathSegments.clear() # clear out the path segments because they are now useless
+        currSeg.newPathSegment()
         return
+
+    # if it made it to here then there is at least one segment in vTrajectory and wTrajectory
+    if(currSeg.pathSeg is None):
+        currSeg.newPathSegment(pathSegments.get(vTrajectory[0].segNumber),position,State.getYaw(orientation))
+        last_vel = TwistMsg()
+        last_vel.linear.x = lastVCmd
+        last_vel.angular.z = lastWCmd
+        currSeg.updateState(last_vel,position,State.getYaw(orientation))
+
     
     if(currSeg.segDistDone >= vTrajectory[0].endS): # this segment is done
         oldVTraj = vTrajectory.popleft() # temporary storage, this will eventually be thrown away
         if(oldVTraj.segNumber != vTrajectory[0].segNumber):
             wTrajectory.popleft() # could potentially be out of sync. This method does not account for that
             currSeg.newPathSegment(pathSegments.get(vTrajectory[0].segNumber),position,State.getYaw(orientation))
-            pathSegments.clear(oldVTraj.segNumber) # remove no longer needed pathSegments
+            pathSegments.pop(oldVTraj.segNumber) # remove no longer needed pathSegments
 
     if(currSeg.segDistDone >= wTrajectory[0].endS): # this segment is done
         oldWTraj = wTrajectory.popleft()
         if(oldWTraj.segNumber != wTrajectory[0].segNumber):
             vTrajectory.popleft()
             currSeg.newPathSegment(pathSegments.get(wTrajectory[0].segNumber),position,State.getYaw(orientation))
-            pathSegments.clear(oldWTraj.segNumber)
+            pathSegments.pop(oldWTraj.segNumber)
         
 
 def main():
