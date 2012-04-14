@@ -278,15 +278,43 @@ def computeSpinTrajectory(seg,w_i,w_f):
 
     return (vTrajSegs, wTrajSegs, w_f)
         
-def getDesiredVelocity():
+def getDesiredVelocity(vTrajSeg,wTrajSeg):
+    '''
+    Given a velocity trajectory segment and an omega trajectory segment this function will
+    Compute the scheduled velocity and omega for the robot's current position along the path
+    '''
     global vTrajectory
     global wTrajectory
     global pathSegments
     global currSeg
 
-    vTrajSeg = None
-    wTrajSeg = None
+    if(vTrajSeg.segType == TrajSeg.ACCEL):
+        print "Using velocity acceleration segment"
+        vCmd = getDesiredVelAccel(vTrajSeg, currSeg.segDistDone)
+    elif(vTrajSeg.segType == TrajSeg.CONST):
+        print "Using constant velocity segment"
+        vCmd = getDesiredVelConst(vTrajSeg, currSeg.segDistDone)
+    elif(vTrajSeg.segType == TrajSeg.DECEL):
+        print "Using velocity deceleration segment"
+        vCmd = getDesiredVelDecel(vTrajSeg, currSeg.segDistDone)
+   
+    if(wTrajSeg.segType == TrajSeg.ACCEL):
+        print "Using omega acceleration segment"
+        wCmd = getDesiredVelAccel(wTrajSeg, currSeg.segDistDone)
+    elif(wTrajSeg.segType == TrajSeg.CONST):
+        print "Using constant omega segment"
+        wCmd = getDesiredVelConst(wTrajSeg, currSeg.segDistDone)
+    elif(wTrajSeg.segType == TrajSeg.DECEL):
+        print "Using omega deceleration segment"
+        wCmd = getDesiredVelDecel(wTrajSeg, currSeg.segDistDone)
     
+    vel_cmd = TwistMsg()
+    vel_cmd.linear.x = vCmd
+    vel_cmd.angular.z = wCmd
+
+    return vel_cmd
+
+
     # this next if block removes completed vTrajectory segments and keeps wTrajectory and
     # currSeg in sync
     print "len(vTrajectory): %i" % len(vTrajectory)
@@ -434,6 +462,8 @@ def getDesiredVelAccel(seg, segDistDone, cmdType=0):
             vCmd = vTest
         else:
             vCmd = vScheduled
+    else:
+        vCmd = vScheduled
     return vCmd
 
 def getDesiredVelConst(seg, segDistDone, cmdType=0):
@@ -494,6 +524,39 @@ def getDesiredVelDecel(seg, currSeg, cmdType=0):
         vCmd = vScheduled
     return vCmd
 
+def update():
+    '''
+    This function is responsible for updating all the state variables each iteration of the node's main loop
+    '''
+    global currSeg
+    global pathSegments
+    global vTrajectory
+    global wTrajectory
+    
+    oldVTraj = None
+    oldWTraj = None
+
+    if(len(vTrajectory) == 0 or len(wTrajectory) == 0):
+        # Clear the deques because either they should both have elements or neither should
+        vTrajectory.clear()
+        wTrajectory.clear()
+        pathSegments.clear() # clear out the path segments because they are now useless
+        return
+    
+    if(currSeg.segDistDone >= vTrajectory[0].endS): # this segment is done
+        oldVTraj = vTrajectory.popleft() # temporary storage, this will eventually be thrown away
+        if(oldVTraj.segNumber != vTrajectory[0].segNumber):
+            wTrajectory.popleft() # could potentially be out of sync. This method does not account for that
+            currSeg.newPathSegment(pathSegments.get(vTrajectory[0].segNumber),position,State.getYaw(orientation))
+            pathSegments.clear(oldVTraj.segNumber) # remove no longer needed pathSegments
+
+    if(currSeg.segDistDone >= wTrajectory[0].endS): # this segment is done
+        oldWTraj = wTrajectory.popleft()
+        if(oldWTraj.segNumber != wTrajectory[0].segNumber):
+            vTrajectory.popleft()
+            currSeg.newPathSegment(pathSegments.get(wTrajectory[0].segNumber),position,State.getYaw(orientation))
+            pathSegments.clear(oldWTraj.segNumber)
+        
 
 def main():
     global naptime
@@ -513,27 +576,20 @@ def main():
     
     currSeg = State(dt=1/RATE)
     while not rospy.is_shutdown():
-        print "getDesiredVelocity()"
-        des_vel = getDesiredVelocity()
-        print "desVelPub.publish(des_vel)"
-        desVelPub.publish(des_vel)
-        if(currSeg is not None):
-            print "segDistDone %f" % currSeg.segDistDone
-        naptime.sleep()
-        """ print "stopped:"
-        print stopped
-        print "pathSegments:"
-        print pathSegments.keys()
-        print "lastVCmd:"
-        print lastVCmd
-        print "lastOCmd:"
-        print lastOCmd
-        print "position:"
-        print position
-        print "orientation"
-        print orientation"""
-
-        
+        # check where the robot is
+        last_vel = TwistMsg()
+        last_vel.linear.x = lastVCmd
+        last_vel.angular.z = lastWCmd
+        if(currSeg.pathSeg is not None):
+            currSeg.updateState(last_vel,position,State.getYaw(orientation))
+        # check if there are segments to execute
+        if(len(vTrajectory) != 0 or len(wTrajectory) != 0): # Note: Either both or neither should have 0 elements
+            des_vel = getDesiredVelocity(vTrajectory[0],wTrajectory[0])
+        else:
+            des_vel = TwistMsg() # initialized to 0's by default
+        desVelPub.publish(des_vel) # publish either the scheduled commands or 0's
+        update() # remove completed segments and change currSeg's path segment when necessary
+        naptime.sleep()            
 
 if __name__ == "__main__":
     main()
