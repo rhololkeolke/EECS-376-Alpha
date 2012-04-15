@@ -191,11 +191,15 @@ def computeLineTrajectory(seg,v_i,v_f):
     # with the maximum velocity.  If v_f >= maximum velocity then
     # sDecel >= 1
     # Otherwise sDecel < 1
+    print "seg.max_speeds.linear.x^2: %f" % (pow(seg.max_speeds.linear.x,2))
+    print "seg.min_speeds.linear.x^2: %f" % (pow(seg.min_speeds.linear.x,2))
+    print "v_f^2: %f" % (pow(v_f,2))
+    print "seg.decel_limit: %f" % seg.decel_limit
+    print "seg.seg_length: %f" % seg.seg_length
     if(v_f < seg.min_speeds.linear.x):
-        sDecel = 1-abs((pow(seg.max_speeds.linear.x,2)-pow(seg.min_speeds.linear.x,2))/(2*.8*seg.decel_limit*seg.seg_length))
+        sDecel = 1-abs((pow(seg.max_speeds.linear.x,2)-pow(seg.min_speeds.linear.x,2))/(seg.decel_limit*seg.seg_length))
     else:
-        sDecel = 1-abs((pow(seg.max_speeds.linear.x,2)-pow(v_f,2))/(2*.8*seg.decel_limit*seg.seg_length))
-
+        sDecel = 1-abs((pow(seg.max_speeds.linear.x,2)-pow(v_f,2))/(seg.decel_limit*seg.seg_length))
     
     # Determine where accel and decel lines intersect.
     # if intersect at x < 0 then should only be decelerating and potentially const
@@ -254,7 +258,10 @@ def computeLineTrajectory(seg,v_i,v_f):
         if(sLeft > 0.0):
             if(sDecel < 1.0):
                 decelSeg = TrajSeg(TrajSeg.DECEL,1.0,seg.max_speeds.linear.x,max(v_f,seg.min_speeds.linear.x),seg.seg_number)
+                print "sDecel: %f" % sDecel
                 sLeft -= 1-sDecel
+                print "sLeft: %f" % sLeft
+
         
         if(sLeft > 0.0): # there is anything left in s then that is how long to do constant velocity for
             sAccel = (pow(seg.max_speeds.linear.x,2) - pow(v_i,2))/(2*seg.accel_limit*seg.seg_length)
@@ -287,24 +294,31 @@ def computeSpinTrajectory(seg,w_i,w_f):
     w_f_orig = w_f
     w_i = abs(w_i)
     w_f = abs(w_f)
+    if(cmp(w_i_orig,0) != cmp(w_f_orig,0) and cmp(w_i_orig,0) != 0):
+        w_f_orig = 0
+
     max_speed = abs(seg.max_speeds.angular.z)
     min_speed = abs(seg.min_speeds.angular.z)
     seg_length = abs(seg.seg_length)
-    decel_limit = cmp(seg.accel_limit,0)*abs(seg.decel_limit)
-    accel_limit = cmp(seg.decel_limit,0)*abs(seg.accel_limit)
+    if(seg.seg_length <0):
+        accel_limit = abs(seg.accel_limit)
+        decel_limit = -1*abs(seg.decel_limit)
+    else:
+        accel_limit = seg.accel_limit
+        decel_limit = seg.decel_limit
     
-    print "w_i_orig: %f" % w_i_orig
-    print "w_f_orig: %f" % w_f_orig
-    print "w_i: %f" % w_i
-    print "w_f: %f" % w_f
-    print "max_speed_orig: %f" % (seg.max_speeds.angular.z)
-    print "min_speed_orig: %f" % (seg.min_speeds.angular.z)
-    print "max_speed: %f" % max_speed
-    print "min_speed: %f" % min_speed
-    print "accel_orig: %f" % (seg.accel_limit)
-    print "accel: %f" % accel_limit
-    print "decel_orig: %f" % (seg.decel_limit)
-    print "decel: %f" % decel_limit
+    #print "w_i_orig: %f" % w_i_orig
+    #print "w_f_orig: %f" % w_f_orig
+    #print "w_i: %f" % w_i
+    #print "w_f: %f" % w_f
+    #print "max_speed_orig: %f" % (seg.max_speeds.angular.z)
+    #print "min_speed_orig: %f" % (seg.min_speeds.angular.z)
+    #print "max_speed: %f" % max_speed
+    #print "min_speed: %f" % min_speed
+    #print "accel_orig: %f" % (seg.accel_limit)
+    #print "accel: %f" % accel_limit
+    #print "decel_orig: %f" % (seg.decel_limit)
+    #print "decel: %f" % decel_limit
                               
 
     # Compute if acceleration segment is needed
@@ -397,7 +411,6 @@ def computeSpinTrajectory(seg,w_i,w_f):
         if(decelSeg is not None): # if there was a decel segment defined then add it to the vTrajSeg list
             wTrajSegs.append(decelSeg)
                 
-    w_f = w_f_orig
     temp = max(w_f,min_speed)
     if(temp == w_f):
         temp = w_f_orig
@@ -429,13 +442,13 @@ def getDesiredVelocity(vTrajSeg,wTrajSeg):
         print "vCmd: %f" % vCmd
    
     if(wTrajSeg.segType == TrajSeg.ACCEL):
-        print "Using omega acceleration segment"
+        #print "Using omega acceleration segment"
         wCmd = getDesiredVelAccel(wTrajSeg, currSeg.segDistDone,1)
     elif(wTrajSeg.segType == TrajSeg.CONST):
-        print "Using constant omega segment"
+        #print "Using constant omega segment"
         wCmd = getDesiredVelConst(wTrajSeg, currSeg.segDistDone,1)
     elif(wTrajSeg.segType == TrajSeg.DECEL):
-        print "Using omega deceleration segment"
+        #print "Using omega deceleration segment"
         wCmd = getDesiredVelDecel(wTrajSeg, currSeg.segDistDone,1)
     
     vel_cmd = TwistMsg()
@@ -452,17 +465,19 @@ def getDesiredVelAccel(seg, segDistDone, cmdType=0):
         lastCmd = lastWCmd
     else:
         lastCmd = lastVCmd
+    v_f = seg.v_f
+    v_i = seg.v_i
 
     if(segDistDone < 0.0): # this is to prevent the robot from sticking in place with negative path offset
-        if(abs(lastCmd) < abs(seg.v_f)):
+        if(abs(lastCmd) <= abs(v_f)):
             vScheduled = lastCmd + a_max*1/RATE
         else:
             vScheduled = lastCmd
     else:
         if(a_max < 0.0):
-            vScheduled = -1*sqrt(pow(seg.v_i,2) + 2*abs(pathSeg.seg_length)*segDistDone*abs(a_max))
+            vScheduled = -1*sqrt(pow(v_i,2) + 2*abs(pathSeg.seg_length)*segDistDone*abs(a_max))
         else:
-            vScheduled = sqrt(pow(seg.v_i,2) + 2*pathSeg.seg_length*segDistDone*a_max)
+            vScheduled = sqrt(pow(v_i,2) + 2*pathSeg.seg_length*segDistDone*a_max)
         if(abs(vScheduled) < abs(a_max)*1/RATE):
             vScheduled = a_max*1/RATE
 
@@ -472,7 +487,7 @@ def getDesiredVelAccel(seg, segDistDone, cmdType=0):
             vCmd = vTest
         else:
             vCmd = vScheduled
-    elif(abs(lastCmd) > abs(vScheduled)):
+    elif(abs(lastCmd) > abs(vScheduled) and cmp(lastCmd,0) == cmp(v_f,0)):
         vTest = lastCmd + (1.2*d_max*1/RATE)
         if(abs(vTest) > abs(vScheduled)):
             vCmd = vTest
@@ -492,8 +507,14 @@ def getDesiredVelConst(seg, segDistDone, cmdType=0):
     # simply set lastCmd to whichever variable is appropriate
     if(cmdType == 1):
         lastCmd = lastWCmd
+        if(pathSeg.seg_type == 1):
+            return 0
     else:
         lastCmd = lastVCmd
+        if(pathSeg.seg_type == 3):
+            return 0
+    v_f = seg.v_f
+    v_i = seg.v_i
 
     if(abs(lastCmd) < abs(vScheduled)):
         vTest = lastCmd + a_max*1/RATE
@@ -520,15 +541,19 @@ def getDesiredVelDecel(seg, segDistDone, cmdType=0):
     else:
         lastCmd = lastVCmd
 
+    v_f = seg.v_f
+    v_i = seg.v_i
+
     if(segDistDone > 1.0): # this to prevent negative numbers in the sqrt
-        vScheduled = seg.v_f
+        vScheduled = v_f
     elif(segDistDone < 0.0): # this is to prevent the robot from getting stuck before a segment completes
-        vScheduled = seg.v_i
+        vScheduled = v_i
     else:
         if(d_max < 0.0):
-            vScheduled = sqrt(pow(seg.v_f,2)+2*(1-segDistDone)*pathSeg.seg_length*abs(d_max))
+            vScheduled = pow(v_f,2)+2*.8*(1-segDistDone)*pathSeg.seg_length*abs(d_max)
+            print "vScheduled:%f" % vScheduled
         else:
-            vScheduled = -1*sqrt(pow(seg.v_f,2)+2*(1-segDistDone)*abs(pathSeg.seg_length)*abs(d_max))
+            vScheduled = -1*(pow(v_f,2)+2*.8*(1-segDistDone)*abs(pathSeg.seg_length)*abs(d_max))
 
     if(abs(lastCmd) < abs(vScheduled)):
         vTest = lastCmd + a_max*1/RATE
