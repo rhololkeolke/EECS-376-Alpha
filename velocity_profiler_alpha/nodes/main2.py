@@ -192,9 +192,9 @@ def computeLineTrajectory(seg,v_i,v_f):
     # sDecel >= 1
     # Otherwise sDecel < 1
     if(v_f < seg.min_speeds.linear.x):
-        sDecel = 1-abs((pow(seg.max_speeds.linear.x,2)-pow(seg.min_speeds.linear.x,2))/(2*seg.decel_limit*seg.seg_length))
+        sDecel = 1-abs((pow(seg.max_speeds.linear.x,2)-pow(seg.min_speeds.linear.x,2))/(2*.8*seg.decel_limit*seg.seg_length))
     else:
-        sDecel = 1-abs((pow(seg.max_speeds.linear.x,2)-pow(v_f,2))/(2*seg.decel_limit*seg.seg_length))
+        sDecel = 1-abs((pow(seg.max_speeds.linear.x,2)-pow(v_f,2))/(2*.8*seg.decel_limit*seg.seg_length))
 
     
     # Determine where accel and decel lines intersect.
@@ -306,6 +306,7 @@ def getDesiredVelocity(vTrajSeg,wTrajSeg):
     elif(vTrajSeg.segType == TrajSeg.DECEL):
         #print "Using velocity deceleration segment"
         vCmd = getDesiredVelDecel(vTrajSeg, currSeg.segDistDone)
+        print "vCmd: %f" % vCmd
    
     if(wTrajSeg.segType == TrajSeg.ACCEL):
         #print "Using omega acceleration segment"

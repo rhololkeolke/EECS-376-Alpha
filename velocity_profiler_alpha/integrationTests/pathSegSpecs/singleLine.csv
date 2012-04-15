@@ -1,2 +1,2 @@
 seg_type,seg_length,ref_point.x,ref_point.y,init_tan_angle,curvature,max_v,max_w,min_v,min_w,accel_limit,decel_limit
-1,2.0,8.42,15.09,-2.46,0,.25,0,0,0,.25,-.25
+1,2.0,8.42,15.09,-2.46,0,.25,0,0,0,.25,-.1
