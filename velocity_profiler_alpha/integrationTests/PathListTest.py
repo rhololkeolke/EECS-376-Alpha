@@ -7,6 +7,7 @@ from geometry_msgs.msg._Twist import Twist as TwistMsg
 from geometry_msgs.msg._Point import Point as PointMsg
 from msg_alpha.msg._PathSegment import PathSegment as PathSegmentMsg
 from msg_alpha.msg._PathList import PathList as PathListMsg
+from msg_alpha.msg._SegStatus import SegStatus as SegStatusMsg
 from tf.transformations import euler_from_quaternion,quaternion_from_euler
 from geometry_msgs.msg._Quaternion import Quaternion as QuaternionMsg
 
@@ -15,6 +16,7 @@ from math import pi,cos,sin
 
 RATE = 1.0
 naptime = None
+lastSegNumber = 0
 
 def getYaw(quat):
     try:
@@ -30,6 +32,10 @@ def createQuat(x,y,z):
     quat.z = quatList[2]
     quat.w = quatList[3]
     return quat
+
+def segStatusCallback(segStat):
+    global lastSegNumber
+    lastSegNumber = segStat.lastSegComplete
 
 def randomLines():
     global naptime
@@ -74,12 +80,14 @@ def shortLines():
     rospy.init_node('path_list_test')
     naptime = rospy.Rate(20.0)
     pathListPub = rospy.Publisher('path',PathListMsg)
+    rospy.Subscriber("seg_status",SegStatusMsg,segStatusCallback)
 
     print "Entering main loop"
 
-    count = 0
+    count = 1
     path = list()
     pathList = PathListMsg()
+    pathSegments = dict()
     lengths = [.2,1,.3,.5,.6]
     max_speeds = [1,.1,.25,.5,3]
     min_speeds = [0,0,0,0,0]
@@ -89,24 +97,30 @@ def shortLines():
     starty = 15.09
     startYaw = pi/180.0*-132.39
     while not rospy.is_shutdown():
-        if(count < len(lengths)):
+        if(count <= len(lengths)):
             newSeg = PathSegmentMsg()
             newSeg.seg_type = PathSegmentMsg.LINE
             newSeg.seg_number = count
-            newSeg.seg_length = lengths[count]
+            newSeg.seg_length = lengths[count-1]
             newSeg.ref_point.x = startx
             newSeg.ref_point.y = starty
-            if(count > 0):
-                newSeg.ref_point.x += lengths[count]*cos(startYaw)
-                newSeg.ref_point.y += lengths[count]*sin(startYaw)
+            if(count > 1):
+                newSeg.ref_point.x += sum(lengths[:count-2])*cos(startYaw)
+                newSeg.ref_point.y += sum(lengths[:count-2])*sin(startYaw)
             newSeg.init_tan_angle = createQuat(0,0,startYaw)
-            newSeg.max_speeds.linear.x = max_speeds[count]
-            newSeg.min_speeds.linear.x = min_speeds[count]
-            newSeg.accel_limit = accel[count]
-            newSeg.decel_limit = decel[count]
+            newSeg.max_speeds.linear.x = max_speeds[count-1]
+            newSeg.min_speeds.linear.x = min_speeds[count-1]
+            newSeg.accel_limit = accel[count-1]
+            newSeg.decel_limit = decel[count-1]
             path.append(newSeg)
+            pathSegments[count] = len(path)-1
             pathList.segments = path
             print "Appending segment number %i" % count
+        for i,seg in enumerate(path):
+            if seg.seg_number <= lastSegNumber:
+                "Deleting segment number %i" % seg.seg_number
+                del path[i]
+        pathList.segments = path
         pathListPub.publish(pathList)    
         count += 1
         naptime.sleep()

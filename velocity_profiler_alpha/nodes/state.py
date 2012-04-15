@@ -109,6 +109,8 @@ class State:
         """
         dt = 1.0/20.0
         if(self.pathSeg.seg_type == PathSegmentMsg.LINE):
+            approx_equal = lambda a,b,t:abs(a-b)<t
+            
             # grab the angle of the path
             angle = State.getYaw(self.pathSeg.init_tan_angle)
 
@@ -130,7 +132,16 @@ class State:
             intersect.x = point.x + u*cos(angle)
             intersect.y = point.y + u*sin(angle)
             
-            d = sqrt(pow(point.x-intersect.x,2)+pow(point.y-intersect.y,2))
+            d = sqrt(pow(intersect.x-p0.x,2)+pow(intersect.y-p0.y,2))
+
+            # see where this point will lead if followed along the line for a distance d
+            testX = intersect.x + d*cos(angle)
+            testY = intersect.y + d*sin(angle)
+
+            # if the distance gets smaller then the d should be negative
+            # if the distance gets bigger then the d should be positive
+            if(sqrt(pow(testX-p0.x,2)+pow(testY-p0.y,2)) < d):
+                d = -d
 
             self.segDistDone = d/self.pathSeg.seg_length            
         elif(self.pathSeg.seg_type == PathSegmentMsg.ARC):

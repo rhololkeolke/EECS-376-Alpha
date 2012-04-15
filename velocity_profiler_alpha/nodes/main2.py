@@ -51,6 +51,9 @@ wTrajectory = deque()
 # keeps track of the percent complete of the current path segment
 currSeg = None
 
+# Keeps track of the last segment number completed
+lastSegNumber = 0
+
 def eStopCallback(motors_enabled):
     global stopped
     stopped = not motors_enabled.data
@@ -189,10 +192,11 @@ def computeLineTrajectory(seg,v_i,v_f):
     # sDecel >= 1
     # Otherwise sDecel < 1
     if(v_f < seg.min_speeds.linear.x):
-        sDecel = (pow(seg.max_speeds.linear.x,2)-pow(seg.min_speeds.linear.x,2))/(2*seg.decel_limit*seg.seg_length)
+        sDecel = 1-abs((pow(seg.max_speeds.linear.x,2)-pow(seg.min_speeds.linear.x,2))/(2*seg.decel_limit*seg.seg_length))
     else:
-        sDecel = (pow(seg.max_speeds.linear.x,2)-pow(v_f,2))/(2*seg.decel_limit*seg.seg_length)
+        sDecel = 1-abs((pow(seg.max_speeds.linear.x,2)-pow(v_f,2))/(2*seg.decel_limit*seg.seg_length))
 
+    
     # Determine where accel and decel lines intersect.
     # if intersect at x < 0 then should only be decelerating and potentially const
     # if intersect at x > 0 then should only be accelerating and potentially const
@@ -237,8 +241,12 @@ def computeLineTrajectory(seg,v_i,v_f):
                 sAccel = 1.0
             temp = TrajSeg(TrajSeg.DECEL,sAccel,v_i,seg.max_speeds.linear.x,seg.seg_number)
             vTrajSegs.append(temp)
-        if(sAccel > 1.0): # will accelerate the whole time
+        elif(sAccel > 1.0): # will accelerate the whole time
             temp = TrajSeg(TrajSeg.ACCEL,1.0,v_i,seg.max_speeds.linear.x,seg.seg_number)
+            vTrajSegs.append(temp)
+        else:
+            print "Appending accel"
+            temp = TrajSeg(TrajSeg.ACCEL,sAccel,v_i,seg.max_speeds.linear.x,seg.seg_number)
             vTrajSegs.append(temp)
 
         sLeft -= sAccel
@@ -246,15 +254,17 @@ def computeLineTrajectory(seg,v_i,v_f):
         # see if there is any s left
         if(sLeft > 0.0):
             if(sDecel < 1.0):
-                decelSeg = TrajSeg(TrajSeg.DECEL,1.0,seg.max_speeds.linear.x,v_f,seg.seg_number)
+                decelSeg = TrajSeg(TrajSeg.DECEL,1.0,seg.max_speeds.linear.x,max(v_f,seg.max_speeds.linear.x),seg.seg_number)
                 sLeft -= 1-sDecel
         
         if(sLeft > 0.0): # there is anything left in s then that is how long to do constant velocity for
+            print "Appending constant"
             sAccel = (pow(seg.max_speeds.linear.x,2)-pow(v_i,2))/(2*seg.decel_limit*seg.seg_length)
             temp = TrajSeg(TrajSeg.CONST,sAccel+sLeft,seg.max_speeds.linear.x,seg.max_speeds.linear.x,seg.seg_number)
             vTrajSegs.append(temp)
 
         if(decelSeg is not None): # if there was a decel segment defined then add it to the vTrajSeg list
+            print "Appending decel"
             vTrajSegs.append(decelSeg)
                 
     return (vTrajSegs, wTrajSegs, max(v_f,seg.min_speeds.linear.x))
@@ -288,25 +298,26 @@ def getDesiredVelocity(vTrajSeg,wTrajSeg):
     global pathSegments
     global currSeg
 
+
+    print "segDistDone: %f" % (currSeg.segDistDone)
     if(vTrajSeg.segType == TrajSeg.ACCEL):
-        print "Using velocity acceleration segment"
-        print "segDistDone: %f" % (currSeg.segDistDone)
+        #print "Using velocity acceleration segment"
         vCmd = getDesiredVelAccel(vTrajSeg, currSeg.segDistDone)
     elif(vTrajSeg.segType == TrajSeg.CONST):
-        print "Using constant velocity segment"
+        #print "Using constant velocity segment"
         vCmd = getDesiredVelConst(vTrajSeg, currSeg.segDistDone)
     elif(vTrajSeg.segType == TrajSeg.DECEL):
-        print "Using velocity deceleration segment"
+        #print "Using velocity deceleration segment"
         vCmd = getDesiredVelDecel(vTrajSeg, currSeg.segDistDone)
    
     if(wTrajSeg.segType == TrajSeg.ACCEL):
-        print "Using omega acceleration segment"
+        #print "Using omega acceleration segment"
         wCmd = getDesiredVelAccel(wTrajSeg, currSeg.segDistDone,1)
     elif(wTrajSeg.segType == TrajSeg.CONST):
-        print "Using constant omega segment"
+        #print "Using constant omega segment"
         wCmd = getDesiredVelConst(wTrajSeg, currSeg.segDistDone,1)
     elif(wTrajSeg.segType == TrajSeg.DECEL):
-        print "Using omega deceleration segment"
+        #print "Using omega deceleration segment"
         wCmd = getDesiredVelDecel(wTrajSeg, currSeg.segDistDone,1)
     
     vel_cmd = TwistMsg()
@@ -324,14 +335,20 @@ def getDesiredVelAccel(seg, segDistDone, cmdType=0):
     else:
         lastCmd = lastVCmd
 
-    if(a_max < 0.0):
-        vScheduled = -1*sqrt(pow(seg.v_i,2) + 2*pathSeg.seg_length*segDistDone*abs(a_max))
+    if(segDistDone < 0.0): # this is to prevent the robot from sticking in place with negative path offset
+        if(abs(lastCmd) < abs(seg.v_f)):
+            print "seg.v_f: %f, lastCmd: %f" % (seg.v_f,lastCmd)
+            vScheduled = lastCmd + a_max*1/RATE
+            print "vScheduled: %f" % vScheduled
+        else:
+            vScheduled = lastCmd
     else:
-        vScheduled = sqrt(pow(seg.v_i,2) + 2*pathSeg.seg_length*segDistDone*a_max)
-    if(abs(vScheduled) < abs(a_max)*1/RATE):
-        vScheduled = a_max*1/RATE
-
-    print "vScheduled: %f" % vScheduled
+        if(a_max < 0.0):
+            vScheduled = -1*sqrt(pow(seg.v_i,2) + 2*pathSeg.seg_length*segDistDone*abs(a_max))
+        else:
+            vScheduled = sqrt(pow(seg.v_i,2) + 2*pathSeg.seg_length*segDistDone*a_max)
+        if(abs(vScheduled) < abs(a_max)*1/RATE):
+            vScheduled = a_max*1/RATE
 
     if(abs(lastCmd) < abs(vScheduled)):
         vTest = lastCmd + a_max*1/RATE
@@ -387,17 +404,22 @@ def getDesiredVelDecel(seg, segDistDone, cmdType=0):
     else:
         lastCmd = lastVCmd
 
-    if(a_max <0.0):
-        vScheduled = sqrt(pow(seg.v_f,2)+2*(1-segDistDone)*pathSeg.seg_length*abs(d_max))
+    if(segDistDone > 1.0): # this to prevent negative numbers in the sqrt
+        vScheduled = seg.v_f
+    elif(segDistDone < 0.0): # this is to prevent the robot from getting stuck before a segment completes
+        vScheduled = seg.v_i
     else:
-        vScheduled = -1*sqrt(pow(seg.v_f,2)+2*(1-segDistDone)*pathSeg.seg_length*abs(d_max))
+        if(a_max <0.0):
+            vScheduled = sqrt(pow(seg.v_f,2)+2*(1-segDistDone)*pathSeg.seg_length*abs(d_max))
+        else:
+            vScheduled = -1*sqrt(pow(seg.v_f,2)+2*(1-segDistDone)*pathSeg.seg_length*abs(d_max))
 
     if(abs(lastCmd) < abs(vScheduled)):
         vTest = lastCmd + a_max*1/RATE
         if(abs(vTest) < abs(vScheduled)):
             vCmd = vTest
         else:
-            vCmd = seg.vScheduled
+            vCmd = vScheduled
     elif(abs(lastCmd) > abs(vScheduled)):
         vTest = lastCmd + (1.2*d_max*1/RATE)
         if(abs(vTest) > abs(vScheduled)):
@@ -416,10 +438,10 @@ def update():
     global pathSegments
     global vTrajectory
     global wTrajectory
+    global lastSegNumber
     
     oldVTraj = None
     oldWTraj = None
-
 
     if(len(vTrajectory) == 0 or len(wTrajectory) == 0):
         # Clear the deques because either they should both have elements or neither should
@@ -440,18 +462,48 @@ def update():
     
     if(currSeg.segDistDone >= vTrajectory[0].endS): # this segment is done
         oldVTraj = vTrajectory.popleft() # temporary storage, this will eventually be thrown away
+        if(len(vTrajectory) == 0):
+            lastSegNumber = oldVTraj.segNumber
+            wTrajectory.clear()
+            pathSegments.clear()
+            currSeg.newPathSegment()
+            return
         if(oldVTraj.segNumber != vTrajectory[0].segNumber):
+            lastSegNumber = oldVTraj.segNumber
             wTrajectory.popleft() # could potentially be out of sync. This method does not account for that
             currSeg.newPathSegment(pathSegments.get(vTrajectory[0].segNumber),position,State.getYaw(orientation))
             pathSegments.pop(oldVTraj.segNumber) # remove no longer needed pathSegments
 
     if(currSeg.segDistDone >= wTrajectory[0].endS): # this segment is done
         oldWTraj = wTrajectory.popleft()
+        if(len(wTrajectory) == 0):
+            lastSegNumber = oldWTraj.segNumber
+            vTrajectory.clear()
+            pathSegments.clear()
+            currSeg.newPathSegment()
+            return
         if(oldWTraj.segNumber != wTrajectory[0].segNumber):
+            lastSegNumber = oldWTraj.segNumber
             vTrajectory.popleft()
             currSeg.newPathSegment(pathSegments.get(wTrajectory[0].segNumber),position,State.getYaw(orientation))
             pathSegments.pop(oldWTraj.segNumber)
         
+def publishSegStatus(segStatusPub,abort=False):
+    segStat = SegStatusMsg()
+    segStat.lastSegComplete = lastSegNumber
+    segStat.abort = abort
+    if(currSeg is not None):
+        if(currSeg.pathSeg is not None):
+            segStat.seg_number = currSeg.pathSeg.seg_number
+        else:
+            segStat.seg_number = 0
+        segStat.progress_made = currSeg.segDistDone
+    else:
+        segStat.seg_number = 0
+        segStat.progress_made = 0.0
+        
+    segStatusPub.publish(segStat)
+    
 
 def main():
     global naptime
@@ -484,6 +536,7 @@ def main():
             des_vel = TwistMsg() # initialized to 0's by default
         desVelPub.publish(des_vel) # publish either the scheduled commands or 0's
         update() # remove completed segments and change currSeg's path segment when necessary
+        publishSegStatus(segStatusPub)
         naptime.sleep()            
 
 if __name__ == "__main__":
