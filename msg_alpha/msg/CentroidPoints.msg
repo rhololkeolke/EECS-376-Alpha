@@ -1,3 +1,4 @@
 #Contains the list of coordinates of the centroids of the slices along the orange strap.
+Header header
 
-int32[][] points
+geometry_msgs/Point[] points
