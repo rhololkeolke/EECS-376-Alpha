@@ -96,6 +96,37 @@ def getYaw(quat):
     except AttributeError:
         return euler_from_quaternion(quat)[2]
 
+def getStartAndEndPoints():
+    if(currSeg.seg_type == PathSegmentMsg.LINE):
+        p_s = PointMsg()
+        p_f = PointMsg()
+
+        p_s.x = currSeg.ref_point.x
+        p_s.y = currSeg.ref_point.y
+
+        p_f.x = currSeg.ref_point.x + currSeg.seg_length*cos(getYaw(currSeg.init_tan_angle))
+        p_f.y = currSeg.ref_point.y + currSeg.seg_length*sin(getYaw(currSeg.init_tan_angle))
+        return (p_s,p_f)
+    elif(currSeg.seg_type == PathSegmentMsg.ARC):
+        return (0.0,0.0) # TODO
+    elif(currSeg.seg_type == PathSegmentMsg.SPIN_IN_PLACE):
+        return (currSeg.ref_point,currSeg.ref_point) # spins should never move in x,y plane
+    else:
+        return (0.0,0.0) # not sure if this is the best default answer
+
+def getStartAndEndYaw():
+    if(currSeg.seg_type == PathSegmentMsg.LINE):
+        temp = getYaw(currSeg.init_tan_angle)
+        return (temp,temp) # yaw of straight line shouldn't change
+    elif(currSeg.seg_type == PathSegmentMsg.ARC):
+        return (0.0,0.0)
+    elif(currSeg.seg_type == PathSegmentMsg.SPIN_IN_PLACE):
+        yaw_s = getYaw(currSeg.init_tan_angle)
+        yaw_f = (yaw_s + currSeg.seg_length) % (2*pi)
+        return (yaw_s,yaw_f)
+    else:
+        return (0.0,0.0) # not sure if this is the best default answer
+
 def main():
     '''
     The main function that is executed while the node is running
@@ -115,6 +146,29 @@ def main():
     print "Entering main loop"
 
     while not rospy.is_shutdown():
+        if(currSeg is not None):
+            (p_s,p_f) = getStartAndEndPoints()
+            (yaw_s,yaw_f) = getStartAndEndYaw()
+            print "----"
+            print "p_s:"
+            print "----"
+            print p_s
+            print ""
+            print "----"
+            print "p_f:"
+            print "----"
+            print p_f
+            print ""
+            print "------"
+            print "yaw_s:"
+            print "------"
+            print yaw_s
+            print ""
+            print "------"
+            print "yaw_f:"
+            print "------"
+            print yaw_f
+            print ""
         print "-------"
         print "desVel:"
         print "-------"
