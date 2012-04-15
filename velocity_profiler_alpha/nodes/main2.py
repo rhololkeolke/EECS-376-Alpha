@@ -245,7 +245,6 @@ def computeLineTrajectory(seg,v_i,v_f):
             temp = TrajSeg(TrajSeg.ACCEL,1.0,v_i,seg.max_speeds.linear.x,seg.seg_number)
             vTrajSegs.append(temp)
         else:
-            print "Appending accel"
             temp = TrajSeg(TrajSeg.ACCEL,sAccel,v_i,seg.max_speeds.linear.x,seg.seg_number)
             vTrajSegs.append(temp)
 
@@ -254,17 +253,15 @@ def computeLineTrajectory(seg,v_i,v_f):
         # see if there is any s left
         if(sLeft > 0.0):
             if(sDecel < 1.0):
-                decelSeg = TrajSeg(TrajSeg.DECEL,1.0,seg.max_speeds.linear.x,max(v_f,seg.max_speeds.linear.x),seg.seg_number)
+                decelSeg = TrajSeg(TrajSeg.DECEL,1.0,seg.max_speeds.linear.x,max(v_f,seg.min_speeds.linear.x),seg.seg_number)
                 sLeft -= 1-sDecel
         
         if(sLeft > 0.0): # there is anything left in s then that is how long to do constant velocity for
-            print "Appending constant"
-            sAccel = (pow(seg.max_speeds.linear.x,2)-pow(v_i,2))/(2*seg.decel_limit*seg.seg_length)
+            sAccel = (pow(seg.max_speeds.linear.x,2) - pow(v_i,2))/(2*seg.accel_limit*seg.seg_length)
             temp = TrajSeg(TrajSeg.CONST,sAccel+sLeft,seg.max_speeds.linear.x,seg.max_speeds.linear.x,seg.seg_number)
             vTrajSegs.append(temp)
 
         if(decelSeg is not None): # if there was a decel segment defined then add it to the vTrajSeg list
-            print "Appending decel"
             vTrajSegs.append(decelSeg)
                 
     return (vTrajSegs, wTrajSegs, max(v_f,seg.min_speeds.linear.x))
@@ -337,9 +334,7 @@ def getDesiredVelAccel(seg, segDistDone, cmdType=0):
 
     if(segDistDone < 0.0): # this is to prevent the robot from sticking in place with negative path offset
         if(abs(lastCmd) < abs(seg.v_f)):
-            print "seg.v_f: %f, lastCmd: %f" % (seg.v_f,lastCmd)
             vScheduled = lastCmd + a_max*1/RATE
-            print "vScheduled: %f" % vScheduled
         else:
             vScheduled = lastCmd
     else:
@@ -409,7 +404,7 @@ def getDesiredVelDecel(seg, segDistDone, cmdType=0):
     elif(segDistDone < 0.0): # this is to prevent the robot from getting stuck before a segment completes
         vScheduled = seg.v_i
     else:
-        if(a_max <0.0):
+        if(d_max < 0.0):
             vScheduled = sqrt(pow(seg.v_f,2)+2*(1-segDistDone)*pathSeg.seg_length*abs(d_max))
         else:
             vScheduled = -1*sqrt(pow(seg.v_f,2)+2*(1-segDistDone)*pathSeg.seg_length*abs(d_max))
