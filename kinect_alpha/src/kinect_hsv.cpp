@@ -49,7 +49,7 @@ KinectNode::KinectNode():
   private_nh.param("hl",params[0], 0);
   private_nh.param("hh",params[1], 255);
 
-  std::cout << params[0] << params[1] << params[2] << params[3] << params[4] << params[5] << std::endl;
+  std::cout << params[0] << params[1] << std::endl;
   sub_ = it_.subscribe("in_image", 1, &KinectNode::imageCallback, this);
   //image_pub_ = it_.advertise("out_image", 1);
   blobPub = nh_.advertise<msg_alpha::BlobDistance>("blob_dist",1);
@@ -74,22 +74,19 @@ void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
   try {
 
     //convert the image to an HSV
-    cvCvtColor(cv_ptr->image, output, CV_HSV2RGB);
+    cvCvtColor(&image, &output, CV_HSV2RGB);
 
     //Threshold the HSV image where H holds the values, in this case look for the specified lower and upper bounds of orange in the image
-    cvInRange(output, params, output);
+    cvInRange(&output, params, &output);
 
     //Display the images
     cv::imshow("view", output);  
     cvWaitKey(5);
 
-    /*
-    IplImage temp = output;
-	blobDist.dist = tempInt;
-	std::cout << blobDist << std::endl;
-    KinectNode::blobPub.publish(blobDist);
-    //image_pub_.publish(bridge.cvToImgMsg(&temp, "bgr8"));
-    */
+
+
+
+
   }
   catch (cv_bridge::Exception& e) {
 
