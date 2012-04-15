@@ -283,7 +283,127 @@ def computeSpinTrajectory(seg,w_i,w_f):
     vTrajSegs = [TrajSeg(TrajSeg.CONST,1.0,0.0,0.0,seg.seg_number)]
     wTrajSegs = []
 
-    return (vTrajSegs, wTrajSegs, w_f)
+    w_i_orig = w_i
+    w_f_orig = w_f
+    w_i = abs(w_i)
+    w_f = abs(w_f)
+    max_speed = abs(seg.max_speeds.angular.z)
+    min_speed = abs(seg.min_speeds.angular.z)
+    seg_length = abs(seg.seg_length)
+    decel_limit = cmp(seg.accel_limit,0)*abs(seg.decel_limit)
+    accel_limit = cmp(seg.decel_limit,0)*abs(seg.accel_limit)
+    
+    print "w_i_orig: %f" % w_i_orig
+    print "w_f_orig: %f" % w_f_orig
+    print "w_i: %f" % w_i
+    print "w_f: %f" % w_f
+    print "max_speed_orig: %f" % (seg.max_speeds.angular.z)
+    print "min_speed_orig: %f" % (seg.min_speeds.angular.z)
+    print "max_speed: %f" % max_speed
+    print "min_speed: %f" % min_speed
+    print "accel_orig: %f" % (seg.accel_limit)
+    print "accel: %f" % accel_limit
+    print "decel_orig: %f" % (seg.decel_limit)
+    print "decel: %f" % decel_limit
+                              
+
+    # Compute if acceleration segment is needed
+    # Essentially finding the intersection of the line passing through the point (0,v_i)
+    # with the maximum velocity. if v_i >= maximum velocity then
+    # sAccel <= 0
+    # Otherwise sAccel > 0
+    sAccel = (pow(max_speed,2) - pow(w_i,2))/(2*accel_limit*seg_length)
+    
+    # Compute Deceleration segment
+    # Essentially finding the intersection of the line passing through the point (1,v_f)
+    # with the maximum velocity.  If v_f >= maximum velocity then
+    # sDecel >= 1
+    # Otherwise sDecel < 1
+    if(w_f < min_speed):
+        sDecel = 1-abs((pow(max_speed,2)-pow(min_speed,2))/(2*.8*decel_limit*seg_length))
+    else:
+        sDecel = 1-abs((pow(max_speed,2)-pow(w_f,2))/(2*.8*decel_limit*seg_length))
+
+    
+    # Determine where accel and decel lines intersect.
+    # if intersect at x < 0 then should only be decelerating and potentially const
+    # if intersect at x > 0 then should only be accelerating and potentially const
+    # if intersect in the middle then potentially should be doing all three
+    xIntersect = (w_f-w_i-decel_limit)/((accel_limit-decel_limit)*seg_length)
+    if(xIntersect < 0.0): # No acceleration
+        if(sDecel >= 1): # should be travelling at a const velocity the whole segment
+            temp = TrajSeg(TrajSeg.CONST,1.0,seg.max_speeds.angular.z,seg.max_speeds.angular.z,seg.seg_number)
+            wTrajSegs.append(temp)
+        if(sDecel < 0.0): # if this is less than 0 then decelerate the whole trip
+            temp = TrajSeg(TrajSeg.DECEL,1.0,seg.max_speeds.angular.z,w_f_orig,seg.seg_number)
+            wTrajSegs.append(temp)
+        else: # there is some constant velocity during this segment
+            temp = TrajSeg(TrajSeg.CONST,sDecel,seg.max_speeds.angular.z,seg.max_speeds.angular.z,seg.seg_number)
+            wTrajSegs.append(temp)
+            temp = TrajSeg(TrajSeg.DECEL,1.0,seg.max_speeds.angular.z,w_f_orig,seg.seg_number)
+            wTrajSegs.append(temp)
+    elif(xIntersect > 1.0): # No deceleration
+        if(sAccel < 0.0): # actually have to start by decelerating
+            sAccel = (pow(max_speed,2)-pow(w_i,2))/(2*decel_limit*seg_length)
+            if(sAccel >= 1.0): # There is no constant velocity
+                temp = TrajSeg(TrajSeg.DECEL,1.0,w_i_orig,seg.max_speeds.angular.z,seg.seg_number)
+                wTrajSegs.append(temp)
+            else: # there is a section of constant velocity
+                temp = TrajSeg(TrajSeg.DECEL,sAccel,w_i_orig,seg.max_speeds.angular.z,seg.seg_number)
+                wTrajSegs.append(temp)
+                temp = TrajSeg(TrajSeg.CONST,1.0,seg.max_speeds.angular.z,seg.max_speeds.angular.z,seg.seg_number)
+                wTrajSegs.append(temp)
+        elif(sAccel >= 1.0): # always accelerating
+            temp = TrajSeg(TrajSeg.ACCEL,1.0,w_i_orig,seg.max_speeds.angular.z,seg.seg_number)
+            wTrajSegs.append(temp)
+        else: # some constant velocity
+            temp = TrajSeg(TrajSeg.ACCEL,sAccel,w_i_orig,seg.max_speeds.angular.z,seg.seg_number)
+            wTrajSegs.append(temp)
+            temp = TrajSeg(TrajSeg.CONST,1.0,seg.max_speeds.angular.z,seg.max_speeds.angular.z,seg.seg_number)
+            wTrajSegs.append(temp)
+    else: # both acceleration and deceleration
+        sLeft = 1.0 # whatever is left is the amount of time spent in constant velocity
+        if(sAccel < 0.0): # should actually start with a deceleration
+            sAccel = (pow(max_speed,2)-pow(w_i,2))/(2*decel_limit*seg_length)
+            if(sAccel > 1.0): # decelerating the entire time
+                sAccel = 1.0
+            temp = TrajSeg(TrajSeg.DECEL,sAccel,w_i_orig,seg.max_speeds.angular.z,seg.seg_number)
+            wTrajSegs.append(temp)
+        elif(sAccel > 1.0): # will accelerate the whole time
+            temp = TrajSeg(TrajSeg.ACCEL,1.0,w_i_orig,seg.max_speeds.angular.z,seg.seg_number)
+            wTrajSegs.append(temp)
+        else:
+            temp = TrajSeg(TrajSeg.ACCEL,sAccel,w_i_orig,seg.max_speeds.angular.z,seg.seg_number)
+            wTrajSegs.append(temp)
+
+        sLeft -= sAccel
+        decelSeg = None # used to temporarily store the deceleration segment if needed, segments have to be added in order
+        # see if there is any s left
+        if(sLeft > 0.0):
+            if(sDecel < 1.0):
+                temp = max(w_f,min_speed)
+                if(temp == w_f):
+                    temp = w_f_orig
+                else:
+                    temp = seg.min_speeds.angular.z
+                decelSeg = TrajSeg(TrajSeg.DECEL,1.0,seg.max_speeds.angular.z,temp,seg.seg_number)
+                sLeft -= 1-sDecel
+        
+        if(sLeft > 0.0): # there is anything left in s then that is how long to do constant velocity for
+            sAccel = (pow(max_speed,2) - pow(w_i,2))/(2*accel_limit*seg_length)
+            temp = TrajSeg(TrajSeg.CONST,sAccel+sLeft,seg.max_speeds.angular.z,seg.max_speeds.angular.z,seg.seg_number)
+            wTrajSegs.append(temp)
+
+        if(decelSeg is not None): # if there was a decel segment defined then add it to the vTrajSeg list
+            wTrajSegs.append(decelSeg)
+                
+    w_f = w_f_orig
+    temp = max(w_f,min_speed)
+    if(temp == w_f):
+        temp = w_f_orig
+    else:
+        temp = seg.min_speeds.angular.z
+    return (vTrajSegs, wTrajSegs, temp)
         
 def getDesiredVelocity(vTrajSeg,wTrajSeg):
     '''
@@ -309,13 +429,13 @@ def getDesiredVelocity(vTrajSeg,wTrajSeg):
         print "vCmd: %f" % vCmd
    
     if(wTrajSeg.segType == TrajSeg.ACCEL):
-        #print "Using omega acceleration segment"
+        print "Using omega acceleration segment"
         wCmd = getDesiredVelAccel(wTrajSeg, currSeg.segDistDone,1)
     elif(wTrajSeg.segType == TrajSeg.CONST):
-        #print "Using constant omega segment"
+        print "Using constant omega segment"
         wCmd = getDesiredVelConst(wTrajSeg, currSeg.segDistDone,1)
     elif(wTrajSeg.segType == TrajSeg.DECEL):
-        #print "Using omega deceleration segment"
+        print "Using omega deceleration segment"
         wCmd = getDesiredVelDecel(wTrajSeg, currSeg.segDistDone,1)
     
     vel_cmd = TwistMsg()
@@ -340,7 +460,7 @@ def getDesiredVelAccel(seg, segDistDone, cmdType=0):
             vScheduled = lastCmd
     else:
         if(a_max < 0.0):
-            vScheduled = -1*sqrt(pow(seg.v_i,2) + 2*pathSeg.seg_length*segDistDone*abs(a_max))
+            vScheduled = -1*sqrt(pow(seg.v_i,2) + 2*abs(pathSeg.seg_length)*segDistDone*abs(a_max))
         else:
             vScheduled = sqrt(pow(seg.v_i,2) + 2*pathSeg.seg_length*segDistDone*a_max)
         if(abs(vScheduled) < abs(a_max)*1/RATE):
@@ -408,7 +528,7 @@ def getDesiredVelDecel(seg, segDistDone, cmdType=0):
         if(d_max < 0.0):
             vScheduled = sqrt(pow(seg.v_f,2)+2*(1-segDistDone)*pathSeg.seg_length*abs(d_max))
         else:
-            vScheduled = -1*sqrt(pow(seg.v_f,2)+2*(1-segDistDone)*pathSeg.seg_length*abs(d_max))
+            vScheduled = -1*sqrt(pow(seg.v_f,2)+2*(1-segDistDone)*abs(pathSeg.seg_length)*abs(d_max))
 
     if(abs(lastCmd) < abs(vScheduled)):
         vTest = lastCmd + a_max*1/RATE

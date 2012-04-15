@@ -232,10 +232,8 @@ class State:
             if(beta >= 0 and beta <= halfAngle+pi): # beta is in the specified arc
                 alpha = beta
             else:
-                alpha = 2*pi - beta
-                    
-            alpha = alpha % (2*pi)
-                
+                alpha = beta - 2*pi
+
             self.segDistDone = alpha/self.pathSeg.seg_length
         else:
             pass # should probably throw an unknown segment type error
