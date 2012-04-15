@@ -69,6 +69,7 @@ def pathListCallback(pathList):
         minSegNumber = pathList.segments[-1].seg_number
     else:
         # if there are no path segments specified then there is no current segment
+        print "No Segments specified in pathList"
         currSeg = None
         return
 
@@ -144,55 +145,77 @@ def main():
     rospy.Subscriber('seg_status', SegStatusMsg, segStatusCallback)
 
     print "Entering main loop"
+    
+    Kd = 0.5
+    Ktheta = 1.0
 
     while not rospy.is_shutdown():
-        if(currSeg is not None):
+        if(currSeg is not None and currSeg.seg_type == PathSegmentMsg.LINE):
             (p_s,p_f) = getStartAndEndPoints()
-            (yaw_s,yaw_f) = getStartAndEndYaw()
-            print "----"
-            print "p_s:"
-            print "----"
-            print p_s
-            print ""
-            print "----"
-            print "p_f:"
-            print "----"
-            print p_f
-            print ""
-            print "------"
-            print "yaw_s:"
-            print "------"
-            print yaw_s
-            print ""
-            print "------"
-            print "yaw_f:"
-            print "------"
-            print yaw_f
-            print ""
-        print "-------"
-        print "desVel:"
-        print "-------"
-        print desVel
-        print ""
-        print "--------"
-        print "currSeg:"
-        print "--------"
-        print currSeg
-        print ""
-        print "-------------------"
-        print "lastSegComplete: %i" % lastSegComplete
-        print "-------------------"
-        print ""
-        print "---------"
-        print "position:"
-        print "---------"
-        print position
-        print ""
-        print "----"
-        print "psi:"
-        print "----"
-        print "%f" % (getYaw(orientation))
-        print ""
+            desPsi = getYaw(currSeg.init_tan_angle)
+
+            currPsi = getYaw(orientation)
+            tx = cos(desPsi)
+            ty = sin(desPsi)
+            nx = -ty
+            ny = tx
+
+            dTheta = (desPsi - currPsi) % (2*pi)
+            if(dTheta > pi):
+                dTheta  = dTheta-2*pi
+            
+            # compute offset error
+            currX = position.x
+            currY = position.y
+
+            # vector from start point to current robot point
+            xrs = currX-p_s.x
+            yrs = currY-p_s.y
+
+            # dot this vectory with path normal vector to get the offset (works for line segments)
+            offset = xrs*nx+yrs*ny
+
+            cmd_vel = TwistMsg()
+            cmd_vel.angular.z = -Kd*offset + Ktheta*dTheta
+            cmd_vel.linear.x = desVel.linear.x
+            
+            cmdPub.publish(cmd_vel)
+            naptime.sleep()
+            continue
+        elif(currSeg is not None):
+            cmdPub.publish(desVel)
+            naptime.sleep()
+            continue
+            #print "--------"
+            #print "cmd_vel:"
+            #print "--------"
+            #print cmd_vel
+            #print ""
+        #print "-------"
+        #print "desVel:"
+        #print "-------"
+        #print desVel
+        #print ""
+        #print "--------"
+        #print "currSeg:"
+        #print "--------"
+        #print currSeg
+        #print ""
+        #print "-------------------"
+        #print "lastSegComplete: %i" % lastSegComplete
+        #print "-------------------"
+        #print ""
+        #print "---------"
+        #print "position:"
+        #print "---------"
+        #print position
+        #print ""
+        #print "----"
+        #print "psi:"
+        #print "----"
+        #print "%f" % (getYaw(orientation))
+        #print ""
+        cmdPub.publish(TwistMsg())
         naptime.sleep()
 
 if __name__ == "__main__":
