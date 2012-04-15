@@ -74,10 +74,13 @@ void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
   try {
 
     //convert the image to an HSV
-    cvCvtColor(&image, &output, CV_HSV2RGB);
+    cvCvtColor(&image, &output, CV_BGR2HSV);
 
     //Threshold the HSV image where H holds the values, in this case look for the specified lower and upper bounds of orange in the image
     cvInRange(&output, params, &output);
+
+    //Convert the black and white image to an RGB image for the sake of the point cloud
+    cvCvtColor(&output, &output,CV_HSV2BGR);
 
     //Display the images
     cv::imshow("view", output);  
@@ -93,6 +96,10 @@ void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
     ROS_ERROR("Could not convert to 'bgr8'. Ex was %s", e.what());
   }
 }
+
+convert
+
+
 
 
 
