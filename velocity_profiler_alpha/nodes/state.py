@@ -119,8 +119,8 @@ class State:
 
             # calculate another point along the line
             p1 = PointMsg()
-            p1.x = p0.x + cos(angle)
-            p1.y = p0.y + sin(angle)
+            p1.x = p0.x + self.pathSeg.seg_length*cos(angle)
+            p1.y = p0.y + self.pathSeg.seg_length*sin(angle)
             
             # line segment
             tanVecMag = pow(p0.x-p1.x,2) + pow(p0.y-p1.y,2)

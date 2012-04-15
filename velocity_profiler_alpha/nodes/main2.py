@@ -197,7 +197,7 @@ def computeLineTrajectory(seg,v_i,v_f):
     print "seg.decel_limit: %f" % seg.decel_limit
     print "seg.seg_length: %f" % seg.seg_length
     if(v_f < seg.min_speeds.linear.x):
-        sDecel = 1-abs((pow(seg.max_speeds.linear.x,2)-pow(seg.min_speeds.linear.x,2))/(seg.decel_limit*seg.seg_length))
+        sDecel = 1-abs((pow(seg.max_speeds.linear.x,2)-pow(seg.min_speeds.linear.x,2))/(2*seg.decel_limit*seg.seg_length))
     else:
         sDecel = 1-abs((pow(seg.max_speeds.linear.x,2)-pow(v_f,2))/(seg.decel_limit*seg.seg_length))
     
@@ -550,10 +550,10 @@ def getDesiredVelDecel(seg, segDistDone, cmdType=0):
         vScheduled = v_i
     else:
         if(d_max < 0.0):
-            vScheduled = pow(v_f,2)+2*.8*(1-segDistDone)*pathSeg.seg_length*abs(d_max)
+            vScheduled = 2*(1-segDistDone)*pathSeg.seg_length*abs(d_max)
             print "vScheduled:%f" % vScheduled
         else:
-            vScheduled = -1*(pow(v_f,2)+2*.8*(1-segDistDone)*abs(pathSeg.seg_length)*abs(d_max))
+            vScheduled = -1*2*(1-segDistDone)*abs(pathSeg.seg_length)*abs(d_max)
 
     if(abs(lastCmd) < abs(vScheduled)):
         vTest = lastCmd + a_max*1/RATE
@@ -563,10 +563,13 @@ def getDesiredVelDecel(seg, segDistDone, cmdType=0):
             vCmd = vScheduled
     elif(abs(lastCmd) > abs(vScheduled)):
         vTest = lastCmd + (1.2*d_max*1/RATE)
-        if(abs(vTest) > abs(vScheduled)):
+        if(abs(vTest) > abs(vScheduled) and cmp(vTest,0) == cmp(vScheduled,0)):
             vCmd = vTest
         else:
-            vCmd = vScheduled
+            if(vScheduled < .05): # this is to make sure that the segment actually finishes
+                vCmd = .05
+            else:
+                vCmd = vScheduled
     else:
         vCmd = vScheduled
     return vCmd
