@@ -41,26 +41,15 @@ class KinectNode {
     //image_transport::Publisher image_pub_;
     msg_alpha::BlobDistance blobDist;
     ros::Publisher blobPub;
-<<<<<<< HEAD
-    int params[6];
-=======
     int params[7];
 	int dilationIterations;
->>>>>>> d0643dd... made the strap detection a standalone function, added a launch parameter for the length of the slice dialation, added comments
 };
 
 KinectNode::KinectNode():
   it_(nh_)
 {
   ros::NodeHandle private_nh("~");
-<<<<<<< HEAD
-  private_nh.param("rh",params[0], 0);
-  private_nh.param("rl",params[1], 255);
-  private_nh.param("bh",params[2], 0);
-  private_nh.param("bl",params[3], 255);
-  private_nh.param("gh",params[4], 0);
-  private_nh.param("gl",params[5], 255);
-=======
+
   private_nh.param("hl",params[0], 0);
   private_nh.param("hh",params[1], 255);
   private_nh.param("sl",params[2], 0);
@@ -71,20 +60,13 @@ KinectNode::KinectNode():
   private_nh.param("sliceLength",params[7],5);
 
 
->>>>>>> d0643dd... made the strap detection a standalone function, added a launch parameter for the length of the slice dialation, added comments
   std::cout << params[0] << params[1] << params[2] << params[3] << params[4] << params[5] << std::endl;
   sub_ = it_.subscribe("in_image", 1, &KinectNode::imageCallback, this);
   //image_pub_ = it_.advertise("out_image", 1);
-<<<<<<< HEAD
+
   //blobPub = nh_.advertise<msg_alpha::BlobDistance>("blob_dist",1);
   centroidPub = nh_.advertise<msg_alpha::CentroidPoints>("centroid_pnts",1);
-=======
-  blobPub = nh_.advertise<msg_alpha::BlobDistance>("blob_dist",1);
 
-
-
-
->>>>>>> d0643dd... made the strap detection a standalone function, added a launch parameter for the length of the slice dialation, added comments
 }
 
 /* Function to receive Kinect Data
@@ -121,19 +103,6 @@ cv::Mat KinectNode::detectStrap()
 
   cv::Mat output;
   try {
-<<<<<<< HEAD
-    //normalizeColors(cv_ptr->image, output);
-	int tempInt;
-    blobfind(params, cv_ptr->image, output, tempInt);
-    //findLines(cv_ptr->image, output);
-    cv::imshow("view", output);
-    cvWaitKey(5);
-    IplImage temp = output;
-	blobDist.dist = tempInt;
-	std::cout << blobDist << std::endl;
-    KinectNode::blobPub.publish(blobDist);
-    //image_pub_.publish(bridge.cvToImgMsg(&temp, "bgr8"));
-=======
 	
 	cv::cvtColor(cv_ptr->image, output, CV_BGR2HSV);
 	
@@ -162,7 +131,6 @@ cv::Mat KinectNode::detectStrap()
 	//	cvWaitKey(5);
 
 	return output;
->>>>>>> d0643dd... made the strap detection a standalone function, added a launch parameter for the length of the slice dialation, added comments
   }
 
   catch (cv_bridge::Exception& e) {
