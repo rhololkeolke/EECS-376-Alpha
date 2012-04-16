@@ -19,7 +19,7 @@ from geometry_msgs.msg._Point import Point as PointMsg
 from geometry_msgs.msg._Twist import Twist as TwistMsg
 from tf.transformations import quaternion_from_euler,euler_from_quaternion
 
-from math import cos,sin,tan,pi,sqrt
+from math import atan2,pi
 
 # set the rate the node runs at
 RATE = 20.0
@@ -28,7 +28,7 @@ RATE = 20.0
 naptime = None # this will be initialized first thing in main
 
 # Current point to steer to
-currPoint = PointMsg()
+currPoint = None
 
 # pose data
 position = PointMsg()
@@ -78,7 +78,32 @@ def main():
 
     print "Entering main loop"
     
+    Kd = 0.5
+    Ktheta = 1.0
+
     while(not rospy.is_shutdown()):
+        if(currPoint is None):
+            # For now publish stop messages when no point is detected
+            # Eventually this will be the spin routine
+            cmdPub.publish(TwistMsg())
+            naptime.sleep()
+            continue
+        
+        xVec = currPoint.x-position.x
+        yVec = currPoint.y-position.y
+
+        actPsi = getYaw(orientation)
+        desPsi = atan2(yVec,xVec)
+
+        dTheta = (desPsi - actPsi) % (2*pi)
+        if(dTheta > pi):
+            dTheta = dTheta - 2*pi
+
+        cmd_vel = TwistMsg()
+        cmd_vel.angular.z = Ktheta*dTheta
+        cmd_vel.linear.x = .25 # Eventually this will actually accelerate and decelerate
+
+        cmdPub.publish(cmd_vel)
         naptime.sleep()
 
 if __name__ == "__main__":
