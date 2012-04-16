@@ -16,6 +16,9 @@
 		<param name="vh" type="int" value="255"/>
 		<param name="dilationIterations" type="int" value="5"/>
 		<param name="sliceLength" type="int" value="5" />
+		<param name="zTolLow" type="int" value= "-0.5" />
+		<param name="zTolHigh" type="int" value="0.5" />
+		<param name="gridSize" type="int" value="10" />
 	</node>
 	<node pkg="kinect_alpha" type="main.py" name="kinect_py" />
 
