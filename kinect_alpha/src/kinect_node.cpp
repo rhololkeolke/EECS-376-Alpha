@@ -72,14 +72,35 @@ class KinectNode {
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;
     image_transport::Subscriber sub_;
-    image_transport::Publisher image_pub_;
+
+    //image_transport::Publisher image_pub_;
+    //msg_alpha::BlobDistance blobDist;
+    //ros::Publisher blobPub;
+    int params[7];
+	int dilationIterations;
 };
 
 KinectNode::KinectNode():
   it_(nh_)
 {
-  sub_ = it_.subscribe("image", 1, &KinectNode::imageCallback, this);
-  image_pub_ = it_.advertise("out_image", 1);
+
+  ros::NodeHandle private_nh("~");
+
+  private_nh.param("hl",params[0], 0);
+  private_nh.param("hh",params[1], 255);
+  private_nh.param("sl",params[2], 0);
+  private_nh.param("sh",params[3], 255);
+  private_nh.param("vl",params[4], 0);
+  private_nh.param("vh",params[5], 255);
+  private_nh.param("dilationIterations",dilationIterations,10);
+  private_nh.param("sliceLength",params[7],5);
+
+  std::cout << params[0] << params[1] << params[2] << params[3] << params[4] << params[5] << std::endl;
+  sub_ = it_.subscribe("in_image", 1, &KinectNode::imageCallback, this);
+
+  centroidPub = nh_.advertise<msg_alpha::CentroidPoint>("centroid_point", 1);
+
+
 }
 
 void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& msg)
