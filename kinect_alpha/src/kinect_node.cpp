@@ -22,6 +22,7 @@
 
 using std::string;
 namespace enc = sensor_msgs::image_encodings;
+using namespace cv;
 
 // Global variables here
 ros::Publisher             cloud_pub_;
@@ -40,19 +41,23 @@ class KinectNode {
     msg_alpha::BlobDistance blobDist;
     ros::Publisher blobPub;
     int params[6];
+	int dilationIterations;
 };
 
 KinectNode::KinectNode():
   it_(nh_)
 {
   ros::NodeHandle private_nh("~");
-  private_nh.param("rh",params[0], 0);
-  private_nh.param("rl",params[1], 255);
-  private_nh.param("bh",params[2], 0);
-  private_nh.param("bl",params[3], 255);
-  private_nh.param("gh",params[4], 0);
-  private_nh.param("gl",params[5], 255);
+  private_nh.param("hl",params[0], 0);
+  private_nh.param("hh",params[1], 255);
+  private_nh.param("sl",params[2], 0);
+  private_nh.param("sh",params[3], 255);
+  private_nh.param("vl",params[4], 0);
+  private_nh.param("vh",params[5], 255);
+  private_nh.param("dilationIterations",dilationIterations,10)
+
   std::cout << params[0] << params[1] << params[2] << params[3] << params[4] << params[5] << std::endl;
+  std::cout << dilationIterations << std::endl;
   sub_ = it_.subscribe("in_image", 1, &KinectNode::imageCallback, this);
   //image_pub_ = it_.advertise("out_image", 1);
   blobPub = nh_.advertise<msg_alpha::BlobDistance>("blob_dist",1);
@@ -75,23 +80,70 @@ void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
 
   cv::Mat output;
   try {
-    //normalizeColors(cv_ptr->image, output);
-	int tempInt;
-    blobfind(params, cv_ptr->image, output, tempInt);
-    //findLines(cv_ptr->image, output);
-    cv::imshow("view", output);
+	
+	cv::cvtColor(cv_ptr->image, output, CV_BGR2HSV);
+	
+	cv::Mat temp;
+
+  	//Make a vector of Mats to hold the invidiual B,G,R channels
+  	vector<Mat> mats;
+
+  	//Split the input into 3 separate channels
+  	split(temp, mats);
+
+	//std::cout << mats.size() << std::endl;
+   
+	cv::Scalar lowerBound = cv::Scalar(params[0],params[2],params[4]);
+	cv::Scalar upperBound = cv::Scalar(params[1],params[3],params[5]);
+
+	cv::inRange(output,lowerBound,upperBound,output);
+
+    //Threshold the HSV image where H holds the values, in this case look for the specified lower and upper bounds of orange in the image
+    // Set all values below value to zero, leave rest the same
+  // Then inverse binary threshold the remaining pixels
+  // Threshold blue channel
+  //cv::threshold(mats[0], mats[0], params[0], 180, THRESH_TOZERO_INV);
+  /*threshold(mats[0], mats[0], params[1], 255, THRESH_BINARY);
+  // Threshold green channel
+  threshold(mats[1], mats[1], params[2], 255, THRESH_TOZERO_INV);
+  threshold(mats[1], mats[1], params[3], 255, THRESH_BINARY);
+  // Threshold red channel
+  threshold(mats[2], mats[2], params[4], 255, THRESH_TOZERO_INV);
+  threshold(mats[2], mats[2], params[5], 255, THRESH_BINARY);
+*/
+	//multiply(mats[0], mats[1], output);
+	//multiply(output, mats[2], output);
+
+    //Convert the black and white image to an RGB(BGR) image for the sake of the point cloud
+    //cvtColor(output, output,CV_HSV2BGR);
+
+    //Display the images
+	//cv::imshow("view",cv_ptr->image);
+
+	erode(output, output, Mat());
+
+  	//dilate(output, output, Mat(), Point(-1,-1), 30);
+
+	cv::imshow("view",output);
     cvWaitKey(5);
-    IplImage temp = output;
-	blobDist.dist = tempInt;
-	std::cout << blobDist << std::endl;
-    KinectNode::blobPub.publish(blobDist);
-    //image_pub_.publish(bridge.cvToImgMsg(&temp, "bgr8"));
+
+
+
+
+
   }
   catch (cv_bridge::Exception& e) {
 
     ROS_ERROR("Could not convert to 'bgr8'. Ex was %s", e.what());
   }
 }
+
+
+
+
+
+
+
 
 int main(int argc, char **argv)
 {
