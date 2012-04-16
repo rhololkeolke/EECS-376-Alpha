@@ -33,8 +33,12 @@ cv_bridge::CvImagePtr cv_ptr; //conversion variable for ROS Image to cvImage
 class KinectNode {
   public:
     KinectNode();
+
+  //member functions
   void imageCallback(const sensor_msgs::ImageConstPtr& msg);
   cv::Mat detectStrap();
+  double computeCentroids();
+  
   private:
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;
@@ -42,7 +46,7 @@ class KinectNode {
     //image_transport::Publisher image_pub_;
     msg_alpha::BlobDistance blobDist;
     ros::Publisher blobPub;
-    int params[7];
+    int params[10];
 	int dilationIterations;
 };
 
@@ -58,6 +62,9 @@ KinectNode::KinectNode():
   private_nh.param("vh",params[5], 255);
   private_nh.param("dilationIterations",dilationIterations,10);
   private_nh.param("sliceLength",params[7],5);
+  private_nh.param("zTolLow",param[8],10);
+  private_nh.param("zTolHigh",param[9],10);
+  private_nh.param("gridSize",params[10], 255);
 
 
   std::cout << params[0] << params[1] << params[2] << params[3] << params[4] << params[5] << std::endl;
@@ -65,11 +72,11 @@ KinectNode::KinectNode():
   sub_ = it_.subscribe("in_image", 1, &KinectNode::imageCallback, this);
   //image_pub_ = it_.advertise("out_image", 1);
   blobPub = nh_.advertise<msg_alpha::BlobDistance>("blob_dist",1);
-
-
-
-
 }
+
+
+
+
 
 /* Function to receive Kinect Data
    @param The Image from the center
@@ -77,11 +84,10 @@ KinectNode::KinectNode():
    @return nothing
 
  */
-
 void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
 {
 
-  //Conver the image from ROS Format to OpenCV format
+  //Convert the image from ROS Format to OpenCV format
 	try	{
 		cv_ptr = cv_bridge::toCvCopy(image_msg, enc::BGR8);
 	}
@@ -90,7 +96,6 @@ void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
 		return;
 	}
 }
-
 
 
 /*
@@ -115,8 +120,6 @@ cv::Mat KinectNode::detectStrap()
 
   	//Split the input into 3 separate channels
   	split(temp, mats);
-
-	//std::cout << mats.size() << std::endl;
    
 	//create the range of HSV values that determine the color we desire to threshold based on launch file params
 	cv::Scalar lowerBound = cv::Scalar(params[0],params[2],params[4]);
@@ -140,6 +143,34 @@ cv::Mat KinectNode::detectStrap()
     ROS_ERROR("Could not convert to 'bgr8'. Ex was %s", e.what());
   }
 }
+
+/*Function to computer centroids given a set of pixels 
+@param cloud
+@type PointCloud
+@param point list
+@type Vector3f
+@return centroid
+@type Vector3f
+*/
+Eigen::Vector3f computeCentroids(pci::PointCloud Eigen::Vector3f pointList)
+ 
+
+  Eigen::Vector3f centroids = compute3DCentroid(cloud,indices); //create a vector of centroid points
+return centroids
+
+}
+   
+   
+ 
+
+
+
+
+
+
+
+
+
 
 int main(int argc, char **argv)
 {
