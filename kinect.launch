@@ -8,12 +8,13 @@
 	<!-- Simple image subscriber/publisher -->
 	<node pkg="kinect_alpha" type="kinect_alpha" name="kinect" output="screen" >	
 		<remap from="in_image" to="/camera/rgb/image_rect_color"/>
-		<param name="rh" type="int" value="255"/>
-		<param name="rl" type="int" value="220"/>
-		<param name="gh" type="int" value="255"/>
-		<param name="gl" type="int" value="0"/>
-		<param name="bh" type="int" value="25"/>
-		<param name="bl" type="int" value="0"/>
+		<param name="hl" type="int" value="0"/>
+		<param name="hh" type="int" value="60"/>
+		<param name="sl" type="int" value="90"/>
+		<param name="sh" type="int" value="192"/>
+		<param name="vl" type="int" value="164"/>
+		<param name="vh" type="int" value="255"/>
+		<param name="dilationIterations" type="int" value="5"/>
 	</node>
 	<node pkg="kinect_alpha" type="main.py" name="kinect_py" />
 
