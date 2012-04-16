@@ -20,6 +20,10 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/opencv.hpp>
 
+//PointCloud includes
+#include <pcl/point_cloud.h>
+#include <pcl/octree/octree.h>
+
 using std::string;
 namespace enc = sensor_msgs::image_encodings;
 using namespace cv;
@@ -37,7 +41,8 @@ class KinectNode {
   //member functions
   void imageCallback(const sensor_msgs::ImageConstPtr& msg);
   cv::Mat detectStrap();
-  double computeCentroids();
+  int computeCentroids(pcl::PointCloud &cloud);
+  pcl::PointXYZ getSearchPoint(pcl::PointXYZ searchPoint);
   
   private:
     ros::NodeHandle nh_;
@@ -62,8 +67,8 @@ KinectNode::KinectNode():
   private_nh.param("vh",params[5], 255);
   private_nh.param("dilationIterations",dilationIterations,10);
   private_nh.param("sliceLength",params[7],5);
-  private_nh.param("zTolLow",param[8],10);
-  private_nh.param("zTolHigh",param[9],10);
+  private_nh.param("zTolLow",params[8],10);
+  private_nh.param("zTolHigh",params[9],10);
   private_nh.param("gridSize",params[10], 255);
 
 
@@ -146,23 +151,146 @@ cv::Mat KinectNode::detectStrap()
 
 /*Function to computer centroids given a set of pixels 
 @param cloud
-@type PointCloud
-@param point list
-@type Vector3f
-@return centroid
-@type Vector3f
+@type PointCloud that has already been extracted to only look at the floor
+@return the closest centroid
+@type int
+@author Eddie
 */
-Eigen::Vector3f computeCentroids(pci::PointCloud Eigen::Vector3f pointList)
- 
+int KinectNode::computeCentroids(pcl::PointCloud<pcl::PointXYZ> cloud)
+{
 
-  Eigen::Vector3f centroids = compute3DCentroid(cloud,indices); //create a vector of centroid points
-return centroids
+  std::vector<int> centroids; //vector of each centroid computed
+  int closestCentroid; //the centroid closest to the robot
+  std::vector<pcl::PointXYZ> data = cloud.points; //all the points of the cloud
+  pcl::PointXYZ curSearchPoint;
+
+  //turn the points from the filtered cloud into an octree
+  float resolution = 128.0f; //describes the smallest voxel at the lowest octree level
+  pcl::octree::OctreePointCloudSearch<pcl::PointXYZ> octree(resolution);  
+  octree.setInputCloud(cloud);
+  octree.addPointsFromInputCloud();
+
+  //Generate each point in the cloud and assign it to the search point
+  //precondition: x,y,z are 0 referring to the xyz value of the point cloud
+  //loop invariant xyz are each < the point cloud
+  //postcondition: xyz refer to the very last point in the cloud
+  for(int x = 0; x < data.size(); x++)
+    {
+      for(int y = 0; y < data.size(); y++)
+	{
+	  for(int z = 0; z < data.size(); z++)
+	    {
+	      //establish what the point is in a point cloud data type
+	      pcl::PointXYZ searchPoint; 
+	      searchPoint.x = x;
+	      searchPoint.y = y;
+	      searchPoint.z = z;
+
+	      curSearchPoint = getSearchPoint(searchPoint); //save the value for use in the voxel search
+	    }
+	}
+    }
+	      
+    
+  //perform a neighboors within Vowel search
+  std::vector<int> pointIdxVec;
+
+  if(octree.voxelSearch(curSearchPoint,pointIdxVec)
+    {
+      for(size_t i = 0; i < pointIdxVec.size(); i++)
+	{
+	  //assign the search point to the corresponding leaf voxel
+	  cloud->points[pointIdxVec[i]].x;
+	  cloud->points[pointIdxVec[i]].y;
+	  cloud->points[pointIdxVec[i]].z;
+
+	  //compute the centroid of that voxel and find the lowest centroid of all voxels
+	  centroid = pcl::compute3DCentroid(cloud,pointIdxVec); 	  
+	  centroids.push_back(centroid); /
+	  closestCentroid = std::min_element(centroids.begin(),centroids.end());
+	}
+    }
+    
+    return closestCentroid;
+    }
+  
+}
+
+
+/* Function that gets what point that the octree needs to search through
+@param the search point
+@type pci::PointXYZ -- point cloud point
+@return the search point
+@type pci::PointXYZ -- point cloud point
+@author Eddie
+*/
+pci::PointXYZ KinectNode::getSearchPoint(pci::PointXYZ searchPoint)
+{
+
+  return searchPoint;
 
 }
+    
+  
+  
+    
+  
+
+
+
+
+
+
+  /*
+//find the centroid of each grid square and assign a value to the closest centroid based on the point cloud
+//precondition: i = 0, centroid = 0
+//invariant: i < the index of the point cloud
+//postcondition: centroid = the closest centroid to the robot
+  for(int i = 0; i < cloud_filtered->width; i++ )
+    {
+      for(int j = 0; j < cloud_filtered->length; j++)
+	{
+	  temp = centroid;
+
+	  if(temp < centroid)
+	    {
+	      centroid = temp;
+	    }
+	  
+	  if(temp == centroid)
+	    {
+	      centroid = centroid;
+	    }
+	  
+	  if(temp > centroid)
+	    {
+	      centroid = centroid;
+	    }
+	}
+    }
+ return centroid;
+}
+ */
+
+ 
+
+
    
    
  
-
+//Return closest centroid
+//Whats the xyz of the corners of the image -- resolution
+//Function in bills code -- I found something interesting... 
+//Take in a param, sizeOFGrid of how many gridSquares to have (pref)
+//Divde the grid into squares
+//Give me the pixels between (step sizes )
+//upper - lower / step size
+//is this centroid closer than the prev best
+//if it is remeber it
+//if Point is Null
+//whats the XY compared to my robot
+//if its closer than my prev best
+//find out how to tell that no Orange is found
 
 
 
