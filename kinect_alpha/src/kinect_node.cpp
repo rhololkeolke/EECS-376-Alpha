@@ -28,11 +28,13 @@ using namespace cv;
 ros::Publisher             cloud_pub_;
 image_transport::Publisher image_pub_;
 string window_name_;
+cv_bridge::CvImagePtr cv_ptr; //conversion variable for ROS Image to cvImage
 
 class KinectNode {
   public:
     KinectNode();
-    void imageCallback(const sensor_msgs::ImageConstPtr& msg);
+  void imageCallback(const sensor_msgs::ImageConstPtr& msg);
+  cv::Mat detectStrap();
   private:
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;
@@ -40,7 +42,7 @@ class KinectNode {
     //image_transport::Publisher image_pub_;
     msg_alpha::BlobDistance blobDist;
     ros::Publisher blobPub;
-    int params[6];
+    int params[7];
 	int dilationIterations;
 };
 
@@ -55,18 +57,31 @@ KinectNode::KinectNode():
   private_nh.param("vl",params[4], 0);
   private_nh.param("vh",params[5], 255);
   private_nh.param("dilationIterations",dilationIterations,10);
+  private_nh.param("sliceLength",params[7],5);
+
 
   std::cout << params[0] << params[1] << params[2] << params[3] << params[4] << params[5] << std::endl;
   std::cout << dilationIterations << std::endl;
   sub_ = it_.subscribe("in_image", 1, &KinectNode::imageCallback, this);
   //image_pub_ = it_.advertise("out_image", 1);
   blobPub = nh_.advertise<msg_alpha::BlobDistance>("blob_dist",1);
+
+
+
+
 }
+
+/* Function to receive Kinect Data
+   @param The Image from the center
+   @type sensor_msg
+   @return nothing
+
+ */
 
 void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
 {
-	// Convert the image from ROS format to OpenCV format
-	cv_bridge::CvImagePtr cv_ptr;
+
+  //Conver the image from ROS Format to OpenCV format
 	try	{
 		cv_ptr = cv_bridge::toCvCopy(image_msg, enc::BGR8);
 	}
@@ -74,9 +89,19 @@ void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
 		ROS_ERROR_STREAM("cv_bridge exception: " << e.what());
 		return;
 	}
-	
-//	ROS_INFO_STREAM(boost::format("Callback got an image in format %s, size %dx%d")
-//		%cv_ptr->encoding %cv_ptr->image.size().width %cv_ptr->image.size().height );
+}
+
+
+
+/*
+  Function to Highlight the path strap from Kinect Data
+  @param none
+  @type cv::Mat which is an OpenCV Matrix 
+  @return an openCV Matrix of the image in black and white -- the path segment is white while the surrondings are black
+  
+ */
+cv::Mat KinectNode::detectStrap()	
+{
 
   cv::Mat output;
   try {
@@ -93,57 +118,28 @@ void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
 
 	//std::cout << mats.size() << std::endl;
    
+	//create the range of HSV values that determine the color we desire to threshold based on launch file params
 	cv::Scalar lowerBound = cv::Scalar(params[0],params[2],params[4]);
 	cv::Scalar upperBound = cv::Scalar(params[1],params[3],params[5]);
 
+	//threshold the image based on the HSV values
 	cv::inRange(output,lowerBound,upperBound,output);
-
-    //Threshold the HSV image where H holds the values, in this case look for the specified lower and upper bounds of orange in the image
-    // Set all values below value to zero, leave rest the same
-  // Then inverse binary threshold the remaining pixels
-  // Threshold blue channel
-  //cv::threshold(mats[0], mats[0], params[0], 180, THRESH_TOZERO_INV);
-  /*threshold(mats[0], mats[0], params[1], 255, THRESH_BINARY);
-  // Threshold green channel
-  threshold(mats[1], mats[1], params[2], 255, THRESH_TOZERO_INV);
-  threshold(mats[1], mats[1], params[3], 255, THRESH_BINARY);
-  // Threshold red channel
-  threshold(mats[2], mats[2], params[4], 255, THRESH_TOZERO_INV);
-  threshold(mats[2], mats[2], params[5], 255, THRESH_BINARY);
-*/
-	//multiply(mats[0], mats[1], output);
-	//multiply(output, mats[2], output);
-
-    //Convert the black and white image to an RGB(BGR) image for the sake of the point cloud
-    //cvtColor(output, output,CV_HSV2BGR);
-
-    //Display the images
-	//cv::imshow("view",cv_ptr->image);
 
 	erode(output, output, Mat());
 
   	dilate(output, output, Mat(), Point(-1,-1), dilationIterations);
 
-	cv::imshow("view",output);
-    cvWaitKey(5);
+	//	cv::imshow("view",output);
+	//	cvWaitKey(5);
 
-
-
-
-
+	return output;
   }
+
   catch (cv_bridge::Exception& e) {
 
     ROS_ERROR("Could not convert to 'bgr8'. Ex was %s", e.what());
   }
 }
-
-
-
-
-
-
-
 
 int main(int argc, char **argv)
 {
