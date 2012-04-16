@@ -55,7 +55,8 @@ KinectNode::KinectNode():
   std::cout << params[0] << params[1] << params[2] << params[3] << params[4] << params[5] << std::endl;
   sub_ = it_.subscribe("in_image", 1, &KinectNode::imageCallback, this);
   //image_pub_ = it_.advertise("out_image", 1);
-  blobPub = nh_.advertise<msg_alpha::BlobDistance>("blob_dist",1);
+  //blobPub = nh_.advertise<msg_alpha::BlobDistance>("blob_dist",1);
+  centroidPub = nh_.advertise<msg_alpha::CentroidPoints>("centroid_pnts",1);
 }
 
 void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
