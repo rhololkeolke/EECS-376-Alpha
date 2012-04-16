@@ -100,8 +100,6 @@ void allCB(const sensor_msgs::ImageConstPtr& image_msg,
   }
 
 
-
-
   //TODO: REPLACE THE INPUT CLOUD THAT IS TAKEN IN BY THE ZPASS FILTER.
   pcl::PassThrough<pcl::PointXYZRGB> zpass;
   zpass.setInputCloud (NEWCLOUDoriginalCloud);
@@ -181,31 +179,43 @@ void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
 		ROS_ERROR_STREAM("cv_bridge exception: " << e.what());
 		return;
 	}
+}
 	
-//	ROS_INFO_STREAM(boost::format("Callback got an image in format %s, size %dx%d")
-//		%cv_ptr->encoding %cv_ptr->image.size().width %cv_ptr->image.size().height );
+cv::Mat KinectNode::detectStrap() 
+{
 
   cv::Mat output;
   try {
 
-    //convert the image to an HSV
-    cvCvtColor(cv_ptr, output, CV_HSV2RGB);
+  cv::cvtColor(cv_ptr->image, output, CV_BGR2HSV);
 
-    //Threshold the HSV image where H holds the values, in this case look for the specified lower and upper bounds of orange in the image
-    cvInRange(output, params, output);
+  cv::Mat temp;
 
-    //Display the images
-    cv::imshow("view", output);  
-    cvWaitKey(5);
+    //Make a vector of Mats to hold the invidiual B,G,R channels
+    vector<Mat> mats;
 
-    /*
-    IplImage temp = output;
-	blobDist.dist = tempInt;
-	std::cout << blobDist << std::endl;
-    KinectNode::blobPub.publish(blobDist);
-    //image_pub_.publish(bridge.cvToImgMsg(&temp, "bgr8"));
-    */
+    //Split the input into 3 separate channels
+    split(temp, mats);
+
+  //std::cout << mats.size() << std::endl;
+   
+  //create the range of HSV values that determine the color we desire to threshold based on launch file params
+  cv::Scalar lowerBound = cv::Scalar(params[0],params[2],params[4]);
+  cv::Scalar upperBound = cv::Scalar(params[1],params[3],params[5]);
+
+  //threshold the image based on the HSV values
+  cv::inRange(output,lowerBound,upperBound,output);
+
+  erode(output, output, Mat());
+
+    dilate(output, output, Mat(), Point(-1,-1), dilationIterations);
+
+  //  cv::imshow("view",output);
+  //  cvWaitKey(5);
+
+  return output;
   }
+
   catch (cv_bridge::Exception& e) {
 
     ROS_ERROR("Could not convert to 'bgr8'. Ex was %s", e.what());
