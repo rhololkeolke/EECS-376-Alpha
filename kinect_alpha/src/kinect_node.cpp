@@ -54,7 +54,7 @@ KinectNode::KinectNode():
   private_nh.param("sh",params[3], 255);
   private_nh.param("vl",params[4], 0);
   private_nh.param("vh",params[5], 255);
-  private_nh.param("dilationIterations",dilationIterations,10)
+  private_nh.param("dilationIterations",dilationIterations,10);
 
   std::cout << params[0] << params[1] << params[2] << params[3] << params[4] << params[5] << std::endl;
   std::cout << dilationIterations << std::endl;
@@ -122,7 +122,7 @@ void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
 
 	erode(output, output, Mat());
 
-  	//dilate(output, output, Mat(), Point(-1,-1), 30);
+  	dilate(output, output, Mat(), Point(-1,-1), dilationIterations);
 
 	cv::imshow("view",output);
     cvWaitKey(5);
