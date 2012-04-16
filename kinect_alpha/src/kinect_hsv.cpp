@@ -20,8 +20,11 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/opencv.hpp>
 
-//PointCloud includes
+// PCL includes
+#include "pcl_ros/point_cloud.h"
+#include <pcl/ros/conversions.h>
 #include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
 #include <pcl/octree/octree.h>
 
 using std::string;
@@ -40,8 +43,8 @@ class KinectNode {
 
   //member functions
   void imageCallback(const sensor_msgs::ImageConstPtr& msg);
-  cv::Mat detectStrap();
-  int computeCentroids(pcl::PointCloud &cloud);
+  void detectStrap();
+  int computeCentroids(pcl::PointCloud<Point  &cloud);
   pcl::PointXYZ getSearchPoint(pcl::PointXYZ searchPoint);
   
   private:
@@ -110,7 +113,7 @@ void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
   @return an openCV Matrix of the image in black and white -- the path segment is white while the surrondings are black
   
  */
-cv::Mat KinectNode::detectStrap()	
+void KinectNode::detectStrap()	
 {
 
   cv::Mat output;
@@ -140,7 +143,7 @@ cv::Mat KinectNode::detectStrap()
 	//	cv::imshow("view",output);
 	//	cvWaitKey(5);
 
-	return output;
+	//	return output;
   }
 
   catch (cv_bridge::Exception& e) {
