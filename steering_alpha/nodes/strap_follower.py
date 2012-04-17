@@ -34,6 +34,9 @@ currPoint = None
 position = PointMsg()
 orientation = QuaternionMsg()
 
+# used when a centroid is not published
+lastGoodYaw = None
+
 def poseCallback(pose):
     '''
     Updates the robot's best estimate on position and orientation
@@ -61,12 +64,14 @@ def getYaw(quat):
     except AttributeError:
         return euler_from_quaternion(quat)[2]
 
+def approx_equal(a,b,sig_fig=5,epsilon=.001):
+    return (a==b or int(a*10**sig_fig) == int(b*10**sig_fig))
 
 def main():
     '''
     The main function that is executed while the node is running
     '''
-    global RATE, naptime
+    global RATE, naptime, lastGoodYaw
 
     rospy.init_node('steering_alpha_main')
     naptime = rospy.Rate(RATE)
@@ -85,10 +90,29 @@ def main():
         if(currPoint is None):
             # For now publish stop messages when no point is detected
             # Eventually this will be the spin routine
+            if(lastGoodYaw is None):
+                lastGoodYaw = getYaw(orientation)
+            
+            cmd = TwistMsg()
+            cmd.angular.z = .5
+            cmdPub.publish(cmd)
+                
+            naptime.sleep()
+            continue
+
+        if(lastGoodYaw is not None):
+            if(getYaw(orientation) == lastGoodYaw + pi):
+                cmd = TwistMsg()
+                cmd.angular.z = .5
+                cmdPub.publish(cmd)
+                naptime.sleep()
+                continue
+        
+        if(approx_equal(position.x, currPoint.x,0) and approx_equal(position.y,currPoint.y,0)):
             cmdPub.publish(TwistMsg())
             naptime.sleep()
             continue
-        
+            
         xVec = currPoint.x-position.x
         yVec = currPoint.y-position.y
 
