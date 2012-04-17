@@ -14,7 +14,8 @@
   <depend package="opencv2"/>
   <depend package="cv_bridge"/>
   <depend package="msg_alpha"/>
-
+  <depend package="pcl" />
+  <depend package="pcl_ros" />
 </package>
 
 
