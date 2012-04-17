@@ -162,8 +162,9 @@ void detectStrap(cv_bridge::CvImagePtr cv_ptr, cv::Mat &output)
   }
 }
 
-void putInBins(PointCloudXYZRGB &cloud, cv_bridge::CvImagePtr cv_ptr, std::vector<std::vector<cv::Point> > bins,const sensor_msgs::PointCloud2::ConstPtr& cloud_msg)
+void putInBins(PointCloudXYZRGB &cloud, cv_bridge::CvImagePtr cv_ptr, std::vector<std::vector<cv::Point> > &bins,const sensor_msgs::PointCloud2::ConstPtr& cloud_msg)
 {
+  // for(
   pcl::PointXYZRGB pcl_pt = cloud.at(0, 0);
   geometry_msgs::Point geom_pt = transformPoint(pcl_pt,cloud_msg);
 }
