@@ -41,9 +41,25 @@ string window_name_;
 tf::TransformListener* tfl_;
 string global_frame_ = "base_link";
 
-geometry_msgs::Point findClosestCentroid(PointCloudXYZRGB &cloud, cv_bridge::CvImagePtr cv_ptr);
+int hl, hh, sl, sh, vl, vh;
+int dilationIterations;
+double zTolLow, zTolHigh;
 
-void detectStrap(cv_bridge::CvImagePtr cv_ptr, cv::Mat &output, int params[]);
+int numBins;
+
+
+// function that calls all of the helper functions
+geometry_msgs::Point findClosestCentroid(PointCloudXYZRGB &cloud, cv_bridge::CvImagePtr cv_ptr, const sensor_msgs::PointCloud2::ConstPtr& cloud_msg);
+
+// makes a binary image with white wherever there is the strap color
+void detectStrap(cv_bridge::CvImagePtr cv_ptr, cv::Mat &output);
+
+// puts each point in the correct bin if it is white and within the z tolerances
+void putInBins(PointCloudXYZRGB &cloud, cv_bridge::CvImagePtr cv_ptr, std::vector<std::vector<cv::Point> > bins,const sensor_msgs::PointCloud2::ConstPtr& cloud_msg);
+
+// helper function for putInBins
+geometry_msgs::Point transformPoint(pcl::PointXYZRGB pcl_pt,const sensor_msgs::PointCloud2::ConstPtr& cloud_msg);
+
 
 // A magical callback that combines an image, cam info, and point cloud
 void allCB(const sensor_msgs::ImageConstPtr& image_msg, 
@@ -77,7 +93,7 @@ void allCB(const sensor_msgs::ImageConstPtr& image_msg,
 	// Get the corresponding 3D point
 	//pcl::PointXYZRGB pcl_pt = cloud.at(col, row);
 	//geometry_msgs::Point geom_pt;
-	geometry_msgs::Point geom_pt = findClosestCentroid(cloud,cv_ptr);
+	geometry_msgs::Point geom_pt = findClosestCentroid(cloud, cv_ptr, cloud_msg);
 	//geom_pt.x = pcl_pt.x; geom_pt.y = pcl_pt.y; geom_pt.z = pcl_pt.z;
 	
 	// the TF package requires inputs to be in the form Stamped<sometype>
@@ -107,13 +123,16 @@ void allCB(const sensor_msgs::ImageConstPtr& image_msg,
   image_pub_.publish(cv_ptr->toImageMsg());
 }
 
-geometry_msgs::Point findClosestCentroid(PointCloudXYZRGB &cloud, cv_bridge::CvImagePtr cv_ptr)
+geometry_msgs::Point findClosestCentroid(PointCloudXYZRGB &cloud, cv_bridge::CvImagePtr cv_ptr, const sensor_msgs::PointCloud2::ConstPtr& cloud_msg)
 {
   geometry_msgs::Point closestPoint;
+
+  cv::Mat output;
+  detectStrap(cv_ptr,output);
   return closestPoint;
 }
 
-void detectStrap(cv_bridge::CvImagePtr cv_ptr, cv::Mat &output, int params[])
+void detectStrap(cv_bridge::CvImagePtr cv_ptr, cv::Mat &output)
 {
   try
   {
@@ -128,19 +147,55 @@ void detectStrap(cv_bridge::CvImagePtr cv_ptr, cv::Mat &output, int params[])
     split(temp,mats);
 
     // create the range of HSV values that determine the color we desire to threshold based on launch file params
-    cv::Scalar lowerBound = cv::Scalar(params[0],params[2],params[4]);
-    cv::Scalar upperBound = cv::Scalar(params[1],params[2],params[5]);
+    cv::Scalar lowerBound = cv::Scalar(hl,sl,vl);
+    cv::Scalar upperBound = cv::Scalar(hh,sh,vh);
 
     //threshold the image based on the HSV values
     cv::inRange(output,lowerBound,upperBound,output);
 
     cv::erode(output, output, cv::Mat());
-    cv::dilate(output, output, cv::Mat(), cv::Point(-1,-1), params[6]);
+    cv::dilate(output, output, cv::Mat(), cv::Point(-1,-1), dilationIterations);
   }
   catch(cv_bridge::Exception& e)
   {
     ROS_ERROR("Could not convert to 'bgr8'. Ex was %s", e.what());
   }
+}
+
+void putInBins(PointCloudXYZRGB &cloud, cv_bridge::CvImagePtr cv_ptr, std::vector<std::vector<cv::Point> > bins,const sensor_msgs::PointCloud2::ConstPtr& cloud_msg)
+{
+  pcl::PointXYZRGB pcl_pt = cloud.at(0, 0);
+  geometry_msgs::Point geom_pt = transformPoint(pcl_pt,cloud_msg);
+}
+
+geometry_msgs::Point transformPoint(pcl::PointXYZRGB pcl_pt,const sensor_msgs::PointCloud2::ConstPtr& cloud_msg)
+{
+  geometry_msgs::Point geom_pt;
+
+  geom_pt.x = pcl_pt.x; 
+  geom_pt.y = pcl_pt.y; 
+  geom_pt.z = pcl_pt.z;
+	
+  // the TF package requires inputs to be in the form Stamped<sometype>
+  tf::Stamped<tf::Point> geom_pt_tf, temp_pt_tf;
+  pointMsgToTF(geom_pt, geom_pt_tf);
+  geom_pt_tf.frame_id_ = cloud_msg->header.frame_id;
+  geom_pt_tf.stamp_    = cloud_msg->header.stamp;
+	
+  try 
+  {
+    tfl_->transformPoint(global_frame_, geom_pt_tf, temp_pt_tf);
+  }
+  catch(tf::TransformException& ex) 
+  {
+    ROS_ERROR_STREAM(boost::format("Failed to transform point pose from \"%s\" to \"%s\" frame: %s")
+		                   %geom_pt_tf.frame_id_ %global_frame_ %ex.what());
+    geometry_msgs::Point empty_pt;
+    return empty_pt;
+  }
+  tf::pointTFToMsg(temp_pt_tf, geom_pt);
+	
+  return geom_pt;
 }
 
 int main (int argc, char** argv)
@@ -157,12 +212,27 @@ int main (int argc, char** argv)
 	// Get some parameters (optional)
 	string mystringparam;
 	double mydoubleparam;
-	private_nh.param("test" , mystringparam, string("this is a default value"));
-	private_nh.param("test2", mydoubleparam, 1.0);
-	ROS_INFO_STREAM("mystringparam = " << mystringparam);
-	ROS_INFO_STREAM("mydoubleparam = " << mydoubleparam);
+	private_nh.param("hl", hl, 0);
+	private_nh.param("hh", hh, 255);
+	private_nh.param("sl", sl, 0);
+	private_nh.param("sh", sh, 255);
+	private_nh.param("vl", vl, 0);
+	private_nh.param("vh", vh, 255);
+	private_nh.param("dilationIterations", dilationIterations, 5);
+	private_nh.param("zTolLow", zTolLow, -0.5);
+	private_nh.param("zTolHigh", zTolHigh, 0.5);
 	
-	private_nh.param("global_frame" , global_frame_, string("this is a default value"));
+	std::cout << "hl: " << hl << std::endl;
+	std::cout << "hh: " << hh << std::endl;
+	std::cout << "sl: " << sl << std::endl;
+	std::cout << "sh: " << sh << std::endl;
+	std::cout << "vl: " << vl << std::endl;
+	std::cout << "vh: " << vh << std::endl;
+	std::cout << "dilationIterations: " << dilationIterations << std::endl;
+	std::cout << "zTolLow: " << zTolLow << std::endl;
+	std::cout << "zTolHigh: " << zTolHigh << std::endl;
+	
+	private_nh.param("global_frame" , global_frame_, string("map"));
 	ROS_INFO_STREAM("Using global frame \""<<global_frame_<<"\"");
 	
 	// Subscribe to an image, cloud, and camera info.
