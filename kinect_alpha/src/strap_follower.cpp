@@ -135,7 +135,16 @@ geometry_msgs::Point findClosestCentroid(PointCloudXYZRGB &cloud, cv_bridge::CvI
   cv::Mat output;
   detectStrap(cv_ptr,output);
   
+  // create the bins vector which will store all of the classified points
+  std::vector<std::vector<geometry_msgs::Point> > bins;
 
+  for(int rowBin=0; rowBin < numBins; rowBin++)
+  {
+    for(int colBin=0; colBin < numBins; colBin++)
+    {
+      bins.push_back(new std::vector<geometry_msgs::Point>);
+    }
+  }
 
   return closestPoint;
 }
