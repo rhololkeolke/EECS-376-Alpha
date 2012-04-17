@@ -142,7 +142,8 @@ geometry_msgs::Point findClosestCentroid(PointCloudXYZRGB &cloud, cv_bridge::CvI
   {
     for(int colBin=0; colBin < numBins; colBin++)
     {
-      bins.push_back(new std::vector<geometry_msgs::Point>);
+      std::vector<geometry_msgs::Point> bin;
+      bins.push_back(bin);
     }
   }
 
