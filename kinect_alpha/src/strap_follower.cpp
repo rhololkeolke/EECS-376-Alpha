@@ -59,7 +59,7 @@ geometry_msgs::Point findClosestCentroid(PointCloudXYZRGB &cloud, cv_bridge::CvI
 void detectStrap(cv_bridge::CvImagePtr cv_ptr, cv::Mat &output);
 
 // puts each point in the correct bin if it is white and within the z tolerances
-void putInBins(PointCloudXYZRGB &cloud, cv_bridge::CvImagePtr cv_ptr, std::vector<std::vector<geometry_msgs::Point> > bins,const sensor_msgs::PointCloud2::ConstPtr& cloud_msg);
+void putInBins(PointCloudXYZRGB &cloud, cv::Mat &input, std::vector<std::vector<geometry_msgs::Point> > &bins, const sensor_msgs::PointCloud2::ConstPtr& cloud_msg);
 
 // helper function for putInBins
 geometry_msgs::Point transformPoint(pcl::PointXYZRGB pcl_pt,const sensor_msgs::PointCloud2::ConstPtr& cloud_msg);
@@ -152,7 +152,7 @@ geometry_msgs::Point findClosestCentroid(PointCloudXYZRGB &cloud, cv_bridge::CvI
   // go through each bin and compute the centroid.  If the centroid is closer than the last
   // set that as the new closest point
 
-  for
+  //for
 
   return closestPoint;
 }
@@ -187,7 +187,7 @@ void detectStrap(cv_bridge::CvImagePtr cv_ptr, cv::Mat &output)
   }
 }
 
-void putInBins(PointCloudXYZRGB &cloud, cv::Mat &input, std::vector<std::vector<geometry_msgs::Point> > &bins,const sensor_msgs::PointCloud2::ConstPtr& cloud_msg)
+void putInBins(PointCloudXYZRGB &cloud, cv::Mat &input, std::vector<std::vector<geometry_msgs::Point> > &bins, const sensor_msgs::PointCloud2::ConstPtr& cloud_msg)
 {
   int colStep = floor(640/numBins);
   int rowStep = floor(480/numBins);
