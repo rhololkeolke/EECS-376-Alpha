@@ -11,7 +11,11 @@
 // STL Data Structures
 #include <vector>
 
+// Boost Libraries
 #include <boost/format.hpp>
+
+// Math!
+#include <math.h>
 
 // PCL includes
 #include "pcl_ros/point_cloud.h"
@@ -55,7 +59,7 @@ geometry_msgs::Point findClosestCentroid(PointCloudXYZRGB &cloud, cv_bridge::CvI
 void detectStrap(cv_bridge::CvImagePtr cv_ptr, cv::Mat &output);
 
 // puts each point in the correct bin if it is white and within the z tolerances
-void putInBins(PointCloudXYZRGB &cloud, cv_bridge::CvImagePtr cv_ptr, std::vector<std::vector<cv::Point> > bins,const sensor_msgs::PointCloud2::ConstPtr& cloud_msg);
+void putInBins(PointCloudXYZRGB &cloud, cv_bridge::CvImagePtr cv_ptr, std::vector<std::vector<geometry_msgs::Point> > bins,const sensor_msgs::PointCloud2::ConstPtr& cloud_msg);
 
 // helper function for putInBins
 geometry_msgs::Point transformPoint(pcl::PointXYZRGB pcl_pt,const sensor_msgs::PointCloud2::ConstPtr& cloud_msg);
@@ -127,8 +131,12 @@ geometry_msgs::Point findClosestCentroid(PointCloudXYZRGB &cloud, cv_bridge::CvI
 {
   geometry_msgs::Point closestPoint;
 
+  // get a binary image
   cv::Mat output;
   detectStrap(cv_ptr,output);
+  
+
+
   return closestPoint;
 }
 
@@ -162,11 +170,31 @@ void detectStrap(cv_bridge::CvImagePtr cv_ptr, cv::Mat &output)
   }
 }
 
-void putInBins(PointCloudXYZRGB &cloud, cv_bridge::CvImagePtr cv_ptr, std::vector<std::vector<cv::Point> > &bins,const sensor_msgs::PointCloud2::ConstPtr& cloud_msg)
+void putInBins(PointCloudXYZRGB &cloud, cv::Mat &input, std::vector<std::vector<geometry_msgs::Point> > &bins,const sensor_msgs::PointCloud2::ConstPtr& cloud_msg)
 {
-  // for(
-  pcl::PointXYZRGB pcl_pt = cloud.at(0, 0);
-  geometry_msgs::Point geom_pt = transformPoint(pcl_pt,cloud_msg);
+  int colStep = floor(640/numBins);
+  int rowStep = floor(480/numBins);
+  for(int row=0; row<480; row++)
+  {
+    for(int col=0; col<640; col++)
+    {  
+      if(input.at<int>(row,col) > 0)
+      {
+	pcl::PointXYZRGB pcl_pt = cloud.at(row, col);
+	geometry_msgs::Point geom_pt = transformPoint(pcl_pt,cloud_msg);
+	if(geom_pt.z < zTolHigh && geom_pt.z > zTolLow)
+	{
+	  // figure out which vector bin in the bins vector the point should go in
+	  // might want to make the bins based on x,y map space and not i,j camera space
+	  // but for the first draft proof of concept it should suffice
+	  int index = floor(row/rowStep)*numBins + floor(col/colStep);
+	  // actually put the point in that bin
+	  bins[index].push_back(geom_pt);
+	  std::cout << "Found a valid point" << std::endl;
+	}
+      }
+    }
+  }
 }
 
 geometry_msgs::Point transformPoint(pcl::PointXYZRGB pcl_pt,const sensor_msgs::PointCloud2::ConstPtr& cloud_msg)
