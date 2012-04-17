@@ -1,5 +1,6 @@
 #include <ros/ros.h>
 #include <kinect_alpha/lib_blob.h>
+//#include "lib_blob.h"
 #include <sensor_msgs/CameraInfo.h>
 #include <message_filters/subscriber.h>
 #include <message_filters/synchronizer.h>
@@ -10,7 +11,7 @@
 #include <boost/format.hpp>
 
 // PCL includes
-#include "pcl_ros/point_cloud.h"
+//#include "pcl_ros/point_cloud.h"
 #include <pcl/ros/conversions.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -19,6 +20,7 @@
 #include <image_transport/image_transport.h>
 #include <image_transport/subscriber_filter.h>
 #include <cv_bridge/cv_bridge.h>
+#include <cv_bridge/CvBridge.h>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/opencv.hpp>
@@ -99,7 +101,7 @@ void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& msg)
   try {
     //normalizeColors(image, output);
     //blobfind(image, output);
-    findLines(image, output);
+    findLines(bridge.imgMsgToCv(msg, "bgr8"), output);
     //cv::imshow("view", output);
     IplImage temp = output;
     image_pub_.publish(bridge.cvToImgMsg(&temp, "bgr8"));
