@@ -28,8 +28,20 @@
 #include <pcl/ros/conversions.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
-#include <pcl/octree.h>
-#include <pcl/octree/octree_pointcloud.h>
+//#include <pcl/octree.h>
+//#include <pcl/octree/octree_pointcloud.h>
+#include <pcl/ModelCoefficients.h>
+#include <pcl/point_types.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/kdtree/kdtree.h>
+#include <pcl/kdtree/organized_neighbor_search.h>
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/sample_consensus/model_types.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/segmentation/extract_clusters.h>
 
 
 
@@ -51,8 +63,9 @@ public:
   //member functions
   void imageCallback(const sensor_msgs::ImageConstPtr& msg);
   void detectStrap();
-  pcl::PointXYZRGBA computeCentroids(pcl::PointCloud<pcl::PointXYZ>);
+  //pcl::PointXYZRGBA computeCentroids(pcl::PointCloud<pcl::PointXYZ>);
   pcl::PointXYZRGBA getSearchPoint(pcl::PointXYZRGBA);
+  pcl::PointXYZRGBA centroids(pcl::PointCloud<pcl::PointXYZ>);
   
 private:
   ros::NodeHandle nh_;
@@ -157,110 +170,14 @@ void KinectNode::detectStrap()
   }
 }
 
-/*Function to computer centroids given a set of pixels 
-  @param cloud
-  @type PointCloud that has already been extracted to only look at the floor
-  @return the closest centroid
-  @type int
-  @author Eddie
-*/
-pcl::PointXYZRGBA KinectNode::computeCentroids(pcl::PointCloud<pcl::PointXYZ> cloud)
-{
-
-  std::vector<int> centroids; //vector of each centroid computed
-  std::vector<int> indicies;
-  int closestCentroid; //the centroid closest to the robot
-  pcl::PointXYZRGBA curSearchPoint; //coordinate value which we are currently computing the centroid for
-  pcl::PointXYZRGBA closest; //the coords of the closet centroid
-
-
-  //turn the points from the filtered cloud into an octree
-  float resolution = 128.0f; //describes the smallest voxel at the lowest octree level
-  pcl::octree::OctreePointCloud<pcl::PointXYZ> *octree;
-						
-  octree = (new pcl::octree::OctreePointCloud<pcl::PointXYZRGB>(resolution));
-  octree->setInputCloud(cloud);
-  octree->addPointsFromInputCloud();
-
- 
-
-
-  //Generate each point in the cloud and assign it to the search point
-  //precondition: x,y,z are 0 referring to the xyz value of the point cloud
-  //loop invariant xyz are each < the point cloud
-  //postcondition: xyz refer to the very last point in the cloud
-  for(int x = 0; x < cloud.points.size(); x++)
-    {
-      for(int y = 0; y < cloud.points.size(); y++)
-	{
-	  for(int z = 0; z < cloud.points.size(); z++)
-	    {	
-	      //establish what the point is in a point cloud data type
-	      pcl::PointXYZRGBA searchPoint; 
-	      searchPoint.x = x;
-	      searchPoint.y = y;
-	      searchPoint.z = z;
-	
-	      curSearchPoint = getSearchPoint(searchPoint); //save the value for use in the voxel search
-	    }
-	}	
-    }	
-  
-	      
-    
-  //perform a neighboors within Vowel search
-  std::vector<int> pointIdxVec;
-  std::vector< std::vector<int> > points;
-
-  if(octree.voxelSearch(curSearchPoint,pointIdxVec))			  
-    {
-      for(size_t i = 0; i < pointIdxVec.size(); i++)
-	{
-	  //assign the search point to the corresponding leaf voxel
-	  cloud->points[pointIdxVec[i]].x;
-	  cloud->points[pointIdxVec[i]].y;
-	  cloud->points[pointIdxVec[i]].z;
-
-	  //compute the centroid of that voxel and find the lowest centroid of all voxels
-	  centroid = pcl::compute3DCentroid(cloud,pointIdxVec); 	  
-	  centroids.push_back(centroid);
-	  points.push_back(pointIdxVec); 
-	  
-	  int lowestCentroid = std::min_element(centroids.begin(),centroids.end()); 
-	  int centIdx = std::lower_bound(centroids.begin(),centroids.end(),lowestCentroid); //index of lowest centroid
-	  
-	  //the point with the lowest centroid is the index that had the lowest centroid
-	  closest = points[centIdx]; 
-	}
-	  	
-    }	
-  return closest;
-}
-	  
-
-
-
-
-/* Function that gets what point that the octree needs to search through
-   @param the search point
-   @type pci::PointXYZ -- point cloud point
-   @return the search point
-   @type pci::PointXYZ -- point cloud point
-   @author Eddie
-*/
-pcl::PointXYZRGBA KinectNode::getSearchPoint(pcl::PointXYZRGBA searchPoint)
-{
-
-  return searchPoint;
-
-}
    
-pcl::PointXYZRGBA KinectNode::centroids(pcl::PointCloud<pcl::PointXYZ cloud>)
+pcl::PointXYZRGBA KinectNode::centroids(pcl::PointCloud<pcl::PointXYZ> cloud) 
 {
+		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>), cloud_f (new pcl::PointCloud<pcl::PointXYZ>);	
 
   //create voxel grid and downsample the data to a left size of 1cm
   pcl::VoxelGrid<pcl::PointXYZ> vg;
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr originalCloud = cloud;  
+  pcl::PointCloud<pcl::PointXYZ>::Ptr originalCloud = cloud;  
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered (new pcl::PointCloud<pcl::PointXYZ>);
   vg.setInputCloud(cloud);
   vg.setLeafSize(0.01f, 0.01f, 0.01f);
@@ -307,7 +224,8 @@ pcl::PointXYZRGBA KinectNode::centroids(pcl::PointCloud<pcl::PointXYZ cloud>)
       cloud_filtered = cloud_f;
     }
   // Creating the KdTree object for the search method of the extraction
-  pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
+  //pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
+  pcl::OrangizedNeighborSearch<PointXYZ> tree = new(pcl::OrganizedNeighborSearch<PointXYZ>);
   tree->setInputCloud (cloud_filtered);
 
   std::vector<pcl::PointIndices> cluster_indices;
@@ -319,9 +237,12 @@ pcl::PointXYZRGBA KinectNode::centroids(pcl::PointCloud<pcl::PointXYZ cloud>)
   ec.setInputCloud (cloud_filtered);
   ec.extract (cluster_indices);
 
-  std::vector<int> centroids;
+  std::vector<int> centroids; //vector to hold all the centroids
 
 
+
+//now search through and for every point create a point cloud based on its neighboors
+//determine the centroid of each point cloud
   int j = 0;
   for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
     {
