@@ -11,6 +11,9 @@
 
 #include <boost/format.hpp>
 
+#include <vector>
+#include <ctime>
+
 // OpenCV includes
 #include <image_transport/image_transport.h>
 #include <image_transport/subscriber_filter.h>
@@ -25,7 +28,12 @@
 #include <pcl/ros/conversions.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
-#include <pcl/octree/octree.h>
+#include <kinect_alpha/octree_impl.h>
+#include <kinect_alpha/octree.h>
+#include <kinect_alpha/octree_search.h>
+
+
+
 
 using std::string;
 namespace enc = sensor_msgs::image_encodings;
@@ -164,16 +172,17 @@ pcl::PointXYZRGBA KinectNode::computeCentroids(pcl::PointCloud<pcl::PointXYZ> cl
   std::vector<int> indicies;
   int closestCentroid; //the centroid closest to the robot
   pcl::PointXYZRGBA curSearchPoint; //coordinate value which we are currently computing the centroid for
-  pcl::PointXYZRGBA //the coords of the closet centroid
-  
+pcl::PointXYZRGBA closest; //the coords of the closet centroid
+
 
   //turn the points from the filtered cloud into an octree
-  float resolution = 128.0f; //describes the smallest voxel at the lowest octree level
-  pcl::octree::OctreePointCloudSearch<pcl::PointXYZ> octree (resolution);
-  octree.setInputCloud(cloud);
+  	float resolution = 128.0f; //describes the smallest voxel at the lowest octree level
+	pcl::octree::OctreePointCloudSearch<pcl::PointXYZ> octree (resolution);
+	
+octree.setInputCloud(cloud);
   octree.addPointsFromInputCloud();
 
-  //Generate each point in the cloud and assign it to the search point
+//Generate each point in the cloud and assign it to the search point
   //precondition: x,y,z are 0 referring to the xyz value of the point cloud
   //loop invariant xyz are each < the point cloud
   //postcondition: xyz refer to the very last point in the cloud
@@ -191,7 +200,7 @@ pcl::PointXYZRGBA KinectNode::computeCentroids(pcl::PointCloud<pcl::PointXYZ> cl
 	
 		  curSearchPoint = getSearchPoint(searchPoint); //save the value for use in the voxel search
 	    	}
-	}	
+		}	
 	}	
     
 	      
@@ -218,10 +227,10 @@ pcl::PointXYZRGBA KinectNode::computeCentroids(pcl::PointCloud<pcl::PointXYZ> cl
 	  int centIdx = std::lower_bound(centroids.begin(),centroids.end(),lowestCentroid); //index of lowest centroid
 	  
       //the point with the lowest centroid is the index that had the lowest centroid
-      pcl::PointXYZRGBA closest = points[centIdx]; 
-	  }
-	  
-	  }
+      closest = points[centIdx]; 
+	  	}
+	  	
+	  }	
 	  return closest;
 }
 	  
@@ -236,7 +245,7 @@ pcl::PointXYZRGBA KinectNode::computeCentroids(pcl::PointCloud<pcl::PointXYZ> cl
 @type pci::PointXYZ -- point cloud point
 @author Eddie
 */
-pcl::PointXYZRGBA KinectNode::getSearchPoint(pci::PointXYZRGBA searchPoint)
+pcl::PointXYZRGBA KinectNode::getSearchPoint(pcl::PointXYZRGBA searchPoint)
 {
 
   return searchPoint;
