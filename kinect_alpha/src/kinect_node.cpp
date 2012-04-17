@@ -21,12 +21,14 @@
 #include <image_transport/subscriber_filter.h>
 #include <cv_bridge/cv_bridge.h>
 #include <cv_bridge/CvBridge.h>
+#include <sensor_msgs/image_encodings.h>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/opencv.hpp>
 
 using std::string;
 using sensor_msgs::PointCloud2;
+namespace enc = sensor_msgs::image_encodings;
 
 // Shorthand for our point cloud type
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudXYZRGB;
@@ -87,21 +89,20 @@ KinectNode::KinectNode():
 void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& msg)
 {
   sensor_msgs::CvBridge bridge;
-  cv::Mat image;
   cv::Mat output;
+  cv_bridge::CvImagePtr cv_ptr;
   try
   {
-    image = cv::Mat(bridge.imgMsgToCv(msg, "bgr8"));
-
+    cv_ptr = cv_bridge::toCvCopy(msg, enc::BGR8);
   }
-  catch (sensor_msgs::CvBridgeException& e)
-  {
-    ROS_ERROR("Could not convert from '%s' to 'bgr8'. E was %s", msg->encoding.c_str(), e.what());
+  catch (cv_bridge::Exception& e) {
+    ROS_ERROR_STREAM("cv_bridge exception: " << e.what());
+    return;
   }
   try {
     //normalizeColors(image, output);
     //blobfind(image, output);
-    findLines(bridge.imgMsgToCv(msg, "bgr8"), output);
+    findLines(cv_ptr->image, output);
     //cv::imshow("view", output);
     IplImage temp = output;
     image_pub_.publish(bridge.cvToImgMsg(&temp, "bgr8"));
