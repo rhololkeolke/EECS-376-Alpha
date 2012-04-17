@@ -147,6 +147,13 @@ geometry_msgs::Point findClosestCentroid(PointCloudXYZRGB &cloud, cv_bridge::CvI
     }
   }
 
+  putInBins(cloud,output,bins,cloud_msg);
+
+  // go through each bin and compute the centroid.  If the centroid is closer than the last
+  // set that as the new closest point
+
+  for
+
   return closestPoint;
 }
 
