@@ -28,9 +28,8 @@
 #include <pcl/ros/conversions.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
-#include <kinect_alpha/octree_impl.h>
-#include <kinect_alpha/octree.h>
-#include <kinect_alpha/octree_search.h>
+#include <pcl/octree.h>
+#include <pcl/octree/octree_pointcloud.h>
 
 
 
@@ -46,8 +45,8 @@ string window_name_;
 cv_bridge::CvImagePtr cv_ptr; //conversion variable for ROS Image to cvImage
 
 class KinectNode {
-  public:
-    KinectNode();
+public:
+  KinectNode();
 
   //member functions
   void imageCallback(const sensor_msgs::ImageConstPtr& msg);
@@ -55,15 +54,15 @@ class KinectNode {
   pcl::PointXYZRGBA computeCentroids(pcl::PointCloud<pcl::PointXYZ>);
   pcl::PointXYZRGBA getSearchPoint(pcl::PointXYZRGBA);
   
-  private:
-    ros::NodeHandle nh_;
-    image_transport::ImageTransport it_;
-    image_transport::Subscriber sub_;
-    //image_transport::Publisher image_pub_;
-    msg_alpha::BlobDistance blobDist;
-    ros::Publisher blobPub;
-    int params[10];
-	int dilationIterations;
+private:
+  ros::NodeHandle nh_;
+  image_transport::ImageTransport it_;
+  image_transport::Subscriber sub_;
+  //image_transport::Publisher image_pub_;
+  msg_alpha::BlobDistance blobDist;
+  ros::Publisher blobPub;
+  int params[10];
+  int dilationIterations;
 };
 
 KinectNode::KinectNode():
@@ -97,18 +96,18 @@ KinectNode::KinectNode():
    @type sensor_msg
    @return nothing
 
- */
+*/
 void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
 {
 
   //Convert the image from ROS Format to OpenCV format
-	try	{
-		cv_ptr = cv_bridge::toCvCopy(image_msg, enc::BGR8);
-	}
-	catch (cv_bridge::Exception& e) {
-		ROS_ERROR_STREAM("cv_bridge exception: " << e.what());
-		return;
-	}
+  try	{
+    cv_ptr = cv_bridge::toCvCopy(image_msg, enc::BGR8);
+  }
+  catch (cv_bridge::Exception& e) {
+    ROS_ERROR_STREAM("cv_bridge exception: " << e.what());
+    return;
+  }
 }
 
 
@@ -118,38 +117,38 @@ void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
   @type cv::Mat which is an OpenCV Matrix 
   @return an openCV Matrix of the image in black and white -- the path segment is white while the surrondings are black
   @author Eddie, Devin 
- */
+*/
 void KinectNode::detectStrap()	
 {
 
   cv::Mat output;
   try {
 	
-	cv::cvtColor(cv_ptr->image, output, CV_BGR2HSV);
+    cv::cvtColor(cv_ptr->image, output, CV_BGR2HSV);
 	
-	cv::Mat temp;
+    cv::Mat temp;
 
-  	//Make a vector of Mats to hold the invidiual B,G,R channels
-  	vector<Mat> mats;
+    //Make a vector of Mats to hold the invidiual B,G,R channels
+    vector<Mat> mats;
 
-  	//Split the input into 3 separate channels
-  	split(temp, mats);
+    //Split the input into 3 separate channels
+    split(temp, mats);
    
-	//create the range of HSV values that determine the color we desire to threshold based on launch file params
-	cv::Scalar lowerBound = cv::Scalar(params[0],params[2],params[4]);
-	cv::Scalar upperBound = cv::Scalar(params[1],params[3],params[5]);
+    //create the range of HSV values that determine the color we desire to threshold based on launch file params
+    cv::Scalar lowerBound = cv::Scalar(params[0],params[2],params[4]);
+    cv::Scalar upperBound = cv::Scalar(params[1],params[3],params[5]);
 
-	//threshold the image based on the HSV values
-	cv::inRange(output,lowerBound,upperBound,output);
+    //threshold the image based on the HSV values
+    cv::inRange(output,lowerBound,upperBound,output);
 
-	erode(output, output, Mat());
+    erode(output, output, Mat());
 
-  	dilate(output, output, Mat(), Point(-1,-1), dilationIterations);
+    dilate(output, output, Mat(), Point(-1,-1), dilationIterations);
 
-	//	cv::imshow("view",output);
-	//	cvWaitKey(5);
+    //	cv::imshow("view",output);
+    //	cvWaitKey(5);
 
-	//	return output;
+    //	return output;
   }
 
   catch (cv_bridge::Exception& e) {
@@ -159,11 +158,11 @@ void KinectNode::detectStrap()
 }
 
 /*Function to computer centroids given a set of pixels 
-@param cloud
-@type PointCloud that has already been extracted to only look at the floor
-@return the closest centroid
-@type int
-@author Eddie
+  @param cloud
+  @type PointCloud that has already been extracted to only look at the floor
+  @return the closest centroid
+  @type int
+  @author Eddie
 */
 pcl::PointXYZRGBA KinectNode::computeCentroids(pcl::PointCloud<pcl::PointXYZ> cloud)
 {
@@ -172,17 +171,21 @@ pcl::PointXYZRGBA KinectNode::computeCentroids(pcl::PointCloud<pcl::PointXYZ> cl
   std::vector<int> indicies;
   int closestCentroid; //the centroid closest to the robot
   pcl::PointXYZRGBA curSearchPoint; //coordinate value which we are currently computing the centroid for
-pcl::PointXYZRGBA closest; //the coords of the closet centroid
+  pcl::PointXYZRGBA closest; //the coords of the closet centroid
 
 
   //turn the points from the filtered cloud into an octree
-  	float resolution = 128.0f; //describes the smallest voxel at the lowest octree level
-	pcl::octree::OctreePointCloudSearch<pcl::PointXYZ> octree (resolution);
-	
-octree.setInputCloud(cloud);
-  octree.addPointsFromInputCloud();
+  float resolution = 128.0f; //describes the smallest voxel at the lowest octree level
+  pcl::octree::OctreePointCloud<pcl::PointXYZ> *octree;
+						
+  octree = (new pcl::octree::OctreePointCloud<pcl::PointXYZRGB>(resolution));
+  octree->setInputCloud(cloud);
+  octree->addPointsFromInputCloud();
 
-//Generate each point in the cloud and assign it to the search point
+ 
+
+
+  //Generate each point in the cloud and assign it to the search point
   //precondition: x,y,z are 0 referring to the xyz value of the point cloud
   //loop invariant xyz are each < the point cloud
   //postcondition: xyz refer to the very last point in the cloud
@@ -198,21 +201,21 @@ octree.setInputCloud(cloud);
 	      searchPoint.y = y;
 	      searchPoint.z = z;
 	
-		  curSearchPoint = getSearchPoint(searchPoint); //save the value for use in the voxel search
-	    	}
-		}	
+	      curSearchPoint = getSearchPoint(searchPoint); //save the value for use in the voxel search
+	    }
 	}	
-    
+    }	
+  
 	      
     
   //perform a neighboors within Vowel search
   std::vector<int> pointIdxVec;
   std::vector< std::vector<int> > points;
 
-  if(octree.voxelSearch(curSearchPoint,pointIdxVec))
+  if(octree.voxelSearch(curSearchPoint,pointIdxVec))			  
     {
       for(size_t i = 0; i < pointIdxVec.size(); i++)
-		{
+	{
 	  //assign the search point to the corresponding leaf voxel
 	  cloud->points[pointIdxVec[i]].x;
 	  cloud->points[pointIdxVec[i]].y;
@@ -226,12 +229,12 @@ octree.setInputCloud(cloud);
 	  int lowestCentroid = std::min_element(centroids.begin(),centroids.end()); 
 	  int centIdx = std::lower_bound(centroids.begin(),centroids.end(),lowestCentroid); //index of lowest centroid
 	  
-      //the point with the lowest centroid is the index that had the lowest centroid
-      closest = points[centIdx]; 
-	  	}
+	  //the point with the lowest centroid is the index that had the lowest centroid
+	  closest = points[centIdx]; 
+	}
 	  	
-	  }	
-	  return closest;
+    }	
+  return closest;
 }
 	  
 
@@ -239,11 +242,11 @@ octree.setInputCloud(cloud);
 
 
 /* Function that gets what point that the octree needs to search through
-@param the search point
-@type pci::PointXYZ -- point cloud point
-@return the search point
-@type pci::PointXYZ -- point cloud point
-@author Eddie
+   @param the search point
+   @type pci::PointXYZ -- point cloud point
+   @return the search point
+   @type pci::PointXYZ -- point cloud point
+   @author Eddie
 */
 pcl::PointXYZRGBA KinectNode::getSearchPoint(pcl::PointXYZRGBA searchPoint)
 {
@@ -251,8 +254,107 @@ pcl::PointXYZRGBA KinectNode::getSearchPoint(pcl::PointXYZRGBA searchPoint)
   return searchPoint;
 
 }
+   
+pcl::PointXYZRGBA KinectNode::centroids(pcl::PointCloud<pcl::PointXYZ cloud>)
+{
+
+  //create voxel grid and downsample the data to a left size of 1cm
+  pcl::VoxelGrid<pcl::PointXYZ> vg;
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr originalCloud = cloud;  
+  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered (new pcl::PointCloud<pcl::PointXYZ>);
+  vg.setInputCloud(cloud);
+  vg.setLeafSize(0.01f, 0.01f, 0.01f);
+  vg.filter(*cloud_filtered);
+
+
+  //create segmentation model
+  
+  pcl::SACSegmentation<pcl::PointXYZ> seg;
+  pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
+  pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
+  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_plane (new pcl::PointCloud<pcl::PointXYZ> ());
+  seg.setOptimizeCoefficients (true);
+  seg.setModelType (pcl::SACMODEL_PLANE);
+  seg.setMethodType (pcl::SAC_RANSAC);
+  seg.setMaxIterations (100);
+  seg.setDistanceThreshold (0.02);
+
+  int i=0, nr_points = (int) cloud_filtered->points.size ();
+  while (cloud_filtered->points.size () > 0.3 * nr_points)
+    {
+      // Segment the largest planar component from the remaining cloud
+      seg.setInputCloud (cloud_filtered);
+      seg.segment (*inliers, *coefficients);
+      if (inliers->indices.size () == 0)
+	{
+	  std::cout << "Could not estimate a planar model for the given dataset." << std::endl;
+	  break;
+	}
+
+      // Extract the planar inliers from the input cloud
+      pcl::ExtractIndices<pcl::PointXYZ> extract;
+      extract.setInputCloud (cloud_filtered);
+      extract.setIndices (inliers);
+      extract.setNegative (false);
+
+      // Write the planar inliers to disk
+      extract.filter (*cloud_plane);
+      std::cout << "PointCloud representing the planar component: " << cloud_plane->points.size () << " data points." << std::endl;
+
+      // Remove the planar inliers, extract the rest
+      extract.setNegative (true);
+      extract.filter (*cloud_f);
+      cloud_filtered = cloud_f;
+    }
+  // Creating the KdTree object for the search method of the extraction
+  pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
+  tree->setInputCloud (cloud_filtered);
+
+  std::vector<pcl::PointIndices> cluster_indices;
+  pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
+  ec.setClusterTolerance (0.02); // 2cm
+  ec.setMinClusterSize (100);
+  ec.setMaxClusterSize (25000);
+  ec.setSearchMethod (tree);
+  ec.setInputCloud (cloud_filtered);
+  ec.extract (cluster_indices);
+
+  std::vector<int> centroids;
+
+
+  int j = 0;
+  for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
+    {
+      pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_cluster (new pcl::PointCloud<pcl::PointXYZ>);
+      for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); pit++)
+	cloud_cluster->points.push_back (cloud_filtered->points[*pit]); //*
+      cloud_cluster->width = cloud_cluster->points.size ();
+      cloud_cluster->height = 1;
+      cloud_cluster->is_dense = true;
+      
+      centroid = pcl::compute3DCentroid(cloud_cluster[it]);
+      centroids.pushback(centorid);
+					
+      
+
+
+      std::cout << "PointCloud representing the Cluster: " << cloud_cluster->points.size () << " data points." << std::endl;
+      std::stringstream ss;
+      ss << "cloud_cluster_" << j << ".pcd";
+      writer.write<pcl::PointXYZ> (ss.str (), *cloud_cluster, false); //*
+      
+      j++;
+    }
+   return centroids[std::lower_bound(centroids.begin(), centroids.end())];
+} 
     
   
+
+
+
+
+
+ 
   
     
   
@@ -260,38 +362,36 @@ pcl::PointXYZRGBA KinectNode::getSearchPoint(pcl::PointXYZRGBA searchPoint)
 
 
 
-
-
-  /*
+/*
 //find the centroid of each grid square and assign a value to the closest centroid based on the point cloud
 //precondition: i = 0, centroid = 0
 //invariant: i < the index of the point cloud
 //postcondition: centroid = the closest centroid to the robot
-  for(int i = 0; i < cloud_filtered->width; i++ )
-    {
-      for(int j = 0; j < cloud_filtered->length; j++)
-	{
-	  temp = centroid;
+for(int i = 0; i < cloud_filtered->width; i++ )
+{
+for(int j = 0; j < cloud_filtered->length; j++)
+{
+temp = centroid;
 
-	  if(temp < centroid)
-	    {
-	      centroid = temp;
-	    }
-	  
-	  if(temp == centroid)
-	    {
-	      centroid = centroid;
-	    }
-	  
-	  if(temp > centroid)
-	    {
-	      centroid = centroid;
-	    }
-	}
-    }
- return centroid;
+if(temp < centroid)
+{
+centroid = temp;
 }
- */
+	  
+if(temp == centroid)
+{
+centroid = centroid;
+}
+	  
+if(temp > centroid)
+{
+centroid = centroid;
+}
+}
+}
+return centroid;
+}
+*/
 
  
 
