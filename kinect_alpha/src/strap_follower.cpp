@@ -73,6 +73,7 @@ void allCB(const sensor_msgs::ImageConstPtr& image_msg,
            const sensor_msgs::PointCloud2::ConstPtr& cloud_msg,
            const sensor_msgs::CameraInfo::ConstPtr& cam_msg)
 {
+  std::cout << "In allCB" << std::endl;
 	// Convert the image from ROS format to OpenCV format
 	cv_bridge::CvImagePtr cv_ptr;
 	try	{
@@ -106,6 +107,7 @@ void allCB(const sensor_msgs::ImageConstPtr& image_msg,
 
 geometry_msgs::Point findClosestCentroid(PointCloudXYZRGB &cloud, cv_bridge::CvImagePtr cv_ptr, string cloud_frame_id, ros::Time stamp)
 {
+  std::cout << "In findClosestCentroid" << std::endl;
   // get a binary image
   cv::Mat output;
   detectStrap(cv_ptr,output);
@@ -117,10 +119,13 @@ geometry_msgs::Point findClosestCentroid(PointCloudXYZRGB &cloud, cv_bridge::CvI
   {
     for(int colBin=0; colBin < numBins; colBin++)
     {
+      std::cout << "Adding a bin to bins" << std::endl;
       std::vector<geometry_msgs::Point> bin;
       bins.push_back(bin);
     }
   }
+
+  std::cout << "Number of Bins: " << bins.size() << std::endl;
 
   // classify all of the wanted points into bins
   putInBins(cloud,output,bins,cloud_frame_id,stamp);
@@ -165,6 +170,7 @@ geometry_msgs::Point findClosestCentroid(PointCloudXYZRGB &cloud, cv_bridge::CvI
 
 void detectStrap(cv_bridge::CvImagePtr cv_ptr, cv::Mat &output)
 {
+  std::cout << "In detectStrap" << std::endl;
   try
   {
     cv::cvtColor(cv_ptr->image, output, CV_BGR2HSV);
@@ -188,6 +194,7 @@ void detectStrap(cv_bridge::CvImagePtr cv_ptr, cv::Mat &output)
     cv::dilate(output, output, cv::Mat(), cv::Point(-1,-1), dilationIterations);
 
     // display the image
+    std::cout << "About to display image" << std::endl;
     cv::imshow("binary",output);
     cvWaitKey(5);
   }
@@ -199,12 +206,15 @@ void detectStrap(cv_bridge::CvImagePtr cv_ptr, cv::Mat &output)
 
 void putInBins(PointCloudXYZRGB &cloud, cv::Mat &input, std::vector<std::vector<geometry_msgs::Point> > &bins, string cloud_frame_id, ros::Time stamp)
 {
+  std::cout << "In putInBins" << std::endl;
   int colStep = floor(640/numBins);
   int rowStep = floor(480/numBins);
   for(int row=0; row<480; row++)
   {
     for(int col=0; col<640; col++)
-    {  
+    {
+	std::cout << "row: " << row << " col: " << col << std::endl;  
+	std::cout << "\tinput: " << input.at<int>(row,col) << std::endl;
       if(input.at<int>(row,col) > 0)
       {
 	pcl::PointXYZRGB pcl_pt = cloud.at(row, col);
@@ -226,6 +236,7 @@ void putInBins(PointCloudXYZRGB &cloud, cv::Mat &input, std::vector<std::vector<
 
 geometry_msgs::Point transformPoint(pcl::PointXYZRGB pcl_pt, string target_frame, string cloud_frame_id, ros::Time stamp)
 {
+  std::cout << "In transformPoint pcl version" << std::endl;
   geometry_msgs::Point geom_pt;
 
   geom_pt.x = pcl_pt.x; 
@@ -256,6 +267,7 @@ geometry_msgs::Point transformPoint(pcl::PointXYZRGB pcl_pt, string target_frame
 
 geometry_msgs::Point transformPoint(geometry_msgs::Point input, string target_frame, string cloud_frame_id, ros::Time stamp)
 {
+  std::cout << "In transformPoint geom version" << std::endl;
   geometry_msgs::Point geom_pt;
  // the TF package requires inputs to be in the form Stamped<sometype>
   tf::Stamped<tf::Point> geom_pt_tf, temp_pt_tf;
@@ -302,6 +314,7 @@ int main (int argc, char** argv)
 	private_nh.param("dilationIterations", dilationIterations, 5);
 	private_nh.param("zTolLow", zTolLow, -0.5);
 	private_nh.param("zTolHigh", zTolHigh, 0.5);
+	private_nh.param("numBins", numBins, 10);
 	
 	std::cout << "hl: " << hl << std::endl;
 	std::cout << "hh: " << hh << std::endl;
@@ -312,6 +325,7 @@ int main (int argc, char** argv)
 	std::cout << "dilationIterations: " << dilationIterations << std::endl;
 	std::cout << "zTolLow: " << zTolLow << std::endl;
 	std::cout << "zTolHigh: " << zTolHigh << std::endl;
+	std::cout << "numBins: " << numBins << std::endl;
 	
 	private_nh.param("global_frame", global_frame_, string("map"));
 	private_nh.param("robot_frame", robot_frame_, string("base_link"));
@@ -320,9 +334,9 @@ int main (int argc, char** argv)
 	
 	// Subscribe to an image, cloud, and camera info.
 	// Note the use of image_transport::SubscriberFilter and message_filters::Subscriber.  These allow for synchronization of the topics.
-	image_transport::SubscriberFilter                    image_sub   (it, "in_image", 1);
-	message_filters::Subscriber<sensor_msgs::PointCloud2>        cloud_sub   (nh, "in_cloud", 1);
-	message_filters::Subscriber<sensor_msgs::CameraInfo> cam_info_sub(nh, "in_cam_info", 1);
+	image_transport::SubscriberFilter                    image_sub   (it, "camera/rgb/image_rect_color", 1);
+	message_filters::Subscriber<sensor_msgs::PointCloud2>        cloud_sub   (nh, "camera/depth_registered/points", 1);
+	message_filters::Subscriber<sensor_msgs::CameraInfo> cam_info_sub(nh, "camera/rgb/camera_info", 1);
 	
 	// This sync policy will invoke a callback if it receives one of each message with matching timestamps
 	typedef message_filters::sync_policies::ApproximateTime
@@ -345,7 +359,7 @@ int main (int argc, char** argv)
 
 	while( ros::ok() )
 	{
-  	ros::spinOnce();
-  }
+	  ros::spinOnce();
+	}
 	return 0;
 }
