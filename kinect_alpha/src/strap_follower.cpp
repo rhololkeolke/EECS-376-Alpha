@@ -52,6 +52,7 @@ int dilationIterations;
 double zTolLow, zTolHigh;
 int numBins;
 
+bool prev_goal_pt_exists = false;
 bool goal_pt_exists = false;
 geometry_msgs::Point goal_pt;
 
@@ -97,7 +98,22 @@ void allCB(const sensor_msgs::ImageConstPtr& image_msg,
 		%cloud.width %cloud.height %(cloud.isOrganized() ? "true" : "false") );
 
 	
-	goal_pt = findClosestCentroid(cloud, cv_ptr, cloud_msg->header.frame_id, cloud_msg->header.stamp);
+	geometry_msgs::Point new_goal_pt = findClosestCentroid(cloud, cv_ptr, cloud_msg->header.frame_id, cloud_msg->header.stamp);
+
+	if(goal_pt_exists && prev_goal_pt_exists)
+	{
+	  // average this point with the previous running average
+	  // this is to help cut down on noise
+	  goal_pt.x = (goal_pt.x+new_goal_pt.x)/2.0;
+	  goal_pt.y = (goal_pt.y+new_goal_pt.y)/2.0;
+	}
+	else if(goal_pt_exists && !prev_goal_pt_exists)
+	{
+	  // last data point is useless so don't bother averaging
+	  goal_pt = new_goal_pt;
+	}
+
+	prev_goal_pt_exists = goal_pt_exists;
 
 	cv::imshow(window_name_.c_str(), cv_ptr->image);
 	cvWaitKey(5);
