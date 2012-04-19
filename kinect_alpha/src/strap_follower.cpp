@@ -50,6 +50,7 @@ string robot_frame_ = "base_link";
 int hl, hh, sl, sh, vl, vh;
 int dilationIterations;
 double zTolLow, zTolHigh;
+
 int numBins;
 
 bool prev_goal_pt_exists = false;
@@ -140,6 +141,8 @@ geometry_msgs::Point findClosestCentroid(PointCloudXYZRGB &cloud, cv_bridge::CvI
     }
   }
 
+  std::cout << "Number of Bins: " << bins.size() << std::endl;
+
   // classify all of the wanted points into bins
   putInBins(cloud,output,bins,cloud_frame_id,stamp);
 
@@ -191,6 +194,7 @@ geometry_msgs::Point findClosestCentroid(PointCloudXYZRGB &cloud, cv_bridge::CvI
 
 void detectStrap(cv_bridge::CvImagePtr cv_ptr, cv::Mat &output)
 {
+  std::cout << "In detectStrap" << std::endl;
   try
   {
     cv::cvtColor(cv_ptr->image, output, CV_BGR2HSV);
@@ -214,6 +218,7 @@ void detectStrap(cv_bridge::CvImagePtr cv_ptr, cv::Mat &output)
     cv::dilate(output, output, cv::Mat(), cv::Point(-1,-1), dilationIterations);
 
     // display the image
+    std::cout << "About to display image" << std::endl;
     cv::imshow("binary",output);
     cvWaitKey(5);
   }
@@ -225,10 +230,14 @@ void detectStrap(cv_bridge::CvImagePtr cv_ptr, cv::Mat &output)
 
 void putInBins(PointCloudXYZRGB &cloud, cv::Mat &input, std::vector<std::vector<geometry_msgs::Point> > &bins, string cloud_frame_id, ros::Time stamp)
 {
+<<<<<<< HEAD
+  std::cout << "In putInBins" << std::endl;
+=======
 
   //std::cout << "Running putInBins" << std::endl;
   //std::cout << "numBins: " << numBins << std::endl;
   //std::cout << "bins.size() " << bins.size() << std::endl;
+>>>>>>> 4b06fb0dd5cffae838708da09f85103064a5eea6
   int colStep = floor(640/numBins);
   int rowStep = floor(480/numBins);
 
@@ -271,6 +280,7 @@ void putInBins(PointCloudXYZRGB &cloud, cv::Mat &input, std::vector<std::vector<
 
 geometry_msgs::Point transformPoint(pcl::PointXYZRGB pcl_pt, string target_frame, string cloud_frame_id, ros::Time stamp)
 {
+  std::cout << "In transformPoint pcl version" << std::endl;
   geometry_msgs::Point geom_pt;
 
   geom_pt.x = pcl_pt.x; 
@@ -301,6 +311,7 @@ geometry_msgs::Point transformPoint(pcl::PointXYZRGB pcl_pt, string target_frame
 
 geometry_msgs::Point transformPoint(geometry_msgs::Point input, string target_frame, string cloud_frame_id, ros::Time stamp)
 {
+  std::cout << "In transformPoint geom version" << std::endl;
   geometry_msgs::Point geom_pt;
  // the TF package requires inputs to be in the form Stamped<sometype>
   tf::Stamped<tf::Point> geom_pt_tf, temp_pt_tf;
