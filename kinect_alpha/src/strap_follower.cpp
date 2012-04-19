@@ -46,10 +46,10 @@ tf::TransformListener* tfl_;
 string global_frame_ = "map";
 string robot_frame_ = "base_link";
 
+// parameters from launch file
 int hl, hh, sl, sh, vl, vh;
 int dilationIterations;
 double zTolLow, zTolHigh;
-
 int numBins;
 
 
@@ -128,7 +128,7 @@ geometry_msgs::Point findClosestCentroid(PointCloudXYZRGB &cloud, cv_bridge::CvI
   // go through each bin and compute the centroid.  If the centroid is closer than the last
   // set that as the new closest point
   geometry_msgs::Point best_point;
-  double closestDist = 0.0;
+  double closestDist = 100.0;
   while(!bins.empty())
   {
     std::vector<geometry_msgs::Point> bin = bins.back();
@@ -142,8 +142,8 @@ geometry_msgs::Point findClosestCentroid(PointCloudXYZRGB &cloud, cv_bridge::CvI
 	centroidX += bin[j].x;
 	centroidY += bin[j].y;
       }
-      centroidX = centroidX/bin.size();
-      centroidY = centroidY/bin.size();
+      centroidX = centroidX/(double)bin.size();
+      centroidY = centroidY/(double)bin.size();
       
       // Check the distance to the base link
       double distance = sqrt(pow(centroidX,2) + pow(centroidY,2));
@@ -155,6 +155,11 @@ geometry_msgs::Point findClosestCentroid(PointCloudXYZRGB &cloud, cv_bridge::CvI
 	best_point.x = centroidX;
 	best_point.y = centroidY;
       }
+      std::cout << "Closest Centroid:\n\tx: " << best_point.x << "\n\ty: " << best_point.y << std::endl;
+    }
+    else
+    {
+      std::cout << "No pixels in bin" << std::endl;
     }
   }
   
@@ -199,25 +204,44 @@ void detectStrap(cv_bridge::CvImagePtr cv_ptr, cv::Mat &output)
 
 void putInBins(PointCloudXYZRGB &cloud, cv::Mat &input, std::vector<std::vector<geometry_msgs::Point> > &bins, string cloud_frame_id, ros::Time stamp)
 {
+
+  //std::cout << "Running putInBins" << std::endl;
+  //std::cout << "numBins: " << numBins << std::endl;
+  //std::cout << "bins.size() " << bins.size() << std::endl;
   int colStep = floor(640/numBins);
   int rowStep = floor(480/numBins);
+
   for(int row=0; row<480; row++)
   {
     for(int col=0; col<640; col++)
     {  
-      if(input.at<int>(row,col) > 0)
+      if(input.at<cv::Vec3b>(row,col)[0] > 0)
       {
-	pcl::PointXYZRGB pcl_pt = cloud.at(row, col);
+
+	pcl::PointXYZRGB pcl_pt = cloud.at(col, row);
 	geometry_msgs::Point geom_pt = transformPoint(pcl_pt, robot_frame_, cloud_frame_id, stamp);
+	
 	if(geom_pt.z < zTolHigh && geom_pt.z > zTolLow)
 	{
 	  // figure out which vector bin in the bins vector the point should go in
 	  // might want to make the bins based on x,y map space and not i,j camera space
 	  // but for the first draft proof of concept it should suffice
 	  int index = floor(row/rowStep)*numBins + floor(col/colStep);
+
 	  // actually put the point in that bin
-	  bins[index].push_back(geom_pt);
-	  std::cout << "Found a valid point" << std::endl;
+	  if(index > bins.size())
+	  {
+	    ROS_ERROR("Index larger than number of bins");
+	    //std::cout << "index: " << index << std::endl;
+	  }
+	  else
+	  {
+	    bins[index].push_back(geom_pt);
+	    //std::cout << "Found a valid point!" << std::endl;
+	    //std::cout << "Value at " << row << ", " << col << " is " << (int)input.at<cv::Vec3b>(row,col)[0] << std::endl;
+	    //std::cout << "Point Location in base_link:\n\tx: " << geom_pt.x << "\n\ty: " << geom_pt.y << "\n\tz: " << geom_pt.z << std::endl;
+	    //std::cout << "index: " << index << std::endl;
+	  }
 	}
       }
     }
@@ -302,6 +326,10 @@ int main (int argc, char** argv)
 	private_nh.param("dilationIterations", dilationIterations, 5);
 	private_nh.param("zTolLow", zTolLow, -0.5);
 	private_nh.param("zTolHigh", zTolHigh, 0.5);
+	private_nh.param("numBins", numBins, 5);
+
+	private_nh.param("global_frame", global_frame_, string("map"));
+	private_nh.param("robot_frame", robot_frame_, string("base_link"));
 	
 	std::cout << "hl: " << hl << std::endl;
 	std::cout << "hh: " << hh << std::endl;
@@ -312,17 +340,15 @@ int main (int argc, char** argv)
 	std::cout << "dilationIterations: " << dilationIterations << std::endl;
 	std::cout << "zTolLow: " << zTolLow << std::endl;
 	std::cout << "zTolHigh: " << zTolHigh << std::endl;
-	
-	private_nh.param("global_frame", global_frame_, string("map"));
-	private_nh.param("robot_frame", robot_frame_, string("base_link"));
-	ROS_INFO_STREAM("Using global frame \""<<global_frame_<<"\"");
-	ROS_INFO_STREAM("Using robot frame \""<< robot_frame_ << "\"");
-	
+	std::cout << "numBins: " << numBins << std::endl;
+	std::cout << "global_frame_: " << global_frame_ << std::endl;
+	std::cout << "robot_frame_: " << robot_frame_ << std::endl;
+		
 	// Subscribe to an image, cloud, and camera info.
 	// Note the use of image_transport::SubscriberFilter and message_filters::Subscriber.  These allow for synchronization of the topics.
-	image_transport::SubscriberFilter                    image_sub   (it, "in_image", 1);
-	message_filters::Subscriber<sensor_msgs::PointCloud2>        cloud_sub   (nh, "in_cloud", 1);
-	message_filters::Subscriber<sensor_msgs::CameraInfo> cam_info_sub(nh, "in_cam_info", 1);
+	image_transport::SubscriberFilter                    image_sub   (it, "camera/rgb/image_rect_color", 1);
+	message_filters::Subscriber<sensor_msgs::PointCloud2>        cloud_sub   (nh, "camera/depth_registered/points", 1);
+	message_filters::Subscriber<sensor_msgs::CameraInfo> cam_info_sub(nh, "camera/rgb/camera_info", 1);
 	
 	// This sync policy will invoke a callback if it receives one of each message with matching timestamps
 	typedef message_filters::sync_policies::ApproximateTime
