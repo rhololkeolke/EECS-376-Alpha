@@ -25,8 +25,8 @@
 		<param name="vl" type="int" value="164"/>
 		<param name="vh" type="int" value="255"/>
 		<param name="dilationIterations" type="int" value="5"/>
-		<param name="zTolLow" type="double" value="-0.5"/>
-		<param name="zTolHigh" type="double" value="0.5"/>
+		<param name="zTolLow" type="double" value="-0.1"/>
+		<param name="zTolHigh" type="double" value="0.1"/>
 		<param name="numBins" type="int" value="10"/>
 		<param name="sliceLength" type="int" value="5" />
 
@@ -40,7 +40,7 @@
 	
         <!-- Static transform from Harlie's base to the pan mount -->
         <node pkg="tf" type="static_transform_publisher" name="kinect_static_tf_pub" respawn="true"
-         args="0.0 0.0 1.12 1.5 .255 0.0 base_link camera_link 100" />
+         args="0.0 0.0 1.12 0.0 .255 0.0 base_link camera_link 100" />
 	
 
 </launch>

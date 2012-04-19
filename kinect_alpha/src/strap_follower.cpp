@@ -46,11 +46,15 @@ tf::TransformListener* tfl_;
 string global_frame_ = "map";
 string robot_frame_ = "base_link";
 
+// parameters from launch file
 int hl, hh, sl, sh, vl, vh;
 int dilationIterations;
 double zTolLow, zTolHigh;
 
 int numBins;
+
+bool goal_pt_exists = false;
+geometry_msgs::Point goal_pt;
 
 
 // function that calls all of the helper functions
@@ -73,7 +77,6 @@ void allCB(const sensor_msgs::ImageConstPtr& image_msg,
            const sensor_msgs::PointCloud2::ConstPtr& cloud_msg,
            const sensor_msgs::CameraInfo::ConstPtr& cam_msg)
 {
-  std::cout << "In allCB" << std::endl;
 	// Convert the image from ROS format to OpenCV format
 	cv_bridge::CvImagePtr cv_ptr;
 	try	{
@@ -95,19 +98,17 @@ void allCB(const sensor_msgs::ImageConstPtr& image_msg,
 		%cloud.width %cloud.height %(cloud.isOrganized() ? "true" : "false") );
 
 	
-	geometry_msgs::Point centroid_pt = findClosestCentroid(cloud, cv_ptr, cloud_msg->header.frame_id, cloud_msg->header.stamp);
+	goal_pt = findClosestCentroid(cloud, cv_ptr, cloud_msg->header.frame_id, cloud_msg->header.stamp);
 
 	cv::imshow(window_name_.c_str(), cv_ptr->image);
 	cvWaitKey(5);
 	
 	// Publish the modified image
 	//image_pub_.publish(cv_ptr->toImageMsg());
-	std::cout << "Closest Point: (" << centroid_pt.x << "," << centroid_pt.y << ")" << std::endl;
 }
 
 geometry_msgs::Point findClosestCentroid(PointCloudXYZRGB &cloud, cv_bridge::CvImagePtr cv_ptr, string cloud_frame_id, ros::Time stamp)
 {
-  std::cout << "In findClosestCentroid" << std::endl;
   // get a binary image
   cv::Mat output;
   detectStrap(cv_ptr,output);
@@ -119,7 +120,6 @@ geometry_msgs::Point findClosestCentroid(PointCloudXYZRGB &cloud, cv_bridge::CvI
   {
     for(int colBin=0; colBin < numBins; colBin++)
     {
-      std::cout << "Adding a bin to bins" << std::endl;
       std::vector<geometry_msgs::Point> bin;
       bins.push_back(bin);
     }
@@ -133,7 +133,7 @@ geometry_msgs::Point findClosestCentroid(PointCloudXYZRGB &cloud, cv_bridge::CvI
   // go through each bin and compute the centroid.  If the centroid is closer than the last
   // set that as the new closest point
   geometry_msgs::Point best_point;
-  double closestDist = 0.0;
+  double closestDist = 100.0;
   while(!bins.empty())
   {
     std::vector<geometry_msgs::Point> bin = bins.back();
@@ -142,13 +142,14 @@ geometry_msgs::Point findClosestCentroid(PointCloudXYZRGB &cloud, cv_bridge::CvI
     double centroidY = 0.0;
     if(!bin.empty())
     {
+      goal_pt_exists = true;
       for(int j=0; j<bin.size(); j++)
       {
 	centroidX += bin[j].x;
 	centroidY += bin[j].y;
       }
-      centroidX = centroidX/bin.size();
-      centroidY = centroidY/bin.size();
+      centroidX = centroidX/(double)bin.size();
+      centroidY = centroidY/(double)bin.size();
       
       // Check the distance to the base link
       double distance = sqrt(pow(centroidX,2) + pow(centroidY,2));
@@ -160,10 +161,17 @@ geometry_msgs::Point findClosestCentroid(PointCloudXYZRGB &cloud, cv_bridge::CvI
 	best_point.x = centroidX;
 	best_point.y = centroidY;
       }
+      //std::cout << "Closest Centroid:\n\tx: " << best_point.x << "\n\ty: " << best_point.y << std::endl;
     }
+    /* else
+    {
+      std::cout << "No pixels in bin" << std::endl;
+      }*/
   }
   
-  best_point = transformPoint(best_point, global_frame_, "base_link", stamp);
+  std::cout << "Best point in base_link: " << best_point << std::endl;
+  //best_point = transformPoint(best_point, global_frame_, "base_link", stamp);
+  //std::cout << "Best point in map: " << best_point << std::endl;
 
   return best_point;
 }
@@ -206,28 +214,48 @@ void detectStrap(cv_bridge::CvImagePtr cv_ptr, cv::Mat &output)
 
 void putInBins(PointCloudXYZRGB &cloud, cv::Mat &input, std::vector<std::vector<geometry_msgs::Point> > &bins, string cloud_frame_id, ros::Time stamp)
 {
+<<<<<<< HEAD
   std::cout << "In putInBins" << std::endl;
+=======
+
+  //std::cout << "Running putInBins" << std::endl;
+  //std::cout << "numBins: " << numBins << std::endl;
+  //std::cout << "bins.size() " << bins.size() << std::endl;
+>>>>>>> 4b06fb0dd5cffae838708da09f85103064a5eea6
   int colStep = floor(640/numBins);
   int rowStep = floor(480/numBins);
+
   for(int row=0; row<480; row++)
   {
     for(int col=0; col<640; col++)
-    {
-	std::cout << "row: " << row << " col: " << col << std::endl;  
-	std::cout << "\tinput: " << input.at<int>(row,col) << std::endl;
-      if(input.at<int>(row,col) > 0)
+    {  
+      if(input.at<cv::Vec3b>(row,col)[0] > 0)
       {
-	pcl::PointXYZRGB pcl_pt = cloud.at(row, col);
+
+	pcl::PointXYZRGB pcl_pt = cloud.at(col, row);
 	geometry_msgs::Point geom_pt = transformPoint(pcl_pt, robot_frame_, cloud_frame_id, stamp);
+	
 	if(geom_pt.z < zTolHigh && geom_pt.z > zTolLow)
 	{
 	  // figure out which vector bin in the bins vector the point should go in
 	  // might want to make the bins based on x,y map space and not i,j camera space
 	  // but for the first draft proof of concept it should suffice
 	  int index = floor(row/rowStep)*numBins + floor(col/colStep);
+
 	  // actually put the point in that bin
-	  bins[index].push_back(geom_pt);
-	  std::cout << "Found a valid point" << std::endl;
+	  if(index > bins.size())
+	  {
+	    ROS_ERROR("Index larger than number of bins");
+	    //std::cout << "index: " << index << std::endl;
+	  }
+	  else
+	  {
+	    bins[index].push_back(geom_pt);
+	    //std::cout << "Found a valid point!" << std::endl;
+	    //std::cout << "Value at " << row << ", " << col << " is " << (int)input.at<cv::Vec3b>(row,col)[0] << std::endl;
+	    //std::cout << "Point Location in base_link:\n\tx: " << geom_pt.x << "\n\ty: " << geom_pt.y << "\n\tz: " << geom_pt.z << std::endl;
+	    //std::cout << "index: " << index << std::endl;
+	  }
 	}
       }
     }
@@ -314,7 +342,10 @@ int main (int argc, char** argv)
 	private_nh.param("dilationIterations", dilationIterations, 5);
 	private_nh.param("zTolLow", zTolLow, -0.5);
 	private_nh.param("zTolHigh", zTolHigh, 0.5);
-	private_nh.param("numBins", numBins, 10);
+	private_nh.param("numBins", numBins, 5);
+
+	private_nh.param("global_frame", global_frame_, string("map"));
+	private_nh.param("robot_frame", robot_frame_, string("base_link"));
 	
 	std::cout << "hl: " << hl << std::endl;
 	std::cout << "hh: " << hh << std::endl;
@@ -326,11 +357,14 @@ int main (int argc, char** argv)
 	std::cout << "zTolLow: " << zTolLow << std::endl;
 	std::cout << "zTolHigh: " << zTolHigh << std::endl;
 	std::cout << "numBins: " << numBins << std::endl;
+	std::cout << "global_frame_: " << global_frame_ << std::endl;
+	std::cout << "robot_frame_: " << robot_frame_ << std::endl;
 	
-	private_nh.param("global_frame", global_frame_, string("map"));
-	private_nh.param("robot_frame", robot_frame_, string("base_link"));
-	ROS_INFO_STREAM("Using global frame \""<<global_frame_<<"\"");
-	ROS_INFO_STREAM("Using robot frame \""<< robot_frame_ << "\"");
+	// naptime
+	ros::Rate naptime(20);// will sleep to enforce a rate of 20 Hz
+
+	// Centroid Point Publisher
+	ros::Publisher centroidPub = nh.advertise<msg_alpha::CentroidPoints>("centroid_point",1);
 	
 	// Subscribe to an image, cloud, and camera info.
 	// Note the use of image_transport::SubscriberFilter and message_filters::Subscriber.  These allow for synchronization of the topics.
@@ -344,13 +378,13 @@ int main (int argc, char** argv)
 	
 	// Synchronize the three topics.  MySyncPolicy(10) tells it to maintain a buffer of 10 messages.
 	message_filters::Synchronizer<MySyncPolicy>
-	   sync(MySyncPolicy(10), image_sub, cloud_sub, cam_info_sub);
+	sync(MySyncPolicy(10), image_sub, cloud_sub, cam_info_sub);
 	
 	// Hook the callback into the sync policy
 	sync.registerCallback( boost::bind(&allCB, _1, _2, _3) );
 	
 	// publishers for the image and point cloud
-  image_pub_ = it.advertise                          (ros::this_node::getName() + "/out_image", 1);
+	image_pub_ = it.advertise                          (ros::this_node::getName() + "/out_image", 1);
 	cloud_pub_ = nh.advertise<sensor_msgs::PointCloud2>(ros::this_node::getName() + "/out_cloud", 1);
 
 	window_name_ = "Image from Kinect";
@@ -360,6 +394,12 @@ int main (int argc, char** argv)
 	while( ros::ok() )
 	{
 	  ros::spinOnce();
+	  msg_alpha::CentroidPoints pointsMsg;
+	  pointsMsg.exists = goal_pt_exists;
+	  pointsMsg.point = goal_pt;
+	  centroidPub.publish(pointsMsg);
+	  naptime.sleep();
+	  
 	}
 	return 0;
 }
