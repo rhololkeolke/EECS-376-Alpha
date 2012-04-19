@@ -53,7 +53,7 @@ def centroidPointCallback(data):
     global currPoint
     # if the point is (0,0) then no centroid was found
     # in reality there should be a better way of signaling this
-    if(data.point.x == 0 and data.point.y == 0):
+    if(not data.exists):
         currPoint = None
     else:
         currPoint = data.point
@@ -88,6 +88,7 @@ def main():
 
     while(not rospy.is_shutdown()):
         if(currPoint is None):
+            print "No point"
             # For now publish stop messages when no point is detected
             # Eventually this will be the spin routine
             if(lastGoodYaw is None):
@@ -112,6 +113,8 @@ def main():
             cmdPub.publish(TwistMsg())
             naptime.sleep()
             continue
+
+        print "Steering to (%f,%f)" % (currPoint.x,currPoint.y)
             
         xVec = currPoint.x-position.x
         yVec = currPoint.y-position.y
