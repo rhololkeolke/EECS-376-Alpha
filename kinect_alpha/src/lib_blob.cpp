@@ -1,4 +1,5 @@
 #include <ros/ros.h>
+#include <iostream>
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
 #include <cv_bridge/CvBridge.h>
@@ -50,7 +51,7 @@ void findLines(const cv::Mat& src, cv::Mat& out) {
   out = color_temp;
 }
 
-void blobfind(const cv::Mat& src, cv::Mat& out, int point)
+void blobfind(int vals[], const cv::Mat& src, cv::Mat& out, int& point)
 {
   Mat temp;
 
@@ -66,14 +67,14 @@ void blobfind(const cv::Mat& src, cv::Mat& out, int point)
   // Set all values below value to zero, leave rest the same
   // Then inverse binary threshold the remaining pixels
   // Threshold blue channel
-  threshold(mats[0], mats[0], bhigh, 255, THRESH_TOZERO_INV);
-  threshold(mats[0], mats[0], blow, 255, THRESH_BINARY);
+  threshold(mats[0], mats[0], vals[2], 255, THRESH_TOZERO_INV);
+  threshold(mats[0], mats[0], vals[3], 255, THRESH_BINARY);
   // Threshold green channel
-  threshold(mats[1], mats[1], ghigh, 255, THRESH_TOZERO_INV);
-  threshold(mats[1], mats[1], glow, 255, THRESH_BINARY);
+  threshold(mats[1], mats[1], vals[4], 255, THRESH_TOZERO_INV);
+  threshold(mats[1], mats[1], vals[5], 255, THRESH_BINARY);
   // Threshold red channel
-  threshold(mats[2], mats[2], rhigh, 255, THRESH_TOZERO_INV);
-  threshold(mats[2], mats[2], rlow, 255, THRESH_BINARY);
+  threshold(mats[2], mats[2], vals[0], 255, THRESH_TOZERO_INV);
+  threshold(mats[2], mats[2], vals[1], 255, THRESH_BINARY);
 
   multiply(mats[0], mats[1], out);
   multiply(out, mats[2], out);
@@ -97,7 +98,8 @@ void blobfind(const cv::Mat& src, cv::Mat& out, int point)
     center = cvCentroid(blobs[greatestBlob]);
   }
 
-  out = temp;
+  std::cout << center.x << std::endl;
+//  out = temp;
   cvReleaseImage(&labelImg);
   point = center.x;
 }

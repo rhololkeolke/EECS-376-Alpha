@@ -1,4 +1,5 @@
 #include <ros/ros.h>
+#include <iostream>
 #include "lib_blob.h"
 #include <msg_alpha/BlobDistance.h>
 #include <sensor_msgs/CameraInfo.h>
@@ -38,11 +39,20 @@ class KinectNode {
     //image_transport::Publisher image_pub_;
     msg_alpha::BlobDistance blobDist;
     ros::Publisher blobPub;
+    int params[6];
 };
 
 KinectNode::KinectNode():
   it_(nh_)
 {
+  ros::NodeHandle private_nh("~");
+  private_nh.param("rh",params[0], 0);
+  private_nh.param("rl",params[1], 255);
+  private_nh.param("bh",params[2], 0);
+  private_nh.param("bl",params[3], 255);
+  private_nh.param("gh",params[4], 0);
+  private_nh.param("gl",params[5], 255);
+  std::cout << params[0] << params[1] << params[2] << params[3] << params[4] << params[5] << std::endl;
   sub_ = it_.subscribe("in_image", 1, &KinectNode::imageCallback, this);
   //image_pub_ = it_.advertise("out_image", 1);
   blobPub = nh_.advertise<msg_alpha::BlobDistance>("blob_dist",1);
@@ -60,16 +70,20 @@ void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
 		return;
 	}
 	
-	ROS_INFO_STREAM(boost::format("Callback got an image in format %s, size %dx%d")
-		%cv_ptr->encoding %cv_ptr->image.size().width %cv_ptr->image.size().height );
+//	ROS_INFO_STREAM(boost::format("Callback got an image in format %s, size %dx%d")
+//		%cv_ptr->encoding %cv_ptr->image.size().width %cv_ptr->image.size().height );
 
-  cv::Mat output, output1, output2;
+  cv::Mat output;
   try {
     //normalizeColors(cv_ptr->image, output);
-    blobfind(cv_ptr->image, output, blobDist.dist);
+	int tempInt;
+    blobfind(params, cv_ptr->image, output, tempInt);
     //findLines(cv_ptr->image, output);
     cv::imshow("view", output);
+    cvWaitKey(5);
     IplImage temp = output;
+	blobDist.dist = tempInt;
+	std::cout << blobDist << std::endl;
     KinectNode::blobPub.publish(blobDist);
     //image_pub_.publish(bridge.cvToImgMsg(&temp, "bgr8"));
   }
@@ -82,9 +96,9 @@ void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "kinect_alpha");
-  KinectNode motion_tracker;
-  cvNamedWindow("view"); //these cv* calls are need if you want to use cv::imshow anywhere in your program
+  cv::namedWindow("view"); //these cv* calls are need if you want to use cv::imshow anywhere in your program
   cvStartWindowThread();
+  KinectNode motion_tracker;
   ros::spin();
   cvDestroyWindow("view");
 }
