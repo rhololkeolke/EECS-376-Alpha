@@ -114,13 +114,19 @@ void allCB(const sensor_msgs::ImageConstPtr& image_msg,
 	  goal_pt = new_goal_pt;
 	}
 
+	if(goal_pt_exists)
+	{
+	  std::cout << "Closest Point: (" << goal_pt.x << "," << goal_pt.y << "," << goal_pt.z << ")" << std::endl;
+	}
+	else
+	{
+	  std::cout << "No point matching selection criteria found" << std::endl;
+	}
+
 	prev_goal_pt_exists = goal_pt_exists;
 
 	cv::imshow(window_name_.c_str(), cv_ptr->image);
-	cvWaitKey(5);
-	
-	// Publish the modified image
-	//image_pub_.publish(cv_ptr->toImageMsg());
+	cvWaitKey(5);	
 }
 
 geometry_msgs::Point findClosestCentroid(PointCloudXYZRGB &cloud, cv_bridge::CvImagePtr cv_ptr, string cloud_frame_id, ros::Time stamp)
@@ -141,7 +147,6 @@ geometry_msgs::Point findClosestCentroid(PointCloudXYZRGB &cloud, cv_bridge::CvI
     }
   }
 
-  std::cout << "Number of Bins: " << bins.size() << std::endl;
 
   // classify all of the wanted points into bins
   putInBins(cloud,output,bins,cloud_frame_id,stamp);
@@ -177,17 +182,10 @@ geometry_msgs::Point findClosestCentroid(PointCloudXYZRGB &cloud, cv_bridge::CvI
 	best_point.x = centroidX;
 	best_point.y = centroidY;
       }
-      //std::cout << "Closest Centroid:\n\tx: " << best_point.x << "\n\ty: " << best_point.y << std::endl;
     }
-    /* else
-    {
-      std::cout << "No pixels in bin" << std::endl;
-      }*/
   }
   
-  std::cout << "Best point in base_link: " << best_point << std::endl;
   best_point = transformPoint(best_point, global_frame_, robot_frame_, stamp);
-  std::cout << "Best point in map: " << best_point << std::endl;
 
   return best_point;
 }
@@ -230,10 +228,6 @@ void detectStrap(cv_bridge::CvImagePtr cv_ptr, cv::Mat &output)
 
 void putInBins(PointCloudXYZRGB &cloud, cv::Mat &input, std::vector<std::vector<geometry_msgs::Point> > &bins, string cloud_frame_id, ros::Time stamp)
 {
-  //std::cout << "Running putInBins" << std::endl;
-  //std::cout << "numBins: " << numBins << std::endl;
-  //std::cout << "bins.size() " << bins.size() << std::endl;
-
   int colStep = floor(640/numBins);
   int rowStep = floor(480/numBins);
 
@@ -255,14 +249,11 @@ void putInBins(PointCloudXYZRGB &cloud, cv::Mat &input, std::vector<std::vector<
 	{
 	  continue;
 	}
-	//Uncomment these print statements to help debug transform between kinect frame and robot frame
-	//std::cout << "Extracted pcl_pt (" << pcl_pt.x << "," << pcl_pt.y << "," << pcl_pt.z << ")" << std::endl;
+
 	geometry_msgs::Point geom_pt = transformPoint(pcl_pt, robot_frame_, cloud_frame_id, stamp);
-	//std::cout << "Transformed pcl_pt to (" << geom_pt.x << "," << geom_pt.y << "," << geom_pt.z << ")" << std::endl;
 	
 	if(geom_pt.z < zTolHigh && geom_pt.z > zTolLow)
 	{
-	  std::cout << "geom_pt is within z tolerance" << std::endl;
 	  // figure out which vector bin in the bins vector the point should go in
 	  // might want to make the bins based on x,y map space and not i,j camera space
 	  // but for the first draft proof of concept it should suffice
@@ -272,15 +263,10 @@ void putInBins(PointCloudXYZRGB &cloud, cv::Mat &input, std::vector<std::vector<
 	  if(index > bins.size())
 	  {
 	    ROS_ERROR("Index larger than number of bins");
-	    //std::cout << "index: " << index << std::endl;
 	  }
 	  else
 	  {
 	    bins[index].push_back(geom_pt);
-	    //std::cout << "Found a valid point!" << std::endl;
-	    //std::cout << "Value at " << row << ", " << col << " is " << (int)input.at<cv::Vec3b>(row,col)[0] << std::endl;
-	    //std::cout << "Point Location in base_link:\n\tx: " << geom_pt.x << "\n\ty: " << geom_pt.y << "\n\tz: " << geom_pt.z << std::endl;
-	    //std::cout << "index: " << index << std::endl;
 	  }
 	}
       }
@@ -320,9 +306,9 @@ geometry_msgs::Point transformPoint(pcl::PointXYZRGB pcl_pt, string target_frame
 
 geometry_msgs::Point transformPoint(geometry_msgs::Point input, string target_frame, string source_frame, ros::Time stamp)
 {
-  std::cout << "Transforming point (" << input.x << "," << input.y << "," << input.z << ")" << std::endl;
   geometry_msgs::Point geom_pt;
- // the TF package requires inputs to be in the form Stamped<sometype>
+
+  // the TF package requires inputs to be in the form Stamped<sometype>
   tf::Stamped<tf::Point> geom_pt_tf, temp_pt_tf;
   pointMsgToTF(input, geom_pt_tf);
   geom_pt_tf.frame_id_ = source_frame;

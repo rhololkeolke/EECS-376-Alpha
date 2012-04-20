@@ -20,6 +20,7 @@ from geometry_msgs.msg._Twist import Twist as TwistMsg
 from tf.transformations import quaternion_from_euler,euler_from_quaternion
 
 from math import atan2,pi
+from decimal import *
 
 # set the rate the node runs at
 RATE = 20.0
@@ -29,6 +30,10 @@ naptime = None # this will be initialized first thing in main
 
 # Current point to steer to
 currPoint = None
+
+# Waypoints to steer to
+waypoints = []
+completedPoints = []
 
 # pose data
 position = PointMsg()
@@ -50,13 +55,22 @@ def centroidPointCallback(data):
     '''
     Remembers the point specified by the image processing node
     '''
-    global currPoint
-    # if the point is (0,0) then no centroid was found
-    # in reality there should be a better way of signaling this
-    if(not data.exists):
-        currPoint = None
-    else:
-        currPoint = data.point
+    global currPoint, completedPoints
+
+    tol = .5
+
+    if(data.exists):
+       add = True
+       for point in waypoints:
+           if(approx_equal(data.point.y,point.y,epsilon=tol) and approx_equal(data.point.x,point.x,epsilon=tol)):
+               add = False
+               break
+       for point in completedPoints:
+           if(approx_equal(data.point.y,point.y,epsilon=tol) and approx_equal(data.point.x,point.x,epsilon=tol)):
+               add = False
+               break
+       if add:
+           waypoints.append(data.point)
 
 def getYaw(quat):
     try:
@@ -64,14 +78,25 @@ def getYaw(quat):
     except AttributeError:
         return euler_from_quaternion(quat)[2]
 
-def approx_equal(a,b,sig_fig=5,epsilon=.001):
-    return (a==b or int(a*10**sig_fig) == int(b*10**sig_fig))
+def approx_equal(a,b,sig_fig=5,epsilon=None):
+    if(a==b):
+        return True
+    if(epsilon is not None):
+        places = abs(Decimal(str(epsilon)).as_tuple().exponent)
+        tol = int(epsilon*10**places)
+        diff = int(abs(a-b)*10**places)
+        if(diff <= tol):
+            return True
+        else:
+            return False
+    else:
+        return (int(a*10**sig_fig) == int(b*10**sig_fig))
 
 def main():
     '''
     The main function that is executed while the node is running
     '''
-    global RATE, naptime, lastGoodYaw
+    global RATE, naptime, lastGoodYaw, waypoints, currPoint, completedPoints
 
     rospy.init_node('steering_alpha_main')
     naptime = rospy.Rate(RATE)
@@ -88,7 +113,16 @@ def main():
 
     while(not rospy.is_shutdown()):
         if(currPoint is None):
-            print "No point"
+            if(len(waypoints) > 0):
+                print "New Point"
+                currPoint = waypoints[0]
+                print "currPoint: (%f,%f)" % (currPoint.x,currPoint.y)
+
+                completedPoints.append(waypoints[0])
+                del waypoints[0] # remove the point from the list
+                continue
+
+            print "No points"
             # For now publish stop messages when no point is detected
             # Eventually this will be the spin routine
             if(lastGoodYaw is None):
@@ -102,7 +136,8 @@ def main():
             continue
 
         if(lastGoodYaw is not None):
-            if(getYaw(orientation) == lastGoodYaw + pi):
+            if(approx_equal(getYaw(orientation), lastGoodYaw + pi, epsilon=.5)):
+                currPoint = None
                 cmd = TwistMsg()
                 cmd.angular.z = .5
                 cmdPub.publish(cmd)
@@ -110,11 +145,14 @@ def main():
                 continue
         
         if(approx_equal(position.x, currPoint.x,0) and approx_equal(position.y,currPoint.y,0)):
-            cmdPub.publish(TwistMsg())
-            naptime.sleep()
+            completedPoints.append(currPoint)
+            currPoint = None
+            #cmdPub.publish(TwistMsg())
+            #naptime.sleep()
             continue
 
-        print "Steering to (%f,%f)" % (currPoint.x,currPoint.y)
+        #print "Steering to (%f,%f)" % (currPoint.x,currPoint.y)
+        print waypoints
             
         xVec = currPoint.x-position.x
         yVec = currPoint.y-position.y
@@ -128,6 +166,11 @@ def main():
 
         cmd_vel = TwistMsg()
         cmd_vel.angular.z = Ktheta*dTheta
+        if(cmd_vel.angular.z > .25):
+            cmd_vel.angular.z = .25
+        elif(cmd_vel.angular.z < -.25):
+            cmd_vel.angular.z = -.25
+
         cmd_vel.linear.x = .25 # Eventually this will actually accelerate and decelerate
 
         cmdPub.publish(cmd_vel)
