@@ -109,6 +109,8 @@ class State:
         """
         dt = 1.0/20.0
         if(self.pathSeg.seg_type == PathSegmentMsg.LINE):
+            approx_equal = lambda a,b,t:abs(a-b)<t
+            
             # grab the angle of the path
             angle = State.getYaw(self.pathSeg.init_tan_angle)
 
@@ -117,8 +119,8 @@ class State:
 
             # calculate another point along the line
             p1 = PointMsg()
-            p1.x = p0.x + cos(angle)
-            p1.y = p0.y + sin(angle)
+            p1.x = p0.x + self.pathSeg.seg_length*cos(angle)
+            p1.y = p0.y + self.pathSeg.seg_length*sin(angle)
             
             # line segment
             tanVecMag = pow(p0.x-p1.x,2) + pow(p0.y-p1.y,2)
@@ -130,7 +132,16 @@ class State:
             intersect.x = point.x + u*cos(angle)
             intersect.y = point.y + u*sin(angle)
             
-            d = sqrt(pow(point.x-intersect.x,2)+pow(point.y-intersect.y,2))
+            d = sqrt(pow(intersect.x-p0.x,2)+pow(intersect.y-p0.y,2))
+
+            # see where this point will lead if followed along the line for a distance d
+            testX = intersect.x + d*cos(angle)
+            testY = intersect.y + d*sin(angle)
+
+            # if the distance gets smaller then the d should be negative
+            # if the distance gets bigger then the d should be positive
+            if(sqrt(pow(testX-p0.x,2)+pow(testY-p0.y,2)) < d):
+                d = -d
 
             self.segDistDone = d/self.pathSeg.seg_length            
         elif(self.pathSeg.seg_type == PathSegmentMsg.ARC):
@@ -221,10 +232,8 @@ class State:
             if(beta >= 0 and beta <= halfAngle+pi): # beta is in the specified arc
                 alpha = beta
             else:
-                alpha = 2*pi - beta
-                    
-            alpha = alpha % (2*pi)
-                
+                alpha = beta - 2*pi
+
             self.segDistDone = alpha/self.pathSeg.seg_length
         else:
             pass # should probably throw an unknown segment type error

@@ -1,9 +1,9 @@
 #ifndef _LIB_DEMO_H
 #define _LIB_DEMO_H
 
-#include <opencv/cv.h>
+#include <opencv2/opencv.hpp>
 
-void blobfind(const cv::Mat& src, cv::Mat& out);
+void blobfind(int vars[], const cv::Mat& src, cv::Mat& out, int& point);
 
 void normalizeColors(const cv::Mat& src, cv::Mat& out);
 

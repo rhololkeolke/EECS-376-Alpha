@@ -16,9 +16,18 @@ import roslib; roslib.load_manifest('velocity_profiler_alpha');
 import rospy
 
 from msg_alpha.msg._PathSegment import PathSegment as PathSegmentMsg
+from msg_alpha.msg._PathList import PathList as PathListMsg
+from msg_alpha.msg._SegStatus import SegStatus as SegStatusMsg
 from tf.transformations import quaternion_from_euler
 
 import csv
+
+lastSegNumber = 0
+RATE = 20.0
+
+def segStatusCallback(segStat):
+    global lastSegNumber
+    lastSegNumber = segStat.lastSegComplete
 
 def publishFromFile(fullPath):
     """
@@ -39,7 +48,8 @@ def publishFromFile(fullPath):
     
     with open(fullPath,'rb') as csvFile:
         rospy.init_node('CustomPathPublisher')
-        pathSegPublisher = rospy.Publisher('path_seg',PathSegmentMsg) 
+        pathListPublisher = rospy.Publisher('path',PathListMsg) 
+        rospy.Subscriber('seg_status',SegStatusMsg,segStatusCallback)
         
         dialect = csv.Sniffer().sniff(csvFile.read(1024)) # auto detect delimiters
         csvFile.seek(0)
@@ -51,6 +61,7 @@ def publishFromFile(fullPath):
         headers = next(reader)
         
         for i,row in enumerate(reader):
+            print row
             pathSeg = PathSegmentMsg()
             pathSeg.seg_number = i+1
 
@@ -177,11 +188,18 @@ def publishFromFile(fullPath):
             segs.append(pathSeg)
     
         print "About to publish"
-        naptime = rospy.Rate(1)
-        for pathSeg in segs:
-            print "Publishing path segment %i" % (pathSeg.seg_number)
-            print pathSeg
-            pathSegPublisher.publish(pathSeg)
+        pathList = PathListMsg()
+        naptime = rospy.Rate(RATE)
+
+        while(not rospy.is_shutdown()):
+            if(len(segs) == 0):
+                break
+            for i,seg in enumerate(segs):
+                if(seg.seg_number <= lastSegNumber):
+                    print "Removing path segment %i" % (seg.seg_number)
+                    del segs[i]
+            pathList.segments = segs
+            pathListPublisher.publish(pathList)
             naptime.sleep()
     
                 

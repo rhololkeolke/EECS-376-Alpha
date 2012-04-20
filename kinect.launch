@@ -1,0 +1,39 @@
+<!---->
+<launch>
+
+	<!-- Kinect driver -->
+        <include file="$(find openni_launch)/launch/openni.launch" />
+
+
+	<!-- Simple image subscriber/publisher -->
+	<node pkg="kinect_alpha" type="kinect_alpha" name="kinect" output="screen" >	
+		<remap from="in_image" to="/camera/rgb/image_rect_color"/>
+<<<<<<< HEAD
+		<param name="rh" type="int" value="255"/>
+		<param name="rl" type="int" value="220"/>
+		<param name="gh" type="int" value="255"/>
+		<param name="gl" type="int" value="0"/>
+		<param name="bh" type="int" value="25"/>
+		<param name="bl" type="int" value="0"/>
+=======
+		<param name="hl" type="int" value="0"/>
+		<param name="hh" type="int" value="60"/>
+		<param name="sl" type="int" value="90"/>
+		<param name="sh" type="int" value="192"/>
+		<param name="vl" type="int" value="164"/>
+		<param name="vh" type="int" value="255"/>
+		<param name="dilationIterations" type="int" value="5"/>
+		<param name="sliceLength" type="int" value="5" />
+>>>>>>> d0643dd... made the strap detection a standalone function, added a launch parameter for the length of the slice dialation, added comments
+	</node>
+	<node pkg="kinect_alpha" type="main.py" name="kinect_py" />
+
+	
+	
+        <!-- Static transform from Harlie's base to the pan mount 
+        <node pkg="tf" type="in_image" name="kinect_static_tf_pub" respawn="true"
+         args="-0.00 0 1.5572 0.017453 0.1047198 -0.017453 base_link camera_link 100" />
+	-->
+	
+
+</launch>
