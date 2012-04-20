@@ -88,16 +88,16 @@ void allCB(const sensor_msgs::ImageConstPtr& image_msg,
 		return;
 	}
 	
-	ROS_INFO_STREAM(boost::format("Callback got an image in format %s, size %dx%d")
-		%cv_ptr->encoding %cv_ptr->image.size().width %cv_ptr->image.size().height );
+	//ROS_INFO_STREAM(boost::format("Callback got an image in format %s, size %dx%d")
+	//	%cv_ptr->encoding %cv_ptr->image.size().width %cv_ptr->image.size().height );
 
 	// Convert the image from ROS format to PCL format
 	PointCloudXYZRGB cloud;
 	pcl::fromROSMsg(*cloud_msg, cloud);
 
-	ROS_INFO_STREAM(boost::format("Cloud has size %dx%d. organized=%s")
-		%cloud.width %cloud.height %(cloud.isOrganized() ? "true" : "false") );
-
+	//ROS_INFO_STREAM(boost::format("Cloud has size %dx%d. organized=%s")
+	//	%cloud.width %cloud.height %(cloud.isOrganized() ? "true" : "false") );
+	
 	
 	geometry_msgs::Point new_goal_pt = findClosestCentroid(cloud, cv_ptr, cloud_msg->header.frame_id, cloud_msg->header.stamp);
 
@@ -186,8 +186,8 @@ geometry_msgs::Point findClosestCentroid(PointCloudXYZRGB &cloud, cv_bridge::CvI
   }
   
   std::cout << "Best point in base_link: " << best_point << std::endl;
-  //best_point = transformPoint(best_point, global_frame_, "base_link", stamp);
-  //std::cout << "Best point in map: " << best_point << std::endl;
+  best_point = transformPoint(best_point, global_frame_, robot_frame_, stamp);
+  std::cout << "Best point in map: " << best_point << std::endl;
 
   return best_point;
 }
@@ -230,14 +230,10 @@ void detectStrap(cv_bridge::CvImagePtr cv_ptr, cv::Mat &output)
 
 void putInBins(PointCloudXYZRGB &cloud, cv::Mat &input, std::vector<std::vector<geometry_msgs::Point> > &bins, string cloud_frame_id, ros::Time stamp)
 {
-<<<<<<< HEAD
-  std::cout << "In putInBins" << std::endl;
-=======
-
   //std::cout << "Running putInBins" << std::endl;
   //std::cout << "numBins: " << numBins << std::endl;
   //std::cout << "bins.size() " << bins.size() << std::endl;
->>>>>>> 4b06fb0dd5cffae838708da09f85103064a5eea6
+
   int colStep = floor(640/numBins);
   int rowStep = floor(480/numBins);
 
@@ -249,10 +245,24 @@ void putInBins(PointCloudXYZRGB &cloud, cv::Mat &input, std::vector<std::vector<
       {
 
 	pcl::PointXYZRGB pcl_pt = cloud.at(col, row);
+
+	// the Kinect assigns NaN values for depths it cannot determine
+	// NaN's always evaluate to false when checking if they equal something
+	// so if something doesn't equal itself, then it must be a NaN
+	// if it is NaN there is no sense even considering the point
+	// so simply run the next loop iteration
+	if(pcl_pt.x != pcl_pt.x || pcl_pt.y != pcl_pt.y || pcl_pt.z != pcl_pt.z)
+	{
+	  continue;
+	}
+	//Uncomment these print statements to help debug transform between kinect frame and robot frame
+	//std::cout << "Extracted pcl_pt (" << pcl_pt.x << "," << pcl_pt.y << "," << pcl_pt.z << ")" << std::endl;
 	geometry_msgs::Point geom_pt = transformPoint(pcl_pt, robot_frame_, cloud_frame_id, stamp);
+	//std::cout << "Transformed pcl_pt to (" << geom_pt.x << "," << geom_pt.y << "," << geom_pt.z << ")" << std::endl;
 	
 	if(geom_pt.z < zTolHigh && geom_pt.z > zTolLow)
 	{
+	  std::cout << "geom_pt is within z tolerance" << std::endl;
 	  // figure out which vector bin in the bins vector the point should go in
 	  // might want to make the bins based on x,y map space and not i,j camera space
 	  // but for the first draft proof of concept it should suffice
@@ -280,7 +290,6 @@ void putInBins(PointCloudXYZRGB &cloud, cv::Mat &input, std::vector<std::vector<
 
 geometry_msgs::Point transformPoint(pcl::PointXYZRGB pcl_pt, string target_frame, string cloud_frame_id, ros::Time stamp)
 {
-  std::cout << "In transformPoint pcl version" << std::endl;
   geometry_msgs::Point geom_pt;
 
   geom_pt.x = pcl_pt.x; 
@@ -309,14 +318,14 @@ geometry_msgs::Point transformPoint(pcl::PointXYZRGB pcl_pt, string target_frame
   return geom_pt;
 }
 
-geometry_msgs::Point transformPoint(geometry_msgs::Point input, string target_frame, string cloud_frame_id, ros::Time stamp)
+geometry_msgs::Point transformPoint(geometry_msgs::Point input, string target_frame, string source_frame, ros::Time stamp)
 {
-  std::cout << "In transformPoint geom version" << std::endl;
+  std::cout << "Transforming point (" << input.x << "," << input.y << "," << input.z << ")" << std::endl;
   geometry_msgs::Point geom_pt;
  // the TF package requires inputs to be in the form Stamped<sometype>
   tf::Stamped<tf::Point> geom_pt_tf, temp_pt_tf;
-  pointMsgToTF(geom_pt, geom_pt_tf);
-  geom_pt_tf.frame_id_ = cloud_frame_id;
+  pointMsgToTF(input, geom_pt_tf);
+  geom_pt_tf.frame_id_ = source_frame;
   geom_pt_tf.stamp_    = stamp;
 	
   try 
