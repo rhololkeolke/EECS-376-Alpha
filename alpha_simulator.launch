@@ -7,13 +7,37 @@
 <!--Include the simulator-->
 <include file="$(find cwru_sim_stage)/harlie_amcl_2ndfloor.launch" />
 
-<!--Launch our nodes-->
-<!--<node name="estopPublisher" pkg="velocity_profiler_alpha" type="estopPublisher" respawn="true" />-->
-<node name="laser_listener" pkg="look_ahead" type="look_ahead.py" respawn="true" /> 
-<node name="velocity_profiler" pkg="velocity_profiler_alpha" type="main.py" respawn="true"/>
-<node name="steering" pkg="steering_alpha" type="steering_example" respawn="true" />
-<!--<node name="pathpub" pkg="pathplanner_alpha" type="path_publisher" respawn="true" />-->
-<node name="pospub" pkg="pos_publisher_alpha" type="main" respawn="true" />--
+<!--Launch Team Alpha Nodes                                        
+<node name="laser_listener" pkg="look_ahead" type="look_ahead.py" respawn="true" />            
+<node name="velocity_profiler" pkg="velocity_profiler_alpha" type="main2.py" respawn="true"/>                            
+<node name="steering" pkg="steering_alpha" type="main.py" respawn="true" /> 
+<node name="pospub" pkg="pos_publisher_alpha" type="main" respawn="true" />-->
 
 
+<node name="costmap" pkg="costmap_alpha" type="main" respawn="true" output="screen">
+<rosparam file="$(find cwru_configs)/$(optenv jinx sim)/nav/costmap_common_params.yaml" command="load" ns="local_costmap" />
+<rosparam file="$(find cwru_configs)/$(optenv jinx sim)/nav/costmap_local_params.yaml" command="load" ns="local_costmap" />
+<rosparam file="$(find cwru_configs)/$(optenv jinx sim)/nav/costmap_local_params.yaml" command="load" ns="local_costmap"  />
+
+
+</node>
+
+
+
+
+<!-- Kinect Image Pub 
+<node pkg="kinect_alpha" type="kinect_alpha" name="kinect" output="screen" >	
+  <remap from="in_image" to="/camera/rgb/image_rect_color"/>
+	       <param name="hh" type="int" value="255"/>
+               <param name="hl" type="int" value="220"/>
+</node>
+-->
+
+<!--
+<node pkg="kinect_alpha" type="main.py" name="kinect_py" />
+-->
+
+
+
+	     
 </launch>

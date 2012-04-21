@@ -6,16 +6,17 @@
 
 <!--Include necessary premade launch files-->
 <include file="$(find cwru_nav)/start_amcl_2ndfloor.launch" />
-<include file="$(find openni_launch)/launch/openni.launch" />
+<!--<include file="$(find openni_launch)/launch/openni.launch" />-->
 <!--<include file="$(find cwru_semi_stable)/cwru_bringup_no_tele.launch" />-->
 <!--<include file="home/jinx/ROSCode/cwru-ros-pkg/cwru_semi_stable/cwru_bringup_no_tele.launch" />-->
 
-<!--Launch Team Alpha Nodes-->
-<!--<node name="laser_listener" pkg="look_ahead" type="look_ahead.py" respawn="true" />-->
+<!--Launch Team Alpha Nodes -->
+<node name="laser_listener" pkg="look_ahead" type="look_ahead.py" respawn="true" />
 <node name="velocity_profiler" pkg="velocity_profiler_alpha" type="main2.py" respawn="true"/>
 <node name="steering" pkg="steering_alpha" type="main.py" respawn="true" />
-<node name="pathpub" pkg="pathplanner_alpha" type="strap_follower.py" respawn="true" />
 <node name="pospub" pkg="pos_publisher_alpha" type="main" respawn="true" />
+
+
 
 
 <!-- Kinect Image Pub -->
@@ -24,12 +25,10 @@
 	       <param name="hh" type="int" value="255"/>
                <param name="hl" type="int" value="220"/>
 </node>
-<node pkg="kinect_alpha" type="main.py" name="kinect_py" />
-</node>
 
-	                  <!-- Static transform from Harlie's base to the pan mount 
-        <node pkg="tf" type="in_image" name="kinect_static_tf_pub" respawn="true"
-              args="-0.00 0 1.5572 0.017453 0.1047198 -0.017453 base_link camera_link 100" />
+<node pkg="kinect_alpha" type="main.py" name="kinect_py" />
+
+
 
 	     
 </launch>
