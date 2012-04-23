@@ -13,7 +13,7 @@ import numpy
 import heapq
 
 
-#A class that stores the x,y position of a node as well as its cost and heuristic and path cost
+#A class that stores the x,y position of a node as well as its path cost and heurisitc value
 class Node(object):
     def __init__(self,x,y,free):
         self.x  = x
@@ -36,17 +36,21 @@ class Node(object):
 
         def getParent(self):
             return parent
+
+        print "Initializing a node"
                     
 
 # A* Search algorithim which computes the optimal path  and returns it as a stack
 class Astar(object):
     def __init__(self):
         self.openList = []
-        heapq.heapify(openList)
+        heapq.heapify(self.openList)
         self.closedList = []
         self.nodes = []
         self.gridHeight = 84 + 6 #total number of Y spaces on the sim map grid
         self.gridWidth = 60 + 18 #total number of X spaces on the sim map grid
+
+        print "Initializing the an a star object"
 
         
         #initialize a grid of corordinates 
@@ -66,7 +70,7 @@ class Astar(object):
                     else:                                                           
                         free = True
                         self.nodes.append(Node(x,y,free))
-            #the start grid is the first node and the last is the end
+
             self.start = (0,0) #(9,15)?
             self.goal= (78,90) #(1,25)?
 
@@ -96,7 +100,7 @@ class Astar(object):
         #@param the Node
         #@type Node 
         #@return the neighboors of a node
-        #@return a list of Nodes
+        #@type a list of Nodes
         def getNeighbors(self,Node):
             nodes = []
             
@@ -128,6 +132,8 @@ class Astar(object):
             while node.parent is not self.start:
                 node = node.parent
                 pathList.append(node)
+                
+            print pathList
             return pathList
                 
                 
@@ -166,9 +172,13 @@ class Astar(object):
                 
             
 def main():
-    rospy.init_node('n')  #initialize node with the name n                                                                                          
+ #   rospy.init_node('n')  #initialize node with the name n                                                                                          
 #    rospy.Subscriber("base_scan",LaserScan,laserCallback) #node subscribes to base_scan topic which is of type LaserScan which invokes the laserCallback with the msg as first arg                                                                                                                                          
  #   rospy.Subscriber("path_seg", PathSegmentMsg, pathSegCallback) #subscribe to path_seg topic of type PathSegmentMsg using PathSegCallback                        
-    astart
-    rospy.spin() 
 
+#    rospy.spin() 
+    Astar()
+    print "In the main function"
+
+if __name__ == '__main__':
+    main()
