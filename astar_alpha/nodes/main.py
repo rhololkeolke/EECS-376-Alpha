@@ -1,25 +1,38 @@
 #!/usr/bin/env python                                                                                                                                                 
 
+'''
+This program uses the A* search algorithim to find the optimal path on a grid map given a starting point and an ending point.
+Each node of the grid is specified by a Node class which stores the x,y position, and cost to move from one node to another node.
+
+The Astar class handles the start position and goal for a search as well as computing the heuristic function for a given node.
+The node is published as an array of points
+
+@author EECS-376-Alpha-Eddie Massey III
+
+'''
+
 #ros imports
 import roslib; roslib.load_manifest('astar_alpha')
 import rospy
 #ros package imports
 
-
 #mathematics
 import math
 import numpy
 #data structures
-import heapq
+import Queue
+
+#methods for comparison
+from types import *
 
 
-#A class that stores the x,y position of a node as well as its path cost and heurisitc value
+#A class that stores the x,y position of a node as well as its path cost and parent node
 class Node(object):
     def __init__(self,x,y,free):
-        self.x  = x
+        self.x = x
         self.y = y
         self.g = 0
-        self.h = math.sqrt(self.x)
+        self.f = 0
         self.parent = None
 
         def getX(self):
@@ -31,58 +44,102 @@ class Node(object):
         def getG(self):
             return self.g
 
-        def getH(self):
-            return self.h
-
         def getParent(self):
             return parent
 
-        print "Initializing a node"
-                    
+    #Overides the comparable function 
+    #Allows the comparison of a node to tuples, lists and other nodes
+    #@param a node
+    #@type Node
+    #@param a node or (x,y) tuple or list of node position
+    #@type Node,tupile, or list
+    def __cmp__(self,node,other):
 
+        if type(other) is ListType or type(other) is TupleType:
+            return node.getX() is other[0] and node.getY() is other[1]
+
+        elif type(other) is Node:
+            return node.getX() is other.getX() and node.y is other.y 
+
+                    
 # A* Search algorithim which computes the optimal path  and returns it as a stack
+#TODO: Pass Data from the Costmap arrays into the Open List and closed list, this function assumes they already exist
 class Astar(object):
-    def __init__(self):
-        self.openList = []
-        heapq.heapify(self.openList)
-        self.closedList = []
-        self.nodes = []
+    def __init__(self,ol,cl):
+
+        #open and closed list arrays
+        self.ol = ol
+        self.cl = cl
+
+        #open and closed list dictionaries
+        self.oDict = {}
+        self.cDict = {}        
+
+        #Create an Open List priority Queue, 
+        #items should be stored as (priority_number,data)
+        openQ = Queue.PriorityQueue(maxsize=0)
+         
+        self.nodeGrid = [] #Array that will hold each node
         self.gridHeight = 84 + 6 #total number of Y spaces on the sim map grid
         self.gridWidth = 60 + 18 #total number of X spaces on the sim map grid
 
-        print "Initializing the an a star object"
-
         
+        #Return a node based on x,y coordinates found on stackoverflow
+        #@param x coordinate
+        #@type int
+        #@param y coordinate
+        #@type int
+        #@return the node
+        #@type Node
+        def getNode(self,x,y):
+             return self.nodeGrid[x * self.gridHeight + y]            
+
         #initialize a grid of corordinates 
         #@param None
         #@return None
         def grid(self):
-            closedList = ((0, 5), (1, 0), (1, 1), (1, 5), (2, 3)
-           (3, 1), (3, 2), (3, 5), (4, 1), (4, 4), (5, 1))  #Mock closed list
-
             
             #Create a 2d grid array of nodes setting open nodes and closed nodes
+            #TODO MAKE LIST A DICTIONARY
             for x in range(self.gridWidth):
                 for y in range(self.gridHeight):
-                    if(x,y) in walls:
+                    if(x,y) in closedList:
                         free = False
-                        self.nodes.append(Node(x,y,free))
+                        self.nodeGrid.append(Node(x,y,free))
                     else:                                                           
                         free = True
-                        self.nodes.append(Node(x,y,free))
+                        openListQ[x,y] = Node(x,y,free)
+                        self.nodeGrid.append(Node(x,y,free))
 
-            self.start = (0,0) #(9,15)?
-            self.goal= (78,90) #(1,25)?
+            self.start = getNode(0,0) #(9,15)?
+            self.goal= getNode(78,90) #(1,25)?
 
+        #Convert the open and closed lists into dictionaries
+        def convertToDict(self):
+
+            for x in range(self.gridWidth):
+                for y in range(self.gridHeight):
+                    if getNode(x,y).free is True:
+                        self.oDict[(x,y)] = getNode(x,y)
+                    
+                    elif getNode(x,y).free is False:
+                        self.cDict[(x,y)] = getNode(x,y)
+        
+        #Convert to the Open List to Queue
+        def convertToQueue(self):
+            for x in range(len(self.ol)):
+                self.openQ(self.f,self.ol[x])
+                
+
+                    
         #Compute the heuristic value of a cell in this case the Euclidean distance between the current node and the goal node
         #@param the current node
         #@type Node
         #@return the heuristic value
         #@type float
         def heuristic(self,node):        
-            return math.sqrt(math.pow(self.goal(0) - node.getX(),2.0) + math.pow(self.goal(1) - node.getY(),2.0))
+            return math.sqrt(math.pow(self.goal[0] - node.getX(),2.0) + math.pow(self.goal[1] - node.getY(),2.0))
 
-        
         #A function to update the state of a Node
         #@param the current node being checked
         #@type Node
@@ -104,18 +161,20 @@ class Astar(object):
         def getNeighbors(self,Node):
             nodes = []
             
-            #if the cell is in the domain of the grid append the Node directly to the left to the array of nodes
+            #if the cell is in the domain of the grid append the Node to the list of nodes
+
+            #append the node to the left
             if(node.getX < self.gridWidth - 1):
                 nodes.append(Node(x - 1, y))
             
-            #append the cell to the right
+            #append the node to the right
             if(node.getX < self.gridWidth - 1):
                 nodes.append(Node(x + 1, y))
 
-            #append the cell below
+            #append the node below
             if(node.getY < self.gridHeight - 1):
                 nodes.append(Node(x, y - 1))
-            #append the cell above
+            #append the node above
             if(node.getY < self.gridWidth - 1):
                 nodes.append(Node(x, y + 1))
 
@@ -137,18 +196,18 @@ class Astar(object):
             return pathList
                 
                 
-                
         #Run through the a* search algorithim and find the best path
         def search(self):
-            #add starting cell to the heapq open list
-            heapq.push(self.op(self.start.f, self.start))
 
-            while len(self.op):
+            #add starting node to the heapq open list Q
+            self.openQ.put(self.f,self.start)
+
+            for item in self.oDict:
                 #pop the node from the p queue
-                node = heapq.heapop(self.op)
+                node = openQ.get()
             
                 #add the current node to the closed list
-                self.cl.append(node)
+                self.cDict((node.getX(),node.getY()) ,node)
             
                 #if the ending node is found
                 if node is self.goal:
@@ -162,12 +221,13 @@ class Astar(object):
                 for n in adjNodes:
                     #if the node is free space and is not in the closed list
                     #check if the adj node should be added to list
-                    if n.free and n not in self.closedList:
+                    if n.free and n not in self.cDict:
                         if n.g > node.g + 1:
                             self.updateNode(node,n)
                     else:
                         self.updateNode(node,n)
-                        heap.heapush(self.op(c.f,c))
+                        self.OpenQ.put(n.f,n)
+
     
                 
             
@@ -176,9 +236,9 @@ def main():
 #    rospy.Subscriber("base_scan",LaserScan,laserCallback) #node subscribes to base_scan topic which is of type LaserScan which invokes the laserCallback with the msg as first arg                                                                                                                                          
  #   rospy.Subscriber("path_seg", PathSegmentMsg, pathSegCallback) #subscribe to path_seg topic of type PathSegmentMsg using PathSegCallback                        
 
-#    rospy.spin() 
-    Astar()
-    print "In the main function"
+#   rospy.spin() 
+    a = Astar((0,0),(5,0))
+
 
 if __name__ == '__main__':
     main()
