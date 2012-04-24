@@ -1,0 +1,17 @@
+<package>
+  <description brief="costmap_alpha">
+
+     costmap_alpha
+
+  </description>
+  <author>mark</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/costmap_alpha</url>
+  <depend package="cwru_base"/>
+  <depend package="roscpp"/>
+  <depend package="msg_alpha"/>
+
+</package>
+
+
