@@ -1,6 +1,6 @@
 global_frame: map
 robot_base_frame: base_link
-update_frequency: 5.0
+update_frequency: 1.0
 publish_frequency: 1.0
 
 publish_voxel_map: true
@@ -20,14 +20,15 @@ unknown_threshold: 10
 mark_threshold: 0
 
 transform_tolerance: 0.3
-obstacle_range: 2.5
+obstacle_range: 5.0
 max_obstacle_height: 2.0
-raytrace_range: 3.0
-footprint: [[-0.325, -0.325], [-0.325, 0.325], [0.325, 0.325], [0.46, 0.0], [0.325, -0.325]]
+min_obstacle_height: 0.0
+raytrace_range: 6.0
+footprint: [[0.3048, 0.3048], [0.3048, -0.3048], [-0.711, -0.3048], [-0.711, 0.3048]]
 
 footprint_padding: 0.01
-inflation_radius: 0.55
-cost_scaling_factor: 10.0
+inflation_radius: 1.0
+cost_scaling_factor: 11.8
 lethal_cost_threshold: 100
 observation_sources: kinect lidar
 kinect: {sensor_frame: base_link, data_type: PointCloud2, topic: obsCloud, marking: true, clearing: true}
