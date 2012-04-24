@@ -20,7 +20,7 @@ int main(int argc, char** argv){
 	costmap_2d::Costmap2DPublisher(n, 1, "map");
 
 	//create a timer for our silly print callback that will call it once a second
-	ros::Timer timer = n.createTimer(ros::Duration(1.0), boost::bind(doSomething, _1, boost::ref(costmap_ros)));
+//	ros::Timer timer = n.createTimer(ros::Duration(1.0), boost::bind(doSomething, _1, boost::ref(costmap_ros)));
 
 	//start processing data
 	ros::spin();

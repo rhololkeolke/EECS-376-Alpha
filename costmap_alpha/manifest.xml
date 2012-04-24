@@ -11,6 +11,7 @@
   <depend package="cwru_base"/>
   <depend package="roscpp"/>
   <depend package="msg_alpha"/>
+  <depend package="costmap_2d"/>
 
 </package>
 
