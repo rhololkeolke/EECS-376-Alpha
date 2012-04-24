@@ -10,10 +10,19 @@
   <url>http://ros.org/wiki/kinect_alpha</url>
   <depend package="rospy"/>
   <depend package="roscpp"/>
+  <depend package="sensor_msgs"/>
+
+  <rosdep name="opencv2.3"/>
+  <depend package="cv_bridge"/>
+
+  <depend package="msg_alpha"/>
+
   <depend package="image_transport"/>
   <depend package="opencv2"/>
-  <depend package="cv_bridge"/>
-  <depend package="msg_alpha"/>
+
+
+  <depend package="pcl"/>
+  <depend package="pcl_ros"/>
 
 </package>
 
