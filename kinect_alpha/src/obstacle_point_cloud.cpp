@@ -245,6 +245,24 @@ int main(int argc, char** argv)
   // Point Cloud publisher
   obsCloudPub = nh.advertise<sensor_msgs::PointCloud2> ("obsCloud",1);
 
+  // Subscribe to an image, cloud, and camera info.
+  // Note the use of image_transport::SubscriberFilter and message_filters::Subscriber.  These allow for synchronization of the topics.
+  image_transport::SubscriberFilter                    image_sub   (it, "camera/rgb/image_rect_color", 1);
+  message_filters::Subscriber<sensor_msgs::PointCloud2>        cloud_sub   (nh, "camera/depth_registered/points", 1);
+  message_filters::Subscriber<sensor_msgs::CameraInfo> cam_info_sub(nh, "camera/rgb/camera_info", 1);
+	
+  // This sync policy will invoke a callback if it receives one of each message with matching timestamps
+  typedef message_filters::sync_policies::ApproximateTime <sensor_msgs::Image, sensor_msgs::PointCloud2, sensor_msgs::CameraInfo> MySyncPolicy;
+	
+  // Synchronize the three topics.  MySyncPolicy(10) tells it to maintain a buffer of 10 messages.
+  message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), image_sub, cloud_sub, cam_info_sub);
+	
+  // Hook the callback into the sync policy
+  sync.registerCallback( boost::bind(&allCB, _1, _2, _3) );
+
+
+  ROS_INFO("Done initializing, going into spin mode.");
+
   while(ros::ok())
   {
     ros::spinOnce();
