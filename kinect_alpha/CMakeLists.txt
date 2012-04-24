@@ -30,4 +30,6 @@ rosbuild_genmsg()
 #rosbuild_add_executable(example examples/example.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
 #target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
-rosbuild_add_executable(strap_follower src/strap_follower.cpp)
+
+#rosbuild_add_executable(strap_follower src/strap_follower.cpp)
+rosbuild_add_executable(obstacle_point_cloud src/obstacle_point_cloud.cpp)
