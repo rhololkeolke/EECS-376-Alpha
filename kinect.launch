@@ -13,6 +13,9 @@
 
 	<!-- Kinect driver -->
         <include file="$(find openni_launch)/launch/openni.launch" />
+        
+        <-- Costmap launch -->
+        <include file="costmap_alpha/costmap.launch" />
 
 
 	<!-- Simple image subscriber/publisher -->
