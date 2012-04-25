@@ -191,11 +191,11 @@ def computeLineTrajectory(seg,v_i,v_f):
     # with the maximum velocity.  If v_f >= maximum velocity then
     # sDecel >= 1
     # Otherwise sDecel < 1
-    print "seg.max_speeds.linear.x^2: %f" % (pow(seg.max_speeds.linear.x,2))
-    print "seg.min_speeds.linear.x^2: %f" % (pow(seg.min_speeds.linear.x,2))
-    print "v_f^2: %f" % (pow(v_f,2))
-    print "seg.decel_limit: %f" % seg.decel_limit
-    print "seg.seg_length: %f" % seg.seg_length
+    # print "seg.max_speeds.linear.x^2: %f" % (pow(seg.max_speeds.linear.x,2))
+    # print "seg.min_speeds.linear.x^2: %f" % (pow(seg.min_speeds.linear.x,2))
+    # print "v_f^2: %f" % (pow(v_f,2))
+    # print "seg.decel_limit: %f" % seg.decel_limit
+    # print "seg.seg_length: %f" % seg.seg_length
     if(v_f < seg.min_speeds.linear.x):
         sDecel = 1-abs((pow(seg.max_speeds.linear.x,2)-pow(seg.min_speeds.linear.x,2))/(2*seg.decel_limit*seg.seg_length))
     else:
@@ -258,9 +258,9 @@ def computeLineTrajectory(seg,v_i,v_f):
         if(sLeft > 0.0):
             if(sDecel < 1.0):
                 decelSeg = TrajSeg(TrajSeg.DECEL,1.0,seg.max_speeds.linear.x,max(v_f,seg.min_speeds.linear.x),seg.seg_number)
-                print "sDecel: %f" % sDecel
+                # print "sDecel: %f" % sDecel
                 sLeft -= 1-sDecel
-                print "sLeft: %f" % sLeft
+                # print "sLeft: %f" % sLeft
 
         
         if(sLeft > 0.0): # there is anything left in s then that is how long to do constant velocity for
@@ -270,7 +270,10 @@ def computeLineTrajectory(seg,v_i,v_f):
 
         if(decelSeg is not None): # if there was a decel segment defined then add it to the vTrajSeg list
             vTrajSegs.append(decelSeg)
-                
+
+    print "sAccel: %f" % sAccel
+    print "sConst: %f" % (sLeft + sAccel)
+    print "sDecel: %f" % sDecel
     return (vTrajSegs, wTrajSegs, max(v_f,seg.min_speeds.linear.x))
 
 def computeArcTrajectory(seg,v_i,v_f,w_i,w_f):
@@ -416,6 +419,10 @@ def computeSpinTrajectory(seg,w_i,w_f):
         temp = w_f_orig
     else:
         temp = seg.min_speeds.angular.z
+
+    print "sAccel: %f" % sAccel
+    print "sConst: %f" % (sLeft + sAccel)
+    print "sDecel: %f" % sDecel
     return (vTrajSegs, wTrajSegs, temp)
         
 def getDesiredVelocity(vTrajSeg,wTrajSeg):
@@ -429,7 +436,7 @@ def getDesiredVelocity(vTrajSeg,wTrajSeg):
     global currSeg
 
 
-    print "segDistDone: %f" % (currSeg.segDistDone)
+    # print "segDistDone: %f" % (currSeg.segDistDone)
     if(vTrajSeg.segType == TrajSeg.ACCEL):
         #print "Using velocity acceleration segment"
         vCmd = getDesiredVelAccel(vTrajSeg, currSeg.segDistDone)
@@ -534,6 +541,9 @@ def getDesiredVelConst(seg, segDistDone, cmdType=0):
 
 def getDesiredVelDecel(seg, segDistDone, cmdType=0):
     pathSeg = pathSegments.get(seg.segNumber)
+    # note this will crash if the segments were not added to the dictionary correctly
+    # however, this is the desired response because otherwise the robot would just
+    # sit in place forever
     a_max = pathSeg.accel_limit
     d_max = pathSeg.decel_limit
     if(cmdType == 1):
@@ -572,6 +582,12 @@ def getDesiredVelDecel(seg, segDistDone, cmdType=0):
                 vCmd = vScheduled
     else:
         vCmd = vScheduled
+
+    # prevents the robot from stopping before a segment is complete
+    # if the robot stopped early it would get stuck on a segment and never finish
+    if(abs(vCmd) <= 0 and segDistDone < 1.0):
+        vCmd = cmp(vCmd,0)*.05 # the .05 should be adjusted
+
     return vCmd
 
 def update():

@@ -75,7 +75,7 @@ def pathListCallback(pathList):
 
     for seg in pathList.segments:
         if(seg.seg_number > lastSegComplete): # it may not the smallest, but it is an unfinished segment
-            if(seg.seg_number < minSegNumber): # new minimum
+            if(seg.seg_number <= minSegNumber): # new minimum
                 minSegNumber = seg.seg_number
                 potentialSeg = seg
 
@@ -178,7 +178,7 @@ def main():
             cmd_vel = TwistMsg()
             cmd_vel.angular.z = -Kd*offset + Ktheta*dTheta
             cmd_vel.linear.x = desVel.linear.x
-            
+
             cmdPub.publish(cmd_vel)
             naptime.sleep()
             continue
