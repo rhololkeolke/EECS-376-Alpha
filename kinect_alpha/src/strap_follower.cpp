@@ -281,27 +281,8 @@ geometry_msgs::Point transformPoint(pcl::PointXYZRGB pcl_pt, string target_frame
   geom_pt.x = pcl_pt.x; 
   geom_pt.y = pcl_pt.y; 
   geom_pt.z = pcl_pt.z;
-	
-  // the TF package requires inputs to be in the form Stamped<sometype>
-  tf::Stamped<tf::Point> geom_pt_tf, temp_pt_tf;
-  pointMsgToTF(geom_pt, geom_pt_tf);
-  geom_pt_tf.frame_id_ = cloud_frame_id;
-  geom_pt_tf.stamp_    = stamp;
-	
-  try 
-  {
-    tfl_->transformPoint(target_frame, geom_pt_tf, temp_pt_tf);
-  }
-  catch(tf::TransformException& ex) 
-  {
-    ROS_ERROR_STREAM(boost::format("Failed to transform point pose from \"%s\" to \"%s\" frame: %s")
-		                   %geom_pt_tf.frame_id_ %target_frame %ex.what());
-    geometry_msgs::Point empty_pt;
-    return empty_pt;
-  }
-  tf::pointTFToMsg(temp_pt_tf, geom_pt);
-	
-  return geom_pt;
+  
+  return transformPoint(geom_pt,target_frame, cloud_frame_id, stamp);
 }
 
 geometry_msgs::Point transformPoint(geometry_msgs::Point input, string target_frame, string source_frame, ros::Time stamp)
