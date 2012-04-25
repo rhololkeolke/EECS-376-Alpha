@@ -466,6 +466,7 @@ def getDesiredVelocity(vTrajSeg,wTrajSeg):
         
 def getDesiredVelAccel(seg, segDistDone, cmdType=0):
     pathSeg = pathSegments.get(seg.segNumber)
+
     a_max = pathSeg.accel_limit
     d_max = pathSeg.decel_limit
     if(cmdType == 1):
@@ -664,6 +665,72 @@ def publishSegStatus(segStatusPub,abort=False):
         
     segStatusPub.publish(segStat)
     
+def stopForObs():
+    '''
+    Responsible for stopping the robot before an obstacle collision
+    '''
+    
+    # calculate the stopping acceleration
+    # this is allowed to override the segment constraints, because
+    # its more important to stop and not crash than it is to 
+    # follow the speed limit
+
+    print "Obstacle detected!"
+    dt = 1.0/RATE
+    decel_rate = -lastVCmd/(2*(obs.distance-.2))
+
+    naptime = rospy.Rate(RATE)
+
+    des_vel = TwistMsg()
+        
+    if(lastVCmd > 0):
+        v_test = lastVCmd + decel_rate*dt
+        des_vel.linear.x = max(v_test,0.0) # this is assuming that velocity is always positive
+
+    # ensure the robot will stop before crashing
+    if(obs.distance < .25):
+        des_vel.linear.x = 0
+        
+    return des_vel;
+
+def obsWithinPathSeg():
+    '''
+    Returns true if the obstacle distance is within the path segment
+    '''
+
+    # if no obstacle is detected then this method is done
+    if(not obs.exists):
+        return False
+
+    if(currSeg.pathSeg is None):
+        return False
+
+    # only detect obstacles for lines
+    # this is currently all look ahead supports
+    if(currSeg.pathSeg.seg_type != 1):
+        return False
+
+    # if the segment length is longer than the distance to the obstacle + .2
+    # then the obstacle is within the current segment so return True
+    if(currSeg.segDistDone*currSeg.pathSeg.seg_length >= obs.distance + .2):
+        return True
+
+    return False
+
+def abortPath():
+    '''
+    Reinitialize the node
+    '''
+    global pathSegments, vTrajectory, wTrajectory, currSeg, lastSegNumber
+
+    # get rid of any segments and trajectory information
+    pathSegments.clear()
+    vTrajectory.clear()
+    wTrajectory.clear()
+    currSeg.pathSeg = None
+
+    # reset the segment number count
+    lastSegNumber = 0
 
 def main():
     global naptime
@@ -678,6 +745,13 @@ def main():
     rospy.Subscriber("cmd_vel", TwistMsg, velCmdCallback) # 
     rospy.Subscriber("path", PathListMsg, pathListCallback)
     rospy.Subscriber("map_pos", PoseStampedMsg, poseCallback)
+
+    abortTime = None # will be set to the time an obstacle is detected
+
+    if rospy.has_param('waitTime'):
+        waitTime = rospy.Duration(rospy.get_param('waitTime'))
+    else:
+        waitTime = rospy.Duration(3.0)
     
     print "Entering main loop"
     
@@ -689,9 +763,35 @@ def main():
         last_vel.angular.z = lastWCmd
         if(currSeg.pathSeg is not None):
             currSeg.updateState(last_vel,position,State.getYaw(orientation))
+
         # check if there are segments to execute
         if(len(vTrajectory) != 0 or len(wTrajectory) != 0): # Note: Either both or neither should have 0 elements
-            des_vel = getDesiredVelocity(vTrajectory[0],wTrajectory[0])
+            # check for obstacles
+            if(obsWithinPathSeg()):
+                # set the timer if necessary
+                if(abortTime is None):
+                    abortTime = rospy.Time.now()
+                else:
+                    if(rospy.Time.now() - abortTime > waitTime):
+                        # time to abort
+                        abortTime = None # reset the time
+                        
+                        # this method will reset anything
+                        # that needs to be reset
+                        abortPath()
+
+                        # make sure the robot is stopped
+                        desVelPub.publish(TwistMsg())
+                        
+                        # publish the abort flag
+                        publishSegStatus(segStatusPub,abort=False)
+                        naptime.sleep()
+                        continue
+       
+                des_vel = stopForObs()
+            else:
+                abortTime = None # make sure that the abortTime gets reset
+                des_vel = getDesiredVelocity(vTrajectory[0],wTrajectory[0])
         else:
             des_vel = TwistMsg() # initialized to 0's by default
         desVelPub.publish(des_vel) # publish either the scheduled commands or 0's
