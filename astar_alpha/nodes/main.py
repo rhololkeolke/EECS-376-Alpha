@@ -39,21 +39,26 @@ class Node(object):
         self.f = 0
         self.parent = None
 
-
     def getX(self):
         return self.x
-        
+     
     def getY(self):
         return self.y
-
+    
     def getFree(self):
         return self.free
 
     def getG(self):
         return self.g
-
+    
     def getParent(self):
         return parent
+    
+        
+
+        
+
+
 
     #Overides the comparable function 
     #Allows the comparison of a node to tuples, lists and other nodes
@@ -70,20 +75,22 @@ class Node(object):
             return node.getX() is other.getX() and node.y is other.y 
 
                     
-# A* Search algorithim which computes the optimal path  and returns it as a stack
-#TODO: Pass Data from the Costmap arrays into the Open List and closed list, this function assumes they already exist
+# A* Search algorithim which computes the optimal path based on a list of closed points
+#TODO: Pass Data from the Costmap arrays into closed list, this function assumes they already exist
 class Astar(object):
-    def __init__(self,ol,cl):
+    def __init__(self,cl):
 
-        #open and closed list arrays
-        self.ol = ol
-        self.cl = cl
+        self.cl = cl #closed list
+        self.cDict = {} #closed list dictionary
+        self.convertToDict() #convert closed list into dictionary
+        
+        self.completeDict = {} #dictionary storing all nodes for getNode() function
 
         #open and closed list dictionaries
         self.oDict = {}
-        self.cDict = {}        
 
-        self.convertToDict()
+
+
 
         #Create an Open List priority Queue, 
         #items should be stored as (data,priority_number)
@@ -113,23 +120,25 @@ class Astar(object):
             for y in range(self.gridHeight):
                 if(x,y) in self.cDict:
                     free = False
-                    self.nodeGrid.append(Node(x,y,free))
+                    node = Node(x,y,free)
+                    self.nodeGrid.append(node)
+                    self.completeDict[(x,y)] = node
                 else:                                                           
                     free = True
-                    self.oDict[x,y] = Node(x,y,free)
-                    self.nodeGrid.append(Node(x,y,free))
+                    node = Node(x,y,free)
+                    self.nodeGrid.append(node)
+                    self.completeDict[(x,y)] = node
+
+                    print 
 
         print "Grid Initialization Complete"
 
 
-    #Convert the open and closed lists into dictionaries
+    #A function to convert the closed list into a dictionary.
     def convertToDict(self):
-        print "Converting Dictionaries"
+        print "Converting Closed List into A Dictionary"
 
          #Add each open and closed list to a dictionary with the (x,y) coord as the key and the Node at that (x,y) as the value
-        for coord in self.ol:
-            self.oDict[coord] = Node(coord[0],coord[1],free=True)
-            
         for coord in self.cl:
             self.cDict[coord] = Node(coord[0],coord[1],free=False)
 
@@ -137,17 +146,6 @@ class Astar(object):
         print "Dictionary Conversion Completed"
 
   
-
-
-    #Convert to the Open List to Queue
-    def convertToQueue(self):
-        print "Doing Queue Conversion"
-        
-        for x in range(len(self.ol)):
-            self.openQ(self.f,self.ol[x])
-
-        print "Finished with Queue Conversion"
-
     #Return a node based on x,y coordinates 
     #@param x coordinate
     #@type int
@@ -155,27 +153,14 @@ class Astar(object):
     #@type int
     #@return the node
     #@type Node
-    #TODO: FIND A FASTER WAY TO RETURN A NODE
     def getNode(self,x,y):
 
-        tup = (x,y)
-        print "Getting the node: %s" % str(tup)        
-        if (x,y) in self.oDict:
-
-            return self.oDict[(x,y)]        
-
-        elif (x,y) in self.cDict:
-            
-            return self.cDict[(x,y)]
-
+        if (x,y) in self.completeDict:
+            return self.completeDict[(x,y)]
         else:
-            print "The %s is not in the open list or closed list" % str(tup)
-
-
-
-        print "Got the node"
-
-
+            print "Node does not exist"
+        
+        
     #Compute the heuristic value of a cell in this case the Euclidean distance between the current node and the goal node
     #@param the current node
     #@type Node
@@ -188,8 +173,6 @@ class Astar(object):
         return math.sqrt(math.pow(self.goal.getX() - node.getX(),2.0) + math.pow(self.goal.getY() - node.getY(),2.0))
 
 
-
-
     #A function to update the state of a Node
     #@param the current node being checked
     #@type Node
@@ -200,14 +183,10 @@ class Astar(object):
         
         print "Updating a Node's state"
 
-#        adj.g = node.g + 1.0
+        adj.g = node.g + 1.0
         adj.h = self.heuristic(adj)
-
         adj.parent = node
-
         adj.f = adj.g + adj.h
-
-
         print "State Updated"
  
         
@@ -222,7 +201,7 @@ class Astar(object):
         print "Finding Neighboors of: %s" % str(tup)
 
         nodes = []
-        
+         
         #if the cell is in the domain of the grid append the Node to the list of nodes
         #append the node to the left
         if(node.getX() < self.gridWidth - 1):
@@ -251,6 +230,40 @@ class Astar(object):
             if type(node) is not NoneType:
                 nodes.append(node)
 
+
+        #append the lower left diagnol
+
+        if node.getX() < self.gridWidth - 1 and node.getY() < self.gridHeight -1:
+
+            node = self.getNode(node.getX() -1 , node.getY() - 1)
+
+            if type(node) is not NoneType:
+                   nodes.append(node)
+
+        #append the lower right
+        if node.getX() < self.gridWidth - 1 and node.getY() < self.gridHeight -1:
+            
+            node = self.getNode(node.getX() + 1, node.getY() - 1)
+
+            if type(node) is not NoneType:
+                nodes.append(node)
+
+        #upper left
+        if node.getX() < self.gridWidth - 1 and node.getY() < self.gridHeight -1:
+            
+            node = self.getNode(node.getX() -1 , node.getY() + 1)
+            
+            if type(node) is not NoneType:
+                nodes.append(node)
+
+        #upper right
+        if node.getX() < self.gridWidth - 1 and node.getY() < self.gridHeight - 1:
+            
+            node = self.getNode(node.getX() + 1,node.getY() + 1)
+
+            
+            
+
         print "Got the neighboors"
         
         for n in nodes:
@@ -259,6 +272,72 @@ class Astar(object):
 
         return nodes
         
+                
+                
+    #Run through the a* search algorithim and find the best path
+    def search(self):
+
+        print "Starting a Search"
+
+        #add starting node to the heapq open list Q
+        self.openQ.put(self.start,self.start.f)
+        
+        while(range(len(self.openQ))):
+            
+            #pop the node from the p queue
+            node = self.openQ.get()
+            print "Checking %s: " % str((node.getX(),node.getY()))
+            
+
+            #add the current node to the closed list
+            self.cDict[(node.getX(),node.getY())] = node
+            
+            
+            #if the ending node is found
+            if node is self.goal:
+                print "I think I found the goal"
+                self.getPath()
+                break
+
+            
+            
+            
+            
+            #get the adjacent nodes for each node
+            adjNodes = self.getNeighboors(node)
+            print len(adjNodes)
+            
+
+            #check each adjacent node 
+            for n in adjNodes:
+                print "Checking each adjacent node of %s:" % str((node.getX(),node.getY()))
+                
+                #if the node is in the closed dictionary ignore it
+                if (n.getX(),n.getY()) in cDict:
+                    pass
+                
+                #if the node is not in the open dictionary add it to the open dictionary and open queue
+                #update the costs of the node
+                if ((n.getX(),n.getY())) not in oDict:
+
+                    
+                    self.openQ.put_nowait((n,n.f)) 
+                    self.oDict[(n.getX(),n.getY())] = n
+                    self.updateNode(n)
+
+                #if the node is already in the open list see if there is a better path    
+                if((n.getX(),n.getY())) in oDict:
+                    
+                    #if the adjacent node has a lower cost value then change its parent to the current node
+                    if n.getG() < node.getG():
+                        
+                        self.upDateNode(n)
+                        n.parent = node
+
+                                                                 
+        print "Closing for each loop."
+
+
     #A function to return the path list based on the A* search algorithim
     #@param node 
     #@return the path
@@ -276,67 +355,7 @@ class Astar(object):
             
         print pathList
         return pathList
-                
-                
-    #Run through the a* search algorithim and find the best path
-    def search(self):
 
-        print "Starting a Search"
-
-        #add starting node to the heapq open list Q
-        self.openQ.put(self.start,self.start.f)
-        
-        for item in self.oDict.items():
-            
-            #pop the node from the p queue
-            node = self.openQ.get()
-            
-
-            #add the current node to the closed list
-            self.cDict[(node.getX(),node.getY())] = node
-            print "Checking Node"
-            print node.getX() 
-            print node.getY()
-            
-            #if the ending node is found
-            if node is self.goal:
-                print "I think I found the goal"
-                self.getPath()
-                break
-            
-            
-            
-            #get the adjacent nodes for each node
-            adjNodes = self.getNeighboors(node)
-            print len(adjNodes)
-            
-            #check each adjacent node 
-            for n in adjNodes:
-                print "Inside the adjacent Nodes loop of self.search"
-                
-                #update the cost 
-                n.g = node.g + 1
-                
-                #if the node is free space and is not in the closed list
-                #check if the adj node should be added to list
-                
-                if n.getFree() is True and (n.getX(),n.getY())  not in self.cDict:
-                    
-                    print '%s  is free and not in the closed list' % str((n.getX(),n.getY()))
-                    if (n.getX(),n.getY() in self.oDict):
-                                             
-                        if n.getG() is node.getG() + 1:
-                            print "Yea, I did determine that n.g > node.g + 1"
-                            self.updateNode(node,n)
-
-                        else:
-                            print "How am I supposed to update anything when g = g?"
-                    else:
-                        print "Neighboor wasn't free"    
-                        self.updateNode(node,n)
-                        self.openQ.put(n,n.f)
-
-        print "closing for each loop"
 
                         
 #Generate a bunch of random x,y coordinates)
@@ -385,10 +404,9 @@ def main():
 
     #Initialize Test Data
     olCl = test()
-    ol = olCl[0] #open list
     cl = olCl[1] #closed list
  
-    a = Astar(ol,cl)
+    a = Astar(cl)
 
 #    n = Node(0,0,free=True)
  #   print  n.getG()
