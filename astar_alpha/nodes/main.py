@@ -17,6 +17,7 @@ import rospy
 
 #ros msg data types
 from msg_alpha.msg._Path_Points import Path_Points
+from geometry_msgs.msg._Point import Point as PointMsg
 
 #mathematics
 import math
@@ -339,7 +340,11 @@ class Astar(object):
 #        return pathList
         self.transformPath(pathList)
 
+
     def transformToMap(self,pathList):
+
+        pathListPub = rospy.Publisher('point_list', Path_Points)     #Data should be published to the obstacles topics using the Obstacles message type                            
+        pathData = Path_Points() #initalize an Obstacle message                   
         
         transList = [] #list transformed into map coordinates
 
@@ -348,6 +353,9 @@ class Astar(object):
         transList.append(pose)
         transList.reverse()
         transList.append(goal)
+
+        pathData.path_points = transList
+        pathListPub.publish(pathData)
         print transList
         
 
@@ -391,22 +399,26 @@ def test():
     
 
 def main():
+
+    global closedList
     rospy.init_node('n')  #initialize node with the name n                                                                                          
 
     pathPointPub = rospy.Publisher('point_list',Path_Points) #publish to the "point_list" topic using the "Path_Points" message
     pathData = Path_Points()
-    rospy.subscriber('costmap_alpha/costmap/inflatedobstacles',GridCells,closedListCallback)
+    rospy.Subscriber('costmap_alpha/costmap/inflatedobstacles',PointMsg,closedListCallback)
 
-    rospy.spin() 
 
+    if closedList == None:
+        print "A* has no closed points"
     #Initialize Test Data
 
 #    olCl = test()
  #   cl = olCl[1] #closed list
   #  ol = olCl[0]
-
-    a = Astar(closedList)
-    a.search()
+    while not rospy.is_shutdown():
+#            rospy.spin() 
+        a = Astar(closedList)
+        a.search()
 
      
 if __name__ == '__main__':

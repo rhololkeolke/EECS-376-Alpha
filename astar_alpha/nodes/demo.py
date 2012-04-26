@@ -16,7 +16,7 @@ import roslib; roslib.load_manifest('astar_alpha')
 import rospy
 
 #ros msg data types
-#from msg_alpha.msg._Path_Points import Path_Points
+from msg_alpha.msg._Path_Points import Path_Points
 from msg_alpha.msg._Obstacles import Obstacles as ObstaclesMsg
 from geometry_msgs.msg._PoseStamped import PoseStamped as PoseStampedMsg
 
@@ -347,6 +347,9 @@ class Astar(object):
         self.transformPath(pathList)
 
     def transformToMap(self,pathList):
+
+        pathListPub = rospy.Publisher('obstacles', Obstacles)     #Data should be published to the obstacles topics using the Obstacles message type      
+        obsData = Obstacles() #initalize an Obstacle message                   
         
         transList = [] #list transformed into map coordinates
 
@@ -354,7 +357,8 @@ class Astar(object):
             transList.append((p[0] + -100, p[1] + -100, 0))
 
         print transList
-        pathData.publish(transList)
+        pathData.path_points = transList
+        pathPointPub.publish(pathData)
         
 
 
@@ -397,7 +401,7 @@ def test():
     
 
 def main():
-    #rospy.init_node('n')  #initialize node with the name n                                                                                          
+    rospy.init_node('n')  #initialize node with the name n                                                                                          
 
     pathPointPub = rospy.Publisher('path',Path_Points) #publish to the "path" topic using the "Path_Points" message
     pathData = Path_Points()
