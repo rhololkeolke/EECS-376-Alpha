@@ -1,7 +1,9 @@
 global_frame: map
 robot_base_frame: base_link
-update_frequency: 10.0
+update_frequency: 5.0
 publish_frequency: 5.0
+
+publish_voxel_map: true
 
 static_map: true
 
@@ -19,15 +21,15 @@ unknown_threshold: 10
 mark_threshold: 0
 
 transform_tolerance: 0.01
-obstacle_range: 10.0
+obstacle_range: 4.0
 max_obstacle_height: 3.1
-raytrace_range: 11.0
+raytrace_range: 5.0
 footprint: [[0.3048, 0.3048], [0.3048, -0.3048], [-0.711, -0.3048], [-0.711, 0.3048]]
 
 footprint_padding: 0.01
-inflation_radius: 1.0
+inflation_radius: 0.6
 cost_scaling_factor: 11.8
 lethal_cost_threshold: 100
-observation_sources: kinect
-kinect: {sensor_frame: camera_rgb_optical_frame data_type: PointCloud2, topic: /camera/depth/points, marking: true, clearing: true, min_obstacle_height: 0.01}
-lidar: {sensor_frame: base_laser1_link, data_type: LaserScan, topic: /base_laser1_scan, marking: true, clearing: true, min_obstacle_height: 0.4, max_obstacle_height: 0.6}
+observation_sources: kinect lidar
+kinect: {sensor_frame: camera_depth_optical_frame, data_type: PointCloud2, topic: camera/depth/points, min_obstacle_height: 0.08, max_obstacle_height: 0.6, marking: true, clearing: true}
+lidar: {sensor_frame: base_laser1_link, data_type: LaserScan, topic: base_laser1_scan, marking: true, clearing: true, min_obstacle_height: 0.0}
