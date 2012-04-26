@@ -1,0 +1,3 @@
+functiont to convert lists to dictionaries
+function to convert lists to Queues
+rewrote A* search to reference things by dictionaries instead of by a list

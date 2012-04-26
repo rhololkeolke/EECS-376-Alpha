@@ -16,7 +16,9 @@ import roslib; roslib.load_manifest('astar_alpha')
 import rospy
 
 #ros msg data types
-from msg_alpha.msg._Path_Points import Path_Points
+#from msg_alpha.msg._Path_Points import Path_Points
+from msg_alpha.msg._Obstacles import Obstacles as ObstaclesMsg
+from geometry_msgs.msg._PoseStamped import PoseStamped as PoseStampedMsg
 
 #mathematics
 import math
@@ -28,20 +30,25 @@ import Queue
 from types import *
 import random
 
+
+exists = False
 pose = None
-closedList = None
 
+def obstacleCallback(obsData):
 
-def closedListCallback(data):
-    global closedList
-    closedList = data
-    
+    global exists
+    exists = obsData.exists
 
 def poseCallback(poseData):
     global pose
     pose = poseData
 
 
+'''
+def closedListCallback(data):
+
+costmap_alpha/costmap/inflatedobstacles
+'''
 
 
 #A class that stores the x,y position of a node as well as its path cost and parent node
@@ -75,7 +82,7 @@ class Node(object):
 # A* Search algorithim which computes the optimal path based on a list of closed points
 #TODO: Pass Data from the Costmap arrays into closed list, this function assumes they already exist
 class Astar(object):
-    def __init__(self,cl):
+    def __init__(self,cl,pathData):
 
         self.cl = cl #closed list
         self.cDict = {} #closed list dictionary
@@ -345,10 +352,9 @@ class Astar(object):
 
         for p in pathList:
             transList.append((p[0] + -100, p[1] + -100, 0))
-        transList.append(pose)
-        transList.reverse()
-        transList.append(goal)
+
         print transList
+        pathData.publish(transList)
         
 
 
@@ -391,11 +397,12 @@ def test():
     
 
 def main():
-    rospy.init_node('n')  #initialize node with the name n                                                                                          
+    #rospy.init_node('n')  #initialize node with the name n                                                                                          
 
-    pathPointPub = rospy.Publisher('point_list',Path_Points) #publish to the "point_list" topic using the "Path_Points" message
+    pathPointPub = rospy.Publisher('path',Path_Points) #publish to the "path" topic using the "Path_Points" message
     pathData = Path_Points()
-    rospy.subscriber('costmap_alpha/costmap/inflatedobstacles',GridCells,closedListCallback)
+    rospy.Subscriber("obstacles", ObstaclesMsg, obstacleCallback) # Lets velocity profiler know where along the path there is an obstacle  
+    rospy.Subscriber("map_pos", PoseStampedMsg, poseCallback)
 
     rospy.spin() 
 
@@ -405,8 +412,14 @@ def main():
  #   cl = olCl[1] #closed list
   #  ol = olCl[0]
 
-    a = Astar(closedList)
-    a.search()
+
+
+    a = Astar((50,50),pathData)
+
+    if exists is True:
+        cl = pose
+        a = Astar(cl)
+        a.search()
 
      
 if __name__ == '__main__':

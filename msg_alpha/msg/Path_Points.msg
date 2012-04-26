@@ -1,4 +1,3 @@
-geometry_msgs/Point[] cells
-float64 x
-float64 y
-float64 z
+Header header
+
+geometry_msgs/Point[] path_points
