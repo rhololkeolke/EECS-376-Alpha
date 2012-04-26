@@ -32,10 +32,9 @@
 		<param name="zTolHigh" type="double" value="0.1"/>
 		<param name="numBins" type="int" value="10"/>
 		<param name="sliceLength" type="int" value="5" />
-
-		<remap from="in_image" to="/camera/rgb/image_rect_color" />
-		<remap from="in_cam_info" to="/camera/rgb/camera_info" />
-		<remap from="in_cloud" to="/camera/depth_registerd/points"/>
+		<param name="zTolLow" type="int" value= "-0.5" />
+		<param name="zTolHigh" type="int" value="0.5" />
+		<param name="gridSize" type="int" value="10" />
 	</node>
 	<!--<node pkg="kinect_alpha" type="main.py" name="kinect_py" />-->
 

@@ -1,0 +1,18 @@
+<package>
+  <description brief="astar_alpha">
+
+     astar_alpha
+
+  </description>
+  <author></author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/astar_alpha</url>
+  <depend package="rospy"/>
+  <depend package="roscpp"/>
+  <depend package="cwru_base"/>
+  <depend package="msg_alpha"/>
+
+</package>
+
+

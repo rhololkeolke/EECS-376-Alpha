@@ -17,6 +17,8 @@ from tf.transformations import quaternion_from_euler,euler_from_quaternion
 from math import cos,sin,pi,sqrt
 from collections import deque
 
+RATE = 20.0
+
 obs = ObstaclesMsg()
 
 RATE = 20.0
@@ -25,6 +27,7 @@ naptime = None
 
 lastSegComplete = 0
 segAbort = False
+last_seg = 1
 
 segNumber = 0
 

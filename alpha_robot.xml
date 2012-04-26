@@ -1,0 +1,34 @@
+<launch>
+
+<!--When launching on Jinx over ssh we may have to uncomment the line below
+<machine name="jinx" address="192.168.0.150" default="true" />
+-->
+
+<!--Include necessary premade launch files-->
+<include file="$(find cwru_nav)/start_amcl_2ndfloor.launch" />
+<!--<include file="$(find openni_launch)/launch/openni.launch" />-->
+<!--<include file="$(find cwru_semi_stable)/cwru_bringup_no_tele.launch" />-->
+<!--<include file="home/jinx/ROSCode/cwru-ros-pkg/cwru_semi_stable/cwru_bringup_no_tele.launch" />-->
+
+<!--Launch Team Alpha Nodes -->
+<node name="laser_listener" pkg="look_ahead" type="look_ahead.py" respawn="true" />
+<node name="velocity_profiler" pkg="velocity_profiler_alpha" type="main2.py" respawn="true"/>
+<node name="steering" pkg="steering_alpha" type="main.py" respawn="true" />
+<node name="pospub" pkg="pos_publisher_alpha" type="main" respawn="true" />
+
+
+
+
+<!-- Kinect Image Pub -->
+<node pkg="kinect_alpha" type="kinect_alpha" name="kinect" output="screen" >	
+  <remap from="in_image" to="/camera/rgb/image_rect_color"/>
+	       <param name="hh" type="int" value="255"/>
+               <param name="hl" type="int" value="220"/>
+</node>
+
+<node pkg="kinect_alpha" type="main.py" name="kinect_py" />
+
+
+
+	     
+</launch>

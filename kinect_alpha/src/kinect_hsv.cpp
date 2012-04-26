@@ -11,6 +11,9 @@
 
 #include <boost/format.hpp>
 
+#include <vector>
+#include <ctime>
+
 // OpenCV includes
 #include <image_transport/image_transport.h>
 #include <image_transport/subscriber_filter.h>
@@ -25,106 +28,109 @@
 #include <pcl/ros/conversions.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+//#include <pcl/octree.h>
+//#include <pcl/octree/octree_pointcloud.h>
+#include <pcl/ModelCoefficients.h>
+#include <pcl/point_types.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/kdtree/kdtree.h>
+#include <pcl/kdtree/organized_neighbor_search.h>
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/sample_consensus/model_types.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/segmentation/extract_clusters.h>
+
+
+
 
 using std::string;
 namespace enc = sensor_msgs::image_encodings;
+using namespace cv;
 
 // Global variables here
 ros::Publisher             cloud_pub_;
 image_transport::Publisher image_pub_;
 string window_name_;
-<<<<<<< HEAD
+
 cv_bridge::CvImagePtr cv_ptr; //conversion variable for ROS Image to cvImage
 cv::Mat output;
-=======
->>>>>>> develop
+
 
 class KinectNode {
-  public:
-    KinectNode();
-    void imageCallback(const sensor_msgs::ImageConstPtr& msg);
-<<<<<<< HEAD
-    cv::Mat detectStrap();
-=======
->>>>>>> develop
-  private:
-    ros::NodeHandle nh_;
-    image_transport::ImageTransport it_;
-    image_transport::Subscriber sub_;
-<<<<<<< HEAD
-    int params[7];
-    int dilationIterations;
-    sub_ = it_.subscribe("in_image", 1, &KinectNode::imageCallback, this);
+public:
+  KinectNode();
+
+  //member functions
+  void imageCallback(const sensor_msgs::ImageConstPtr& msg);
+  void detectStrap();
+  //pcl::PointXYZRGBA computeCentroids(pcl::PointCloud<pcl::PointXYZ>);
+  pcl::PointXYZRGBA getSearchPoint(pcl::PointXYZRGBA);
+  pcl::PointXYZRGBA centroids(pcl::PointCloud<pcl::PointXYZ>);
+  
+private:
+  ros::NodeHandle nh_;
+  image_transport::ImageTransport it_;
+  image_transport::Subscriber sub_;
+  //image_transport::Publisher image_pub_;
+  msg_alpha::BlobDistance blobDist;
+  ros::Publisher blobPub;
+  int params[10];
+  int dilationIterations;
 };
 
-cv::Mat KinectNode::detectStrap() 
+KinectNode::KinectNode():
+  it_(nh_)
 {
+  ros::NodeHandle private_nh("~");
+  private_nh.param("hl",params[0], 0);
+  private_nh.param("hh",params[1], 255);
+  private_nh.param("sl",params[2], 0);
+  private_nh.param("sh",params[3], 255);
+  private_nh.param("vl",params[4], 0);
+  private_nh.param("vh",params[5], 255);
+  private_nh.param("dilationIterations",dilationIterations,10);
+  private_nh.param("sliceLength",params[7],5);
+  private_nh.param("zTolLow",params[8],10);
+  private_nh.param("zTolHigh",params[9],10);
+  private_nh.param("gridSize",params[10], 255);
 
   try {
 
-  cv::cvtColor(cv_ptr->image, output, CV_BGR2HSV);
+  std::cout << params[0] << params[1] << params[2] << params[3] << params[4] << params[5] << std::endl;
+  std::cout << dilationIterations << std::endl;
+  sub_ = it_.subscribe("in_image", 1, &KinectNode::imageCallback, this);
+  //image_pub_ = it_.advertise("out_image", 1);
+  blobPub = nh_.advertise<msg_alpha::BlobDistance>("blob_dist",1);
+}
 
   cv::Mat temp;
 
     //Make a vector of Mats to hold the invidiual B,G,R channels
     vector<Mat> mats;
 
-    //Split the input into 3 separate channels
-    split(temp, mats);
+/* Function to receive Kinect Data
+   @param The Image from the center
+   @type sensor_msg
+   @return nothing
 
-  //std::cout << mats.size() << std::endl;
-   
-  //create the range of HSV values that determine the color we desire to threshold based on launch file params
-  cv::Scalar lowerBound = cv::Scalar(params[0],params[2],params[4]);
-  cv::Scalar upperBound = cv::Scalar(params[1],params[3],params[5]);
-
-  //threshold the image based on the HSV values
-  cv::inRange(output,lowerBound,upperBound,output);
-
-  erode(output, output, Mat());
-
-    dilate(output, output, Mat(), Point(-1,-1), dilationIterations);
-
-  //  cv::imshow("view",output);
-  //  cvWaitKey(5);
-
-  return output;
-  }
-
-  catch (cv_bridge::Exception& e) {
-
-    ROS_ERROR("Could not convert to 'bgr8'. Ex was %s", e.what());
-  }
-}
-
-=======
-    //image_transport::Publisher image_pub_;
-    msg_alpha::BlobDistance blobDist;
-    ros::Publisher blobPub;
-    int params[6];
-};
-
->>>>>>> develop
-// A magical callback that combines an image, cam info, and point cloud
-void allCB(const sensor_msgs::ImageConstPtr& image_msg, 
-           const sensor_msgs::PointCloud2::ConstPtr& cloud_msg,
-           const sensor_msgs::CameraInfo::ConstPtr& cam_msg)
+*/
+void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
 {
   tfl = new tf::TransformListener();
   string global_frame_ = "map";
 
-  // Convert the image from ROS format to OpenCV format
-  cv_bridge::CvImagePtr cv_ptr;
-  try {
-    cv_ptr = cv_bridge::toCvCopy(image_msg);
+  //Convert the image from ROS Format to OpenCV format
+  try	{
+    cv_ptr = cv_bridge::toCvCopy(image_msg, enc::BGR8);
   }
   catch (cv_bridge::Exception& e) {
     ROS_ERROR_STREAM("cv_bridge exception: " << e.what());
     return;
   }
-  
-  //ROS_INFO_STREAM(boost::format("Callback got an image in format %s, size %dx%d")
-  //  %cv_ptr->encoding %cv_ptr->image.size().width %cv_ptr->image.size().height );
+}
 
   PointCloudXYZRGB cloud;
   pcl::fromROSMsg(*cloud_msg, cloud);
@@ -153,134 +159,21 @@ void allCB(const sensor_msgs::ImageConstPtr& image_msg,
   Bpass.filter (*filteredColorCloud);
 <<<<<<< HEAD
 /*
-  geometry_msgs::Point geom_pt;
-  geom_pt.x = pcl_pt.x; geom_pt.y = pcl_pt.y;
-
-
-  // the TF package requires inputs to be in the form Stamped<sometype>
-  tf::Stamped<tf::Point> geom_pt_tf, temp_pt_tf;
-  pointMsgToTF(geom_pt, geom_pt_tf);
-  geom_pt_tf.frame_id_ = cloud_msg->header.frame_id;
-  geom_pt_tf.stamp_ = cloud_msg->header.stamp;
-
-  try {
-        tfl_->transformPoint(global_frame_, geom_pt_tf, temp_pt_tf);
-  }
-  catch(tf::TransformException& ex) {
-        ROS_ERROR_STREAM(boost::format("Failed to transform point pose from \"%s\" to \"%s\" frame: %s")
-                %geom_pt_tf.frame_id_ %global_frame_ %ex.what());
-        return;
-  }
+  Function to Highlight the path strap from Kinect Data
+  @param none
+  @type cv::Mat which is an OpenCV Matrix 
+  @return an openCV Matrix of the image in black and white -- the path segment is white while the surrondings are black
+  @author Eddie, Devin 
 */
-  //TODO: REPLACE THE INPUT CLOUD THAT IS TAKEN IN BY THE ZPASS FILTER.
-  pcl::PassThrough<pcl::PointXYZRGB> zpass;
-  zpass.setInputCloud ();
-=======
-
-  try{
-      tfl_->transformPoint(global_frame_,geom_pt_tf,)
-  }
-
-
-  //TODO: REPLACE THE INPUT CLOUD THAT IS TAKEN IN BY THE ZPASS FILTER.
-  pcl::PassThrough<pcl::PointXYZRGB> zpass;
-  zpass.setInputCloud (NEWCLOUDoriginalCloud);
->>>>>>> develop
-  zpass.setFilterFieldName ("z");
-  zpass.setFilterLimits (zTolLow, zTolHigh);
-  zpass.filter (*filteredFinalCloud);
-
-<<<<<<< HEAD
-=======
-  pointArray[] = new 
-
-
-
-  if(pcl_pt.z == 0 & pcl_pt.r == 0 & pcl_pt.g == 0 & pcl_pt.b == 0)
-  geometry_msgs::Point geom_pt;
-  geom_pt.x = pcl_pt.x; geom_pt.y = pcl_pt.y; geom_pt.z = pcl_pt.z;
-
-  // the TF package requires inputs to be in the form Stamped<sometype>
-  tf::Stamped<tf::Point> geom_pt_tf, temp_pt_tf;
-  pointMsgToTF(geom_pt, geom_pt_tf);
-  geom_pt_tf.frame_id_ = cloud_msg->header.frame_id;
-  geom_pt_tf.stamp_ = cloud_msg->header.stamp;
-
->>>>>>> develop
-  ROS_INFO_STREAM(boost::format("Cloud has size %dx%d. organized=%s")
-    %cloud.width %cloud.height %(cloud.isOrganized() ? "true" : "false") );
-  
-  // Say you found something interesting at pixel (300,150)
-  //in the image and want to know its position in 3D space.
-  //Because the cloud data from the Kinect is organized,
-  //you can just pick off the point at (300,150) in the cloud.
-  //Also, draw a red circle over the desired point.
-<<<<<<< HEAD
-=======
-  //int row = 150; int col = 300;
-  //cv::circle(cv_ptr->image, cv::Point(col,row), 10, CV_RGB(255,0,0));
-  
-  // Get the corresponding 3D point
-
-
-  //Select only the color corresponding pixels
-  pcl:PointXYZRGB 
->>>>>>> develop
-  
-  ROS_INFO_STREAM(boost::format("Pixel (%d,%d) maps to 3D point (%.2f,%.2f,%.2f) in TF frame = \"%s\"")
-    %row %col %p.x %p.y %p.z %cloud_msg->header.frame_id);
-  
-  // Show the image.  The window does not update without the cvWaitKey.
-  cv::imshow(window_name_.c_str(), cv_ptr->image);
-  cvWaitKey(5);
-  
-  // Publish the modified image
-  image_pub_.publish(cv_ptr->toImageMsg());
-}
-
-
-KinectNode::KinectNode():
-  it_(nh_)
-{
-  ros::NodeHandle private_nh("~");
-  private_nh.param("hl",params[0], 0);
-  private_nh.param("hh",params[1], 255);
-  private_nh.param("hl",params[0], 0);
-  private_nh.param("hh",params[1], 255);
-  private_nh.param("hl",params[0], 0);
-  private_nh.param("hh",params[1], 255);
-
-  std::cout << params[0] << params[1]  << std::endl;
-  sub_ = it_.subscribe("in_image", 1, &KinectNode::imageCallback, this);
-  //image_pub_ = it_.advertise("out_image", 1);
-  //blobPub = nh_.advertise<msg_alpha::BlobDistance>("blob_dist",1);
-  centroidPub = nh_.advertise<msg_alpha::CentroidPoint>("centroid_point", 1);
-}
-
-void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
-{
-	// Convert the image from ROS format to OpenCV format
-	cv_bridge::CvImagePtr cv_ptr;
-	try	{
-		cv_ptr = cv_bridge::toCvCopy(image_msg, enc::BGR8);
-	}
-	catch (cv_bridge::Exception& e) {
-		ROS_ERROR_STREAM("cv_bridge exception: " << e.what());
-		return;
-	}
-}
-	
-<<<<<<< HEAD
-=======
-cv::Mat KinectNode::detectStrap() 
+void KinectNode::detectStrap()	
 {
 
   cv::Mat output;
   try {
-
-  cv::cvtColor(cv_ptr->image, output, CV_BGR2HSV);
-
-  cv::Mat temp;
+	
+    cv::cvtColor(cv_ptr->image, output, CV_BGR2HSV);
+	
+    cv::Mat temp;
 
     //Make a vector of Mats to hold the invidiual B,G,R channels
     vector<Mat> mats;
@@ -290,21 +183,21 @@ cv::Mat KinectNode::detectStrap()
 
   //std::cout << mats.size() << std::endl;
    
-  //create the range of HSV values that determine the color we desire to threshold based on launch file params
-  cv::Scalar lowerBound = cv::Scalar(params[0],params[2],params[4]);
-  cv::Scalar upperBound = cv::Scalar(params[1],params[3],params[5]);
+    //create the range of HSV values that determine the color we desire to threshold based on launch file params
+    cv::Scalar lowerBound = cv::Scalar(params[0],params[2],params[4]);
+    cv::Scalar upperBound = cv::Scalar(params[1],params[3],params[5]);
 
-  //threshold the image based on the HSV values
-  cv::inRange(output,lowerBound,upperBound,output);
+    //threshold the image based on the HSV values
+    cv::inRange(output,lowerBound,upperBound,output);
 
-  erode(output, output, Mat());
+    erode(output, output, Mat());
 
     dilate(output, output, Mat(), Point(-1,-1), dilationIterations);
 
-  //  cv::imshow("view",output);
-  //  cvWaitKey(5);
+    //	cv::imshow("view",output);
+    //	cvWaitKey(5);
 
-  return output;
+    //	return output;
   }
 
   catch (cv_bridge::Exception& e) {
@@ -313,9 +206,105 @@ cv::Mat KinectNode::detectStrap()
   }
 }
 
+   
+pcl::PointXYZRGBA KinectNode::centroids(pcl::PointCloud<pcl::PointXYZ> cloud) 
+{
+		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>), cloud_f (new pcl::PointCloud<pcl::PointXYZ>);	
+
+  //create voxel grid and downsample the data to a left size of 1cm
+  pcl::VoxelGrid<pcl::PointXYZ> vg;
+  pcl::PointCloud<pcl::PointXYZ>::Ptr originalCloud = cloud;  
+  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered (new pcl::PointCloud<pcl::PointXYZ>);
+  vg.setInputCloud(cloud);
+  vg.setLeafSize(0.01f, 0.01f, 0.01f);
+  vg.filter(*cloud_filtered);
 
 
->>>>>>> develop
+  //create segmentation model
+  
+  pcl::SACSegmentation<pcl::PointXYZ> seg;
+  pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
+  pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
+  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_plane (new pcl::PointCloud<pcl::PointXYZ> ());
+  seg.setOptimizeCoefficients (true);
+  seg.setModelType (pcl::SACMODEL_PLANE);
+  seg.setMethodType (pcl::SAC_RANSAC);
+  seg.setMaxIterations (100);
+  seg.setDistanceThreshold (0.02);
+
+  int i=0, nr_points = (int) cloud_filtered->points.size ();
+  while (cloud_filtered->points.size () > 0.3 * nr_points)
+    {
+      // Segment the largest planar component from the remaining cloud
+      seg.setInputCloud (cloud_filtered);
+      seg.segment (*inliers, *coefficients);
+      if (inliers->indices.size () == 0)
+	{
+	  std::cout << "Could not estimate a planar model for the given dataset." << std::endl;
+	  break;
+	}
+
+      // Extract the planar inliers from the input cloud
+      pcl::ExtractIndices<pcl::PointXYZ> extract;
+      extract.setInputCloud (cloud_filtered);
+      extract.setIndices (inliers);
+      extract.setNegative (false);
+
+      // Write the planar inliers to disk
+      extract.filter (*cloud_plane);
+      std::cout << "PointCloud representing the planar component: " << cloud_plane->points.size () << " data points." << std::endl;
+
+      // Remove the planar inliers, extract the rest
+      extract.setNegative (true);
+      extract.filter (*cloud_f);
+      cloud_filtered = cloud_f;
+    }
+  // Creating the KdTree object for the search method of the extraction
+  //pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
+  pcl::OrangizedNeighborSearch<PointXYZ> tree = new(pcl::OrganizedNeighborSearch<PointXYZ>);
+  tree->setInputCloud (cloud_filtered);
+
+  std::vector<pcl::PointIndices> cluster_indices;
+  pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
+  ec.setClusterTolerance (0.02); // 2cm
+  ec.setMinClusterSize (100);
+  ec.setMaxClusterSize (25000);
+  ec.setSearchMethod (tree);
+  ec.setInputCloud (cloud_filtered);
+  ec.extract (cluster_indices);
+
+  std::vector<int> centroids; //vector to hold all the centroids
+
+
+
+//now search through and for every point create a point cloud based on its neighboors
+//determine the centroid of each point cloud
+  int j = 0;
+  for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
+    {
+      pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_cluster (new pcl::PointCloud<pcl::PointXYZ>);
+      for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); pit++)
+	cloud_cluster->points.push_back (cloud_filtered->points[*pit]); //*
+      cloud_cluster->width = cloud_cluster->points.size ();
+      cloud_cluster->height = 1;
+      cloud_cluster->is_dense = true;
+      
+      centroid = pcl::compute3DCentroid(cloud_cluster[it]);
+      centroids.pushback(centorid);
+					
+      
+
+
+      std::cout << "PointCloud representing the Cluster: " << cloud_cluster->points.size () << " data points." << std::endl;
+      std::stringstream ss;
+      ss << "cloud_cluster_" << j << ".pcd";
+      writer.write<pcl::PointXYZ> (ss.str (), *cloud_cluster, false); //*
+      
+      j++;
+    }
+   return centroids[std::lower_bound(centroids.begin(), centroids.end())];
+} 
+    
 
 int main(int argc, char **argv)
 {
