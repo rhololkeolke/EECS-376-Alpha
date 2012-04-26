@@ -181,14 +181,14 @@ class Astar(object):
     #@param the adjacent cell
     #@type Node
     #@return Nada
-    def updateNode(self,node):
+    def updateNode(self,node,adj):
         
         print "Updating a Node's state"
 
-        node.g = node.g + 1.0
-        node.h = self.heuristic(node)
-        node.parent = node
-        node.f = node.g + node.h
+        adj.g = node.g + 1.0
+        adj.h = self.heuristic(adj)
+        adj.parent = node
+        adj.f = adj.g + adj.h
         print "State Updated"
  
         
@@ -199,86 +199,85 @@ class Astar(object):
     #@type a list of Nodes
     def getNeighboors(self,node):
         
-        print node
-#        print 'Finding Neighboors of: %f %f' % (node.getX(),node.getY())
+       print 'Finding Neighboors of: %f %f' %(node.getX(),node.getY())
 
-        nodes = []
-         
+       nodes = []
+          
         #if the cell is in the domain of the grid append the Node to the list of nodes
         #append the node to the left
-        if(node.getX() < self.gridWidth - 1):
-            if type(self.getNode(node.getX() - 1, node.getY())) is not NoneType:
-            
-                nodes.append(self.getNode(node.getX() - 1, node.getY()))
-
+       if(node.getX() < self.gridWidth - 1):
+           if type(self.getNode(node.getX() - 1, node.getY())) is not NoneType:
+               
+               nodes.append(self.getNode(node.getX() - 1, node.getY()))
+               
         #append the node to the right
-        if node.getX() < self.gridWidth - 1:
-            if type(self.getNode(node.getX() + 1, node.getY())) is not NoneType:
-        
-                nodes.append(self.getNode(node.getX() + 1, node.getY()))
+       if node.getX() < self.gridWidth - 1:
 
-        #append the node below
-        if node.getY() < self.gridHeight - 1:
-            if type(self.getNode(node.getX(),node.getY() - 1)) is not NoneType:
+           if type(self.getNode(node.getX() + 1, node.getY())) is not NoneType:
 
-                nodes.append((self.getNode(node.getX(),node.getY() - 1)))
+                       nodes.append(self.getNode(node.getX() + 1, node.getY()))
+
+       #append the node below
+       if node.getY() < self.gridHeight - 1:
+           if type(self.getNode(node.getX(),node.getY() - 1)) is not NoneType:
+
+               nodes.append((self.getNode(node.getX(),node.getY() - 1)))
 
 
-        #append the node above
-        if(node.getY() < self.gridHeight - 1):
+       #append the node above
+       if(node.getY() < self.gridHeight - 1):
             
+           if type(self.getNode(node.getX(), node.getY() + 1)) is not NoneType:
 
-            if type(self.getNode(node.getX(), node.getY() + 1)) is not NoneType:
-
-                nodes.append(self.getNode(node.getX(), node.getY() + 1))
+               nodes.append(self.getNode(node.getX(), node.getY() + 1))
 
 
-        #append the lower left diagnol
-        if node.getX() < self.gridWidth - 1 and node.getY() < self.gridHeight -1:
+       #append the lower left diagnol
+       if node.getX() < self.gridWidth - 1 and node.getY() < self.gridHeight -1:
 
-            if type(self.getNode(node.getX() -1 , node.getY() - 1)) is not NoneType:
+           if type(self.getNode(node.getX() -1 , node.getY() - 1)) is not NoneType:
+                
+               nodes.append(self.getNode(node.getX() -1 , node.getY() - 1))
 
-                   nodes.append(self.getNode(node.getX() -1 , node.getY() - 1))
-
-        #append the lower right
-        if type(node) is not NoneType:
+       #append the lower right
+       if type(node) is not NoneType:
             
-            if type(self.getNode(node.getX() + 1 , node.getY() -1)) is not NoneType:
-            
-                nodes.append(self.getNode(node.getX() + 1 , node.getY() -1))
+           if type(self.getNode(node.getX() + 1 , node.getY() -1)) is not NoneType:
+               
+               nodes.append(self.getNode(node.getX() + 1 , node.getY() -1))
 
         #upper left
-        if node.getX() < self.gridWidth - 1 and node.getY() < self.gridHeight -1:
+       if node.getX() < self.gridWidth - 1 and node.getY() < self.gridHeight -1:
             
-            if type(self.getNode(node.getX() -1 , node.getY() + 1)) is not NoneType:
+           if type(self.getNode(node.getX() -1 , node.getY() + 1)) is not NoneType:
+               
+               nodes.append(self.getNode(node.getX() -1 , node.getY() + 1))
 
-                nodes.append(self.getNode(node.getX() -1 , node.getY() + 1))
-
-        #upper right
-        if node.getX() < self.gridWidth - 1 and node.getY() < self.gridHeight - 1:
+       #upper right
+       if node.getX() < self.gridWidth - 1 and node.getY() < self.gridHeight - 1:
             
-            if type(self.getNode(node.getX() + 1,node.getY() + 1)) is not NoneType:
+           if type(self.getNode(node.getX() + 1,node.getY() + 1)) is not NoneType:
 
-                nodes.append(self.getNode(node.getX() + 1,node.getY() + 1))
-            
+               nodes.append(self.getNode(node.getX() + 1,node.getY() + 1))
+                
 
-        print "Got the neighboors"
+       print "Got the neighboors"
         
-        for n in nodes:
-            print (n.getX(),n.getY())
-        
+       for n in nodes:
+           print (n.getX(),n.getY())
+           
 
-        return nodes
+       return nodes
         
                 
                 
     #Run through the a* search algorithim and find the best path
     def search(self):
-
+        
         print "Starting a Search"
 
         start = self.getNode(0,0) #(9,15)?
-        goal= self.getNode(5,5) #(1,25),(78,90)?
+        goal= self.getNode(30,5) #(1,25),(78,90)?
 
         #To ensure that heuristic() can access the goal point
         self.start = start
@@ -286,7 +285,7 @@ class Astar(object):
 
 
         #add starting node to the open list Q
-        self.openQ.put_nowait((start,start.f))
+        self.openQ.put_nowait((start.f,start))
         print "The queue size is %d" % self.openQ.qsize()
 
 
@@ -295,7 +294,7 @@ class Astar(object):
             
             #pop the node from the p queue
             nodeQ = self.openQ.get_nowait() #returns the Node and its priority
-            node = nodeQ[0]
+            node = nodeQ[1] #get the node out of the tupile returned from .get_nowait()
             
             #self.openQ.task_done()
             
@@ -330,23 +329,52 @@ class Astar(object):
                 
                 #if the node is not in the open dictionary add it to the open dictionary and open queue
                 #update the costs of the node
-                if ((n.getX(),n.getY())) not in self.oDict:
+                elif ((n.getX(),n.getY())) not in self.oDict:
 
+                    self.updateNode(node,n)
                     
-                    self.openQ.put_nowait((n,n.f)) 
+                    self.openQ.put_nowait((n.f,n)) 
+                    
+                    print "The adjacent node's f(x) is:"
+                    print n.f
+                    print n.f
+                    print n.f
+                    print n.f
+                    print n.f
+                    print n.f
+                    print n.f
+
+                    print "The adjacent node's g(x) is:"
+                    print n.g
+                    print n.g
+                    print n.g
+                    print n.g
+                    print n.g
+                    print n.g
+                    print n.g
+
+                                        
+                    
+
+
+
+
+
+
                     print "%f %f added to the Open List Queue" %(n.getX(),n.getY())
                     self.oDict[(n.getX(),n.getY())] = n
-                    self.updateNode(n)
+
 
                 #if the node is already in the open list see if there is a better path    
-                if((n.getX(),n.getY())) in self.oDict:
-                    
+                elif((n.getX(),n.getY())) in self.oDict:
+                  
+
                     #if the adjacent node has a lower cost value then change its parent to the current node
                     if n.getG() < node.getG():
-                        
-                        self.upDateNode(n)
-                        n.parent = node
-                print "The queue size at the end of the loop is %d" %self.openQ.qsize()
+                        self.updateNode(node,n)      
+
+
+                    print "The queue size at the end of the loop is %d" %self.openQ.qsize()
 
                                                                  
         print "Closing for each loop."
@@ -365,11 +393,12 @@ class Astar(object):
         
         while node.parent is not self.start:
             node = node.parent
-            print "Path coordinate: %d %d" (node.getX(),node.getY())
-#            pathList.append(node)
+#            print "Path coordinate: %d %d" %(node.getX(),node.getY())
+            pathList.append((node.getX(),node.getY()))
             
- #       print pathList
-        #return pathList
+        print pathList
+        print "Path Generation Complete"
+        return pathList
 
 
                         
