@@ -14,7 +14,9 @@ The node is published as an array of points
 #ros imports
 import roslib; roslib.load_manifest('astar_alpha')
 import rospy
-#ros package imports
+
+#ros msg data types
+#from msg_alpha.msg._Path_Points import Path_Points
 
 #mathematics
 import math
@@ -55,25 +57,6 @@ class Node(object):
         return parent
     
         
-
-        
-
-
-    '''
-    #Overides the comparable function 
-    #Allows the comparison of a node to tuples, lists and other nodes
-    #@param a node
-    #@type Node
-    #@param a node or (x,y) tuple or list of node position
-    #@type Node,tupile, or list
-    def __cmp__(self,node,other):
-
-        if type(other) is ListType or type(other) is TupleType:
-            return node.getX() is other[0] and node.getY() is other[1]
-
-        elif type(other) is Node:
-            return node.getX() is other.getX() and node.y is other.y 
-    '''
                     
 # A* Search algorithim which computes the optimal path based on a list of closed points
 #TODO: Pass Data from the Costmap arrays into closed list, this function assumes they already exist
@@ -89,21 +72,17 @@ class Astar(object):
         self.start = None
         self.goal = None
         
-
+ 
 
         #Create an Open List priority Queue, 
         #items should be stored as (data,priority_number)
         self.openQ = Queue.PriorityQueue(maxsize=0)
          
         self.nodeGrid = [] #Array that will hold each node
-        self.gridHeight = 84 + 6 #total number of Y spaces on the sim map grid
-        self.gridWidth = 60 + 18 #total number of X spaces on the sim map grid
+        self.gridHeight = 90 #total number of Y spaces on the sim map grid
+        self.gridWidth = 78 #total number of X spaces on the sim map grid
 
         self.grid()
-
-
-#        print self.start
- #       print self.goal
 
         
     #initialize a grid of corordinates 
@@ -111,12 +90,10 @@ class Astar(object):
     #@return None
     def grid(self):
 
-        print "Initializing Grid"
-        
 
         #Create a 2d grid array of nodes setting open nodes and closed nodes
-        for x in range(self.gridWidth):
-            for y in range(self.gridHeight):
+        for x in range(self.gridWidth + 1):
+            for y in range(self.gridHeight + 1):
                 if(x,y) in self.cDict:
                     free = False
                     node = Node(x,y,free)
@@ -128,24 +105,12 @@ class Astar(object):
                     self.nodeGrid.append(node)
                     self.completeDict[(x,y)] = node
 
-                    
-
-
-
-        print "Grid Initialization Complete"
-
-
     #A function to convert the closed list into a dictionary.
     def convertToDict(self):
-        print "Converting Closed List into A Dictionary"
 
-         #Add each open and closed list to a dictionary with the (x,y) coord as the key and the Node at that (x,y) as the value
+        #Add each open and closed list to a dictionary with the (x,y) coord as the key and the Node at that (x,y) as the value
         for coord in self.cl:
             self.cDict[coord] = Node(coord[0],coord[1],free=False)
-
-
-        
-        print "Dictionary Conversion Completed"
 
   
     #Return a node based on x,y coordinates 
@@ -158,9 +123,11 @@ class Astar(object):
     def getNode(self,x,y):
 
         if (x,y) in self.completeDict:
+
             return self.completeDict[(x,y)]
         else:
-            print "%f %f does not exist" %(x,y)
+            pass
+
         
         
     #Compute the heuristic value of a cell in this case the Euclidean distance between the current node and the goal node
@@ -169,8 +136,6 @@ class Astar(object):
     #@return the heuristic value
    #@type float
     def heuristic(self,node):        
-        
-        print "Computing h(x)"
         
         return math.sqrt(math.pow(self.goal.getX() - node.getX(),2.0) + math.pow(self.goal.getY() - node.getY(),2.0))
 
@@ -182,15 +147,12 @@ class Astar(object):
     #@type Node
     #@return Nada
     def updateNode(self,node,adj):
-        
-        print "Updating a Node's state"
 
         adj.g = node.g + 1.0
         adj.h = self.heuristic(adj)
         adj.parent = node
         adj.f = adj.g + adj.h
-        print "State Updated"
- 
+
         
     #Find the Neighboors of a given node
     #@param the Node
@@ -199,8 +161,6 @@ class Astar(object):
     #@type a list of Nodes
     def getNeighboors(self,node):
         
-       print 'Finding Neighboors of: %f %f' %(node.getX(),node.getY())
-
        nodes = []
           
         #if the cell is in the domain of the grid append the Node to the list of nodes
@@ -261,23 +221,17 @@ class Astar(object):
                nodes.append(self.getNode(node.getX() + 1,node.getY() + 1))
                 
 
-       print "Got the neighboors"
-        
-       for n in nodes:
-           print (n.getX(),n.getY())
-           
-
        return nodes
         
                 
                 
     #Run through the a* search algorithim and find the best path
+    #TODO: Include case when there is not available path
     def search(self):
         
-        print "Starting a Search"
 
-        start = self.getNode(0,0) #(9,15)?
-        goal= self.getNode(30,5) #(1,25),(78,90)?
+        start = self.getNode(9,15) #(9,15)?
+        goal= self.getNode(78,89) #(1,25),(78,90)?
 
         #To ensure that heuristic() can access the goal point
         self.start = start
@@ -286,21 +240,16 @@ class Astar(object):
 
         #add starting node to the open list Q
         self.openQ.put_nowait((start.f,start))
-        print "The queue size is %d" % self.openQ.qsize()
 
+        #if self.openQ.empty() is True:
+         #   print "There is no Path from %f %f to %f %f" %(start.getX(),start.getY()) %(goal.getX(),goal.getY())
 
-        
         while self.openQ.empty() is False:
             
             #pop the node from the p queue
             nodeQ = self.openQ.get_nowait() #returns the Node and its priority
             node = nodeQ[1] #get the node out of the tupile returned from .get_nowait()
             
-            #self.openQ.task_done()
-            
-            
-            print "The queue size is %d" % self.openQ.qsize()
-            print node
 
             #add the current node to the closed list
             self.cDict[(node.getX(),node.getY())] = node
@@ -308,19 +257,16 @@ class Astar(object):
             
             #if the ending node is found
             if node is goal:
-                print "I think I found the goal"
+
                 self.getPath()
                 break
 
             
             #get the adjacent nodes for each node
             adjNodes = self.getNeighboors(node)
-            print len(adjNodes)
-            
 
             #check each adjacent node 
             for n in adjNodes:
-                print "Checking each adjacent node of %f %f:"  %(n.getX(),n.getY())
                  
                 #if the node is in the closed dictionary ignore it
                 if (n.getX(),n.getY()) in self.cDict:
@@ -334,34 +280,6 @@ class Astar(object):
                     self.updateNode(node,n)
                     
                     self.openQ.put_nowait((n.f,n)) 
-                    
-                    print "The adjacent node's f(x) is:"
-                    print n.f
-                    print n.f
-                    print n.f
-                    print n.f
-                    print n.f
-                    print n.f
-                    print n.f
-
-                    print "The adjacent node's g(x) is:"
-                    print n.g
-                    print n.g
-                    print n.g
-                    print n.g
-                    print n.g
-                    print n.g
-                    print n.g
-
-                                        
-                    
-
-
-
-
-
-
-                    print "%f %f added to the Open List Queue" %(n.getX(),n.getY())
                     self.oDict[(n.getX(),n.getY())] = n
 
 
@@ -374,30 +292,24 @@ class Astar(object):
                         self.updateNode(node,n)      
 
 
-                    print "The queue size at the end of the loop is %d" %self.openQ.qsize()
-
-                                                                 
-        print "Closing for each loop."
-
 
     #A function to return the path list based on the A* search algorithim
     #@param node 
     #@return the path
     #@type list
     def getPath(self):
-        
-        print "Printing the generated Path"
 
         pathList = []
         node = self.goal
         
+        #find the path to the node by tracing back the node's parent pointers
         while node.parent is not self.start:
-            node = node.parent
-#            print "Path coordinate: %d %d" %(node.getX(),node.getY())
+            node = node.parent 
+            
             pathList.append((node.getX(),node.getY()))
             
         print pathList
-        print "Path Generation Complete"
+#        pub.publish(pathList)
         return pathList
 
 
@@ -418,8 +330,8 @@ def test():
     coList = [] #open and closed combined
 
     #generate grid points equivalent to that of the map grid
-    for x in range(gridWidth):
-        for y in range(gridHeight):
+    for x in range(gridWidth + 1):
+        for y in range(gridHeight + 1):
             gridPoints.append((x,y))
     
     for p in gridPoints:
@@ -434,30 +346,28 @@ def test():
     coList.append(ol)
     coList.append(cl)
 
-    print "Done generating Test Points"
     
     return coList
     
 
 def main():
- #   rospy.init_node('n')  #initialize node with the name n                                                                                          
-#    rospy.Subscriber("base_scan",LaserScan,laserCallback) #node subscribes to base_scan topic which is of type LaserScan which invokes the laserCallback with the msg as first arg                                                                                                                                          
- #   rospy.Subscriber("path_seg", PathSegmentMsg, pathSegCallback) #subscribe to path_seg topic of type PathSegmentMsg using PathSegCallback                        
+    #rospy.init_node('n')  #initialize node with the name n                                                                                          
+
+    #pathPointPub = rospy.Publisher('path',Path_Points) #publish to the "path" topic using the "Path_Points" message
+    #pathData = Path_Points()
+
 
 #   rospy.spin() 
 
     #Initialize Test Data
+
     olCl = test()
     cl = olCl[1] #closed list
- 
+    ol = olCl[0]
+
     a = Astar(cl)
-
-#    n = Node(0,0,free=True)
- #   print  n.getG()
     a.search()
- #   nebs = a.getNeighboors(Node(0,0,free=True))
 
-#    a.updateNode(a.getNode(0,0),nebs[1])
      
 if __name__ == '__main__':
     main()
