@@ -1,7 +1,12 @@
 #include <ros/ros.h>
+<<<<<<< HEAD
+#include <kinect_alpha/lib_blob.h>
+//#include "lib_blob.h"
+=======
 #include <iostream>
 #include "lib_blob.h"
 #include <msg_alpha/BlobDistance.h>
+>>>>>>> develop
 #include <sensor_msgs/CameraInfo.h>
 #include <message_filters/subscriber.h>
 #include <message_filters/synchronizer.h>
@@ -11,17 +16,38 @@
 
 #include <boost/format.hpp>
 
+<<<<<<< HEAD
+// PCL includes
+//#include "pcl_ros/point_cloud.h"
+#include <pcl/ros/conversions.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+
+=======
+>>>>>>> develop
 // OpenCV includes
 #include <image_transport/image_transport.h>
 #include <image_transport/subscriber_filter.h>
 #include <cv_bridge/cv_bridge.h>
+<<<<<<< HEAD
+#include <cv_bridge/CvBridge.h>
+=======
+>>>>>>> develop
 #include <sensor_msgs/image_encodings.h>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/opencv.hpp>
 
 using std::string;
+<<<<<<< HEAD
+using sensor_msgs::PointCloud2;
 namespace enc = sensor_msgs::image_encodings;
+
+// Shorthand for our point cloud type
+typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudXYZRGB;
+=======
+namespace enc = sensor_msgs::image_encodings;
+>>>>>>> develop
 
 // Global variables here
 ros::Publisher             cloud_pub_;
@@ -38,9 +64,16 @@ class KinectNode {
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;
     image_transport::Subscriber sub_;
+<<<<<<< HEAD
+
+    //image_transport::Publisher image_pub_;
+    //msg_alpha::BlobDistance blobDist;
+    //ros::Publisher blobPub;
+=======
     //image_transport::Publisher image_pub_;
     msg_alpha::BlobDistance blobDist;
     ros::Publisher blobPub;
+>>>>>>> develop
     int params[7];
 	int dilationIterations;
 };
@@ -48,6 +81,10 @@ class KinectNode {
 KinectNode::KinectNode():
   it_(nh_)
 {
+<<<<<<< HEAD
+
+=======
+>>>>>>> develop
   ros::NodeHandle private_nh("~");
 
   private_nh.param("hl",params[0], 0);
@@ -59,6 +96,13 @@ KinectNode::KinectNode():
   private_nh.param("dilationIterations",dilationIterations,10);
   private_nh.param("sliceLength",params[7],5);
 
+<<<<<<< HEAD
+  std::cout << params[0] << params[1] << params[2] << params[3] << params[4] << params[5] << std::endl;
+  sub_ = it_.subscribe("in_image", 1, &KinectNode::imageCallback, this);
+
+  centroidPub = nh_.advertise<msg_alpha::CentroidPoint>("centroid_point", 1);
+
+=======
 
   std::cout << params[0] << params[1] << params[2] << params[3] << params[4] << params[5] << std::endl;
   sub_ = it_.subscribe("in_image", 1, &KinectNode::imageCallback, this);
@@ -66,6 +110,7 @@ KinectNode::KinectNode():
 
   //blobPub = nh_.advertise<msg_alpha::BlobDistance>("blob_dist",1);
   centroidPub = nh_.advertise<msg_alpha::CentroidPoints>("centroid_pnts",1);
+>>>>>>> develop
 
 }
 
@@ -78,6 +123,26 @@ KinectNode::KinectNode():
 
 void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
 {
+<<<<<<< HEAD
+  sensor_msgs::CvBridge bridge;
+  cv::Mat output;
+  cv_bridge::CvImagePtr cv_ptr;
+  try
+  {
+    cv_ptr = cv_bridge::toCvCopy(msg, enc::BGR8);
+  }
+  catch (cv_bridge::Exception& e) {
+    ROS_ERROR_STREAM("cv_bridge exception: " << e.what());
+    return;
+  }
+  try {
+    //normalizeColors(image, output);
+    //blobfind(image, output);
+    findLines(cv_ptr->image, output);
+    //cv::imshow("view", output);
+    IplImage temp = output;
+    image_pub_.publish(bridge.cvToImgMsg(&temp, "bgr8"));
+=======
 
   //Conver the image from ROS Format to OpenCV format
 	try	{
@@ -131,6 +196,7 @@ cv::Mat KinectNode::detectStrap()
 	//	cvWaitKey(5);
 
 	return output;
+>>>>>>> develop
   }
 
   catch (cv_bridge::Exception& e) {

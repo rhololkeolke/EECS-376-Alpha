@@ -28,6 +28,10 @@ rosbuild_genmsg()
 #rosbuild_add_boost_directories()
 #rosbuild_link_boost(${PROJECT_NAME} thread)
 #rosbuild_add_executable(example examples/example.cpp)
+<<<<<<< HEAD
+rosbuild_add_executable(kinect_alpha src/kinect_node.cpp src/lib_blob.cpp src/cvaux.cpp src/cvblob.cpp src/cvcolor.cpp src/cvcontour.cpp src/cvlabel.cpp src/cvtrack.cpp)
+=======
+>>>>>>> develop
 #target_link_libraries(example ${PROJECT_NAME})
 #target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
 

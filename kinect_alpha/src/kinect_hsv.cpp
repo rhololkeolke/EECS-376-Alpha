@@ -33,21 +33,78 @@ namespace enc = sensor_msgs::image_encodings;
 ros::Publisher             cloud_pub_;
 image_transport::Publisher image_pub_;
 string window_name_;
+<<<<<<< HEAD
+cv_bridge::CvImagePtr cv_ptr; //conversion variable for ROS Image to cvImage
+cv::Mat output;
+=======
+>>>>>>> develop
 
 class KinectNode {
   public:
     KinectNode();
     void imageCallback(const sensor_msgs::ImageConstPtr& msg);
+<<<<<<< HEAD
+    cv::Mat detectStrap();
+=======
+>>>>>>> develop
   private:
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;
     image_transport::Subscriber sub_;
+<<<<<<< HEAD
+    int params[7];
+    int dilationIterations;
+    sub_ = it_.subscribe("in_image", 1, &KinectNode::imageCallback, this);
+};
+
+cv::Mat KinectNode::detectStrap() 
+{
+
+  try {
+
+  cv::cvtColor(cv_ptr->image, output, CV_BGR2HSV);
+
+  cv::Mat temp;
+
+    //Make a vector of Mats to hold the invidiual B,G,R channels
+    vector<Mat> mats;
+
+    //Split the input into 3 separate channels
+    split(temp, mats);
+
+  //std::cout << mats.size() << std::endl;
+   
+  //create the range of HSV values that determine the color we desire to threshold based on launch file params
+  cv::Scalar lowerBound = cv::Scalar(params[0],params[2],params[4]);
+  cv::Scalar upperBound = cv::Scalar(params[1],params[3],params[5]);
+
+  //threshold the image based on the HSV values
+  cv::inRange(output,lowerBound,upperBound,output);
+
+  erode(output, output, Mat());
+
+    dilate(output, output, Mat(), Point(-1,-1), dilationIterations);
+
+  //  cv::imshow("view",output);
+  //  cvWaitKey(5);
+
+  return output;
+  }
+
+  catch (cv_bridge::Exception& e) {
+
+    ROS_ERROR("Could not convert to 'bgr8'. Ex was %s", e.what());
+  }
+}
+
+=======
     //image_transport::Publisher image_pub_;
     msg_alpha::BlobDistance blobDist;
     ros::Publisher blobPub;
     int params[6];
 };
 
+>>>>>>> develop
 // A magical callback that combines an image, cam info, and point cloud
 void allCB(const sensor_msgs::ImageConstPtr& image_msg, 
            const sensor_msgs::PointCloud2::ConstPtr& cloud_msg,
@@ -94,6 +151,31 @@ void allCB(const sensor_msgs::ImageConstPtr& image_msg,
   Bpass.setFilterFieldName ("b");
   Bpass.setFilterLimits (253, 255);
   Bpass.filter (*filteredColorCloud);
+<<<<<<< HEAD
+/*
+  geometry_msgs::Point geom_pt;
+  geom_pt.x = pcl_pt.x; geom_pt.y = pcl_pt.y;
+
+
+  // the TF package requires inputs to be in the form Stamped<sometype>
+  tf::Stamped<tf::Point> geom_pt_tf, temp_pt_tf;
+  pointMsgToTF(geom_pt, geom_pt_tf);
+  geom_pt_tf.frame_id_ = cloud_msg->header.frame_id;
+  geom_pt_tf.stamp_ = cloud_msg->header.stamp;
+
+  try {
+        tfl_->transformPoint(global_frame_, geom_pt_tf, temp_pt_tf);
+  }
+  catch(tf::TransformException& ex) {
+        ROS_ERROR_STREAM(boost::format("Failed to transform point pose from \"%s\" to \"%s\" frame: %s")
+                %geom_pt_tf.frame_id_ %global_frame_ %ex.what());
+        return;
+  }
+*/
+  //TODO: REPLACE THE INPUT CLOUD THAT IS TAKEN IN BY THE ZPASS FILTER.
+  pcl::PassThrough<pcl::PointXYZRGB> zpass;
+  zpass.setInputCloud ();
+=======
 
   try{
       tfl_->transformPoint(global_frame_,geom_pt_tf,)
@@ -103,10 +185,13 @@ void allCB(const sensor_msgs::ImageConstPtr& image_msg,
   //TODO: REPLACE THE INPUT CLOUD THAT IS TAKEN IN BY THE ZPASS FILTER.
   pcl::PassThrough<pcl::PointXYZRGB> zpass;
   zpass.setInputCloud (NEWCLOUDoriginalCloud);
+>>>>>>> develop
   zpass.setFilterFieldName ("z");
   zpass.setFilterLimits (zTolLow, zTolHigh);
   zpass.filter (*filteredFinalCloud);
 
+<<<<<<< HEAD
+=======
   pointArray[] = new 
 
 
@@ -121,6 +206,7 @@ void allCB(const sensor_msgs::ImageConstPtr& image_msg,
   geom_pt_tf.frame_id_ = cloud_msg->header.frame_id;
   geom_pt_tf.stamp_ = cloud_msg->header.stamp;
 
+>>>>>>> develop
   ROS_INFO_STREAM(boost::format("Cloud has size %dx%d. organized=%s")
     %cloud.width %cloud.height %(cloud.isOrganized() ? "true" : "false") );
   
@@ -129,6 +215,8 @@ void allCB(const sensor_msgs::ImageConstPtr& image_msg,
   //Because the cloud data from the Kinect is organized,
   //you can just pick off the point at (300,150) in the cloud.
   //Also, draw a red circle over the desired point.
+<<<<<<< HEAD
+=======
   //int row = 150; int col = 300;
   //cv::circle(cv_ptr->image, cv::Point(col,row), 10, CV_RGB(255,0,0));
   
@@ -137,6 +225,7 @@ void allCB(const sensor_msgs::ImageConstPtr& image_msg,
 
   //Select only the color corresponding pixels
   pcl:PointXYZRGB 
+>>>>>>> develop
   
   ROS_INFO_STREAM(boost::format("Pixel (%d,%d) maps to 3D point (%.2f,%.2f,%.2f) in TF frame = \"%s\"")
     %row %col %p.x %p.y %p.z %cloud_msg->header.frame_id);
@@ -181,6 +270,8 @@ void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
 	}
 }
 	
+<<<<<<< HEAD
+=======
 cv::Mat KinectNode::detectStrap() 
 {
 
@@ -224,6 +315,7 @@ cv::Mat KinectNode::detectStrap()
 
 
 
+>>>>>>> develop
 
 int main(int argc, char **argv)
 {
