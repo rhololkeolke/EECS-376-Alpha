@@ -21,6 +21,8 @@ obs = ObstaclesMsg()
 
 RATE = 20.0
 
+naptime = None
+
 lastSegComplete = 0
 segAbort = False
 
@@ -30,10 +32,20 @@ pathList = PathListMsg()
 
 desPoints = []
 
+def yawToQuat(angle):
+    quatList = quaternion_from_euler(0.0,0.0,angle)
+    quat = QuaternionMsg()
+    quat.x = quatList[0]
+    quat.y = quatList[1]
+    quat.z = quatList[2]
+    quat.w = quatList[3]
+    return quat
+
 def segStatusCallback(data):
     global lastSegComplete
     global segAbort
     global segNumber
+    global pathList
 
     if(segAbort is not True):
         segAbort = data.abort 
@@ -55,25 +67,31 @@ def segStatusCallback(data):
 
 def pointListCallback(data):
     global desPoints
+    global pathList
 
-    if(data.new):
+    #print "In the point list Call back now"
+
+    if(data.new or desPoints == []):
         pathList.segments = []
-        desPoints = data.desPoints
+        desPoints = data.cells
 
 
 def addSegToList(pathSeg):
     global segNumber
+    global pathList
 
     segNumber += 1
 
     pathSeg.seg_number = segNumber
-    pathSeg.max_speeds = .25
-    pathSeg.min_speeds = 0
+    pathSeg.max_speeds.linear.x = .25
+    pathSeg.min_speeds.linear.x = 0
     pathSeg.accel_limit = .125
     pathSeg.decel_limit = -.125
     pathSeg.curvature = 0
     
     pathList.segments.append(pathSeg)
+
+    #print pathList
 
     naptime.sleep()
 
@@ -82,6 +100,7 @@ def main():
     global segNumber
     global segAbort
     global pathList
+    global naptime
 
     rospy.init_node('path_planner_alpha_main')
     pathSegPub = rospy.Publisher('path', PathListMsg)
@@ -98,10 +117,13 @@ def main():
             segNumber = 0
             pathList.segments = []
 
-        if(len(desPoints) >= segNumber+1):
+        if(len(desPoints) > segNumber+1):
             pathSeg = PathSegmentMsg()
             
-            pathSeg.init_tan_angle = m.atan2((desPoints[segNumber+1].y-desPoints[segNumber].y),(desPoints[segNumber+1].x-desPoints[segNumber].x))
+            
+            yaw = m.atan2((desPoints[segNumber+1].y-desPoints[segNumber].y),(desPoints[segNumber+1].x-desPoints[segNumber].x))
+
+            pathSeg.init_tan_angle = yawToQuat(yaw)
 
             #if(theta > m.pi/6):
                 #SPIN TO NEW ANGLES
@@ -111,14 +133,14 @@ def main():
             #Add angle
             xDist = m.pow((desPoints[segNumber].x - desPoints[segNumber+1].x),2)
             yDist = m.pow((desPoints[segNumber].y - desPoints[segNumber+1].y),2)
-            pathSeg.segLength = m.sqrt(xDist + yDist)
+            pathSeg.seg_length = m.sqrt(xDist + yDist)
 
             addSegToList(pathSeg)
 
 
-    pathSegPub.publish(pathList)
+        pathSegPub.publish(pathList)
 
-    naptime.sleep()
+        naptime.sleep()
 
 
 if __name__ == "__main__":
