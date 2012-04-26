@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import roslib; roslib.load_manifest('pathplanner_alpha')
 import rospy
 import math as m
@@ -6,7 +8,7 @@ from msg_alpha.msg._PathSegment import PathSegment as PathSegmentMsg
 from msg_alpha.msg._Obstacles import Obstacles as ObstaclesMsg
 from msg_alpha.msg._SegStatus import SegStatus as SegStatusMsg
 from msg_alpha.msg._PathList import PathList as PathListMsg
-from geometry_msgs.msg._PoseStamped import PoseStamped as PoseStampedMsg
+from msg_alpha.msg._PointList import PointList as PointListMsg
 from std_msgs.msg._Bool import Bool as BoolMsg
 from geometry_msgs.msg._Quaternion import Quaternion as QuaternionMsg
 
@@ -17,110 +19,87 @@ from collections import deque
 
 obs = ObstaclesMsg()
 
-stopped = False
+RATE = 20.0
 
-segComplete = False
+lastSegComplete = 0
 segAbort = False
-last_seg = 1
-
-pose = PoseStampedMsg()
 
 segNumber = 0
 
-pathList = []
-pastPoint = PointMsg()
-currentPoint = PointMsg()
-#futurePoint = PointMsg()
+pathList = PathListMsg()
 
-def eStopCallback(eStop):
-	global stopped
-	stoppped = not eStop.data
-
-def obstaclesCallback(data):
-    global obs
-    obs = data
+desPoints = []
 
 def segStatusCallback(data):
-    global segComplete
+    global lastSegComplete
     global segAbort
-    global last_seg
-    if(segComplete is not True):
-        segComplete = data.segComplete
-    if(segAbort is not True):
-        segAbort = data.abort
-    if(data.seg_number != 0.0): 
-        last_seg = data.seg_number
+    global segNumber
 
-def poseCallback(poseData):
-    global pose
-    pose = poseData
+    if(segAbort is not True):
+        segAbort = data.abort 
+    
+    lastSegComplete = data.lastSegComplete
+
+    # see if there is anything to delete
+    numToDelete = 0
+    for i,seg in enumerate(pathlist):
+        if(seg.seg_number <= lastSegComplete):
+            numToDelete += 1
+        else:
+            break
+
+    # delete the number of items from the front of the list
+    # this is assuming the segment numbers are in order
+    if(numToDelete > 0):
+        del pathList.segments[0:numToDelete-1]
 
 def pointListCallback(data):
-    global desPoints[]
-    data.cells = desPoints[]
+    global desPoints
 
-def yawToQuat(angle):
-    quatList = quaternion_from_euler(0.0,0.0,angle)
-    quat = QuaternionMsg()
-    quat.x = quatList[0]
-    quat.y = quatList[1]
-    quat.z = quatList[2]
-    quat.w = quatList[3]
-    return quat
+    if(data.new):
+        pathList.segments = []
+        desPoints = data.desPoints
 
-def quatToYaw(quat):
-    try:
-        return euler_from_quaternion([quat.x,quat.y,quat.z, quat.w])[2]
-    except AttributeError:
-        return euler_from_quaternion(quat)[2]
 
-def publishSegBlank(pathPub)
-    global seg_number
-    global RATE
+def addSegToList(pathSeg):
+    global segNumber
 
-    naptime = rospy.Rate(RATE)
+    segNumber += 1
 
-    pathSeg = PathSegmentMsg()
-    pathPub.publish(pathSeg)
-    
-    naptime.sleep()
-
-def addSegToList(PathSegmentMsg())
-
-    pathSeg = PathSegmentMsg()
-
-    pathSeg.seg_number = segNumber+1
+    pathSeg.seg_number = segNumber
     pathSeg.max_speeds = .25
     pathSeg.min_speeds = 0
     pathSeg.accel_limit = .125
     pathSeg.decel_limit = -.125
-    #Maybe?
     pathSeg.curvature = 0
     
-    pathList.append(pathSeg)
+    pathList.segments.append(pathSeg)
 
     naptime.sleep()
 
 
 def main():
-	rospy.init_node()
-	rospy.init_node('path_planner_alpha')
-    pathSegPub = rospy.Publisher('path_seg',PathSegmentMsg)
-    rospy.Subscriber('seg_status', SegStatusMsg, segStatusCallback)
-    rospy.Subscriber('motors_enabled', BoolMsg, eStopCallback)
-    rospy.Subscriber('obstacles', ObstaclesMsg, obstaclesCallback)
-    rospy.Subscriber('map_pos', PoseStampedMsg, poseCallback)
-    rospy.Subscriber('pointList', PathListMsg, pointListCallback)
+    global segNumber
+    global segAbort
+    global pathList
 
-    pathSeg = PathSegmentMsg()
+    rospy.init_node('path_planner_alpha_main')
+    pathSegPub = rospy.Publisher('path', PathListMsg)
+    rospy.Subscriber('seg_status', SegStatusMsg, segStatusCallback)
+    rospy.Subscriber('point_list', PointListMsg, pointListCallback)
+
+    naptime = rospy.Rate(RATE)
 
     while not rospy.is_shutdown():
 
+        # clear everything when something gets in the way
+        # of the planned path
         if(segAbort):
             segNumber = 0
-            pathList = []
+            pathList.segments = []
 
         if(len(desPoints) >= segNumber+1):
+            pathSeg = PathSegmentMsg()
             
             pathSeg.init_tan_angle = m.atan2((desPoints[segNumber+1].y-desPoints[segNumber].y),(desPoints[segNumber+1].x-desPoints[segNumber].x))
 
@@ -134,19 +113,13 @@ def main():
             yDist = m.pow((desPoints[segNumber].y - desPoints[segNumber+1].y),2)
             pathSeg.segLength = m.sqrt(xDist + yDist)
 
-            addSegToList()
-
-        if(len(desPoints) == len(pathList)):
-            pathSegPub.publish(pathList)
+            addSegToList(pathSeg)
 
 
+    pathSegPub.publish(pathList)
 
     naptime.sleep()
 
 
 if __name__ == "__main__":
     main()
-
-
-#Add code to check and see if path has changed
-#Make changes to list if the possible places has changed
