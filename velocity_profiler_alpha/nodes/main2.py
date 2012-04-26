@@ -191,11 +191,11 @@ def computeLineTrajectory(seg,v_i,v_f):
     # with the maximum velocity.  If v_f >= maximum velocity then
     # sDecel >= 1
     # Otherwise sDecel < 1
-    print "seg.max_speeds.linear.x^2: %f" % (pow(seg.max_speeds.linear.x,2))
-    print "seg.min_speeds.linear.x^2: %f" % (pow(seg.min_speeds.linear.x,2))
-    print "v_f^2: %f" % (pow(v_f,2))
-    print "seg.decel_limit: %f" % seg.decel_limit
-    print "seg.seg_length: %f" % seg.seg_length
+    # print "seg.max_speeds.linear.x^2: %f" % (pow(seg.max_speeds.linear.x,2))
+    # print "seg.min_speeds.linear.x^2: %f" % (pow(seg.min_speeds.linear.x,2))
+    # print "v_f^2: %f" % (pow(v_f,2))
+    # print "seg.decel_limit: %f" % seg.decel_limit
+    # print "seg.seg_length: %f" % seg.seg_length
     if(v_f < seg.min_speeds.linear.x):
         sDecel = 1-abs((pow(seg.max_speeds.linear.x,2)-pow(seg.min_speeds.linear.x,2))/(2*seg.decel_limit*seg.seg_length))
     else:
@@ -258,9 +258,9 @@ def computeLineTrajectory(seg,v_i,v_f):
         if(sLeft > 0.0):
             if(sDecel < 1.0):
                 decelSeg = TrajSeg(TrajSeg.DECEL,1.0,seg.max_speeds.linear.x,max(v_f,seg.min_speeds.linear.x),seg.seg_number)
-                print "sDecel: %f" % sDecel
+                # print "sDecel: %f" % sDecel
                 sLeft -= 1-sDecel
-                print "sLeft: %f" % sLeft
+                # print "sLeft: %f" % sLeft
 
         
         if(sLeft > 0.0): # there is anything left in s then that is how long to do constant velocity for
@@ -270,7 +270,10 @@ def computeLineTrajectory(seg,v_i,v_f):
 
         if(decelSeg is not None): # if there was a decel segment defined then add it to the vTrajSeg list
             vTrajSegs.append(decelSeg)
-                
+
+    print "sAccel: %f" % sAccel
+    print "sConst: %f" % (sLeft + sAccel)
+    print "sDecel: %f" % sDecel
     return (vTrajSegs, wTrajSegs, max(v_f,seg.min_speeds.linear.x))
 
 def computeArcTrajectory(seg,v_i,v_f,w_i,w_f):
@@ -416,6 +419,10 @@ def computeSpinTrajectory(seg,w_i,w_f):
         temp = w_f_orig
     else:
         temp = seg.min_speeds.angular.z
+
+    print "sAccel: %f" % sAccel
+    print "sConst: %f" % (sLeft + sAccel)
+    print "sDecel: %f" % sDecel
     return (vTrajSegs, wTrajSegs, temp)
         
 def getDesiredVelocity(vTrajSeg,wTrajSeg):
@@ -429,7 +436,7 @@ def getDesiredVelocity(vTrajSeg,wTrajSeg):
     global currSeg
 
 
-    print "segDistDone: %f" % (currSeg.segDistDone)
+    # print "segDistDone: %f" % (currSeg.segDistDone)
     if(vTrajSeg.segType == TrajSeg.ACCEL):
         #print "Using velocity acceleration segment"
         vCmd = getDesiredVelAccel(vTrajSeg, currSeg.segDistDone)
@@ -459,6 +466,7 @@ def getDesiredVelocity(vTrajSeg,wTrajSeg):
         
 def getDesiredVelAccel(seg, segDistDone, cmdType=0):
     pathSeg = pathSegments.get(seg.segNumber)
+
     a_max = pathSeg.accel_limit
     d_max = pathSeg.decel_limit
     if(cmdType == 1):
@@ -534,6 +542,9 @@ def getDesiredVelConst(seg, segDistDone, cmdType=0):
 
 def getDesiredVelDecel(seg, segDistDone, cmdType=0):
     pathSeg = pathSegments.get(seg.segNumber)
+    # note this will crash if the segments were not added to the dictionary correctly
+    # however, this is the desired response because otherwise the robot would just
+    # sit in place forever
     a_max = pathSeg.accel_limit
     d_max = pathSeg.decel_limit
     if(cmdType == 1):
@@ -572,6 +583,12 @@ def getDesiredVelDecel(seg, segDistDone, cmdType=0):
                 vCmd = vScheduled
     else:
         vCmd = vScheduled
+
+    # prevents the robot from stopping before a segment is complete
+    # if the robot stopped early it would get stuck on a segment and never finish
+    if(abs(vCmd) <= 0 and segDistDone < 1.0):
+        vCmd = cmp(vCmd,0)*.05 # the .05 should be adjusted
+
     return vCmd
 
 def update():
@@ -648,6 +665,72 @@ def publishSegStatus(segStatusPub,abort=False):
         
     segStatusPub.publish(segStat)
     
+def stopForObs():
+    '''
+    Responsible for stopping the robot before an obstacle collision
+    '''
+    
+    # calculate the stopping acceleration
+    # this is allowed to override the segment constraints, because
+    # its more important to stop and not crash than it is to 
+    # follow the speed limit
+
+    print "Obstacle detected!"
+    dt = 1.0/RATE
+    decel_rate = -lastVCmd/(2*(obs.distance-.2))
+
+    naptime = rospy.Rate(RATE)
+
+    des_vel = TwistMsg()
+        
+    if(lastVCmd > 0):
+        v_test = lastVCmd + decel_rate*dt
+        des_vel.linear.x = max(v_test,0.0) # this is assuming that velocity is always positive
+
+    # ensure the robot will stop before crashing
+    if(obs.distance < .25):
+        des_vel.linear.x = 0
+        
+    return des_vel;
+
+def obsWithinPathSeg():
+    '''
+    Returns true if the obstacle distance is within the path segment
+    '''
+
+    # if no obstacle is detected then this method is done
+    if(not obs.exists):
+        return False
+
+    if(currSeg.pathSeg is None):
+        return False
+
+    # only detect obstacles for lines
+    # this is currently all look ahead supports
+    if(currSeg.pathSeg.seg_type != 1):
+        return False
+
+    # if the segment length is longer than the distance to the obstacle + .2
+    # then the obstacle is within the current segment so return True
+    if(currSeg.segDistDone*currSeg.pathSeg.seg_length >= obs.distance + .2):
+        return True
+
+    return False
+
+def abortPath():
+    '''
+    Reinitialize the node
+    '''
+    global pathSegments, vTrajectory, wTrajectory, currSeg, lastSegNumber
+
+    # get rid of any segments and trajectory information
+    pathSegments.clear()
+    vTrajectory.clear()
+    wTrajectory.clear()
+    currSeg.pathSeg = None
+
+    # reset the segment number count
+    lastSegNumber = 0
 
 def main():
     global naptime
@@ -662,6 +745,13 @@ def main():
     rospy.Subscriber("cmd_vel", TwistMsg, velCmdCallback) # 
     rospy.Subscriber("path", PathListMsg, pathListCallback)
     rospy.Subscriber("map_pos", PoseStampedMsg, poseCallback)
+
+    abortTime = None # will be set to the time an obstacle is detected
+
+    if rospy.has_param('waitTime'):
+        waitTime = rospy.Duration(rospy.get_param('waitTime'))
+    else:
+        waitTime = rospy.Duration(3.0)
     
     print "Entering main loop"
     
@@ -673,9 +763,37 @@ def main():
         last_vel.angular.z = lastWCmd
         if(currSeg.pathSeg is not None):
             currSeg.updateState(last_vel,position,State.getYaw(orientation))
+
         # check if there are segments to execute
         if(len(vTrajectory) != 0 or len(wTrajectory) != 0): # Note: Either both or neither should have 0 elements
-            des_vel = getDesiredVelocity(vTrajectory[0],wTrajectory[0])
+            # check for obstacles
+            if(obsWithinPathSeg()):
+                # set the timer if necessary
+                if(abortTime is None):
+                    abortTime = rospy.Time.now()
+                else:
+                    if(rospy.Time.now() - abortTime > waitTime):
+                        # time to abort
+                        abortTime = None # reset the time
+                        
+                        # this method will reset anything
+                        # that needs to be reset
+                        # this may need to block here until the
+                        # path list changes
+                        abortPath()
+
+                        # make sure the robot is stopped
+                        desVelPub.publish(TwistMsg())
+                        
+                        # publish the abort flag
+                        publishSegStatus(segStatusPub,abort=False)
+                        naptime.sleep()
+                        continue
+       
+                des_vel = stopForObs()
+            else:
+                abortTime = None # make sure that the abortTime gets reset
+                des_vel = getDesiredVelocity(vTrajectory[0],wTrajectory[0])
         else:
             des_vel = TwistMsg() # initialized to 0's by default
         desVelPub.publish(des_vel) # publish either the scheduled commands or 0's
