@@ -5,6 +5,7 @@ import math as m
 from msg_alpha.msg._PathSegment import PathSegment as PathSegmentMsg
 from msg_alpha.msg._Obstacles import Obstacles as ObstaclesMsg
 from msg_alpha.msg._SegStatus import SegStatus as SegStatusMsg
+from msg_alpha.msg._PathList import PathList as PathListMsg
 from geometry_msgs.msg._PoseStamped import PoseStamped as PoseStampedMsg
 from std_msgs.msg._Bool import Bool as BoolMsg
 from geometry_msgs.msg._Quaternion import Quaternion as QuaternionMsg
@@ -24,13 +25,12 @@ last_seg = 1
 
 pose = PoseStampedMsg()
 
-seg_number = 0
+segNumber = 0
 
-pathStack = deque()
-
+pathList = []
 pastPoint = PointMsg()
 currentPoint = PointMsg()
-futurePoint = PointMsg()
+#futurePoint = PointMsg()
 
 def eStopCallback(eStop):
 	global stopped
@@ -55,7 +55,6 @@ def poseCallback(poseData):
     global pose
     pose = poseData
 
-#TODO: 
 def pointListCallback(data):
     global desPoints[]
     data.cells = desPoints[]
@@ -87,11 +86,18 @@ def publishSegBlank(pathPub)
     naptime.sleep()
 
 def addSegToList(PathSegmentMsg())
-    global seg_number
 
     pathSeg = PathSegmentMsg()
 
-    #Takes in a pathSeg and adds it to the list that will be published
+    pathSeg.seg_number = segNumber+1
+    pathSeg.max_speeds = .25
+    pathSeg.min_speeds = 0
+    pathSeg.accel_limit = .125
+    pathSeg.decel_limit = -.125
+    #Maybe?
+    pathSeg.curvature = 0
+    
+    pathList.append(pathSeg)
 
     naptime.sleep()
 
@@ -104,48 +110,43 @@ def main():
     rospy.Subscriber('motors_enabled', BoolMsg, eStopCallback)
     rospy.Subscriber('obstacles', ObstaclesMsg, obstaclesCallback)
     rospy.Subscriber('map_pos', PoseStampedMsg, poseCallback)
-    rospy.Subscriber('pointList', )
+    rospy.Subscriber('pointList', PathListMsg, pointListCallback)
 
-    segNumber = 0
-    isTurn = False
     pathSeg = PathSegmentMsg()
 
-
-
     while not rospy.is_shutdown():
-        if stopped:
-            stopForEstop(desVelPub, segStatusPub)
 
         if(segAbort):
             segNumber = 0
+            pathList = []
 
-        if(desPoints[segNumber] is not None):
+        if(len(desPoints) >= segNumber+1):
             
-            if(desPoints[segNumber] is not 0):
-            #Calculate the angle between the new line and the old line
-            #to determine if a spin in place is needed between the two
-            
-            oldM = ((desPoints[segNumber].x-desPoints[segNumber+1].x)/(desPoints[segNumber].y-desPoints[segNumber+1].y)) 
-            newM = ((desPoints[segNumber+1].x-desPoints[segNumber+2].x)/(desPoints[segNumber+1].y-desPoints[segNumber+2].y))
-            theta = m.atan2((oldM-newM)/(1+oldM*newM))
+            pathSeg.init_tan_angle = m.atan2((desPoints[segNumber+1].y-desPoints[segNumber].y),(desPoints[segNumber+1].x-desPoints[segNumber].x))
 
-            if(theta > m.pi/6):
+            #if(theta > m.pi/6):
                 #SPIN TO NEW ANGLES
-                addSegToList()
+            #   addSegToList()
+
+            #Calculate the length of the given segment
+            #Add angle
+            xDist = m.pow((desPoints[segNumber].x - desPoints[segNumber+1].x),2)
+            yDist = m.pow((desPoints[segNumber].y - desPoints[segNumber+1].y),2)
+            pathSeg.segLength = m.sqrt(xDist + yDist)
+
+            addSegToList()
+
+        if(len(desPoints) == len(pathList)):
+            pathSegPub.publish(pathList)
 
 
-            else:
-                #Calculate the length of the given segment
-                xDist = m.pow((desPoints[segNumber].x - desPoints[segNumber+1].x),2)
-                yDist = m.pow((desPoints[segNumber].y - desPoints[segNumber+1].y),2)
-                pathSeg.segLength = m.sqrt(xDist + yDist)
-                addSegToList()
-
-
- 
 
     naptime.sleep()
 
 
 if __name__ == "__main__":
     main()
+
+
+#Add code to check and see if path has changed
+#Make changes to list if the possible places has changed
