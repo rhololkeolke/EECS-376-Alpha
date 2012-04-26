@@ -778,6 +778,8 @@ def main():
                         
                         # this method will reset anything
                         # that needs to be reset
+                        # this may need to block here until the
+                        # path list changes
                         abortPath()
 
                         # make sure the robot is stopped
