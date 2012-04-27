@@ -76,7 +76,7 @@ def pointListCallback(data):
 
     if(data.new or desPoints == []):
         pathList.segments = []
-        desPoints = data.cells
+        desPoints = data.points
 
 
 def addSegToList(pathSeg):
