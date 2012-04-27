@@ -57,7 +57,7 @@ def segStatusCallback(data):
 
     # see if there is anything to delete
     numToDelete = 0
-    for i,seg in enumerate(pathlist):
+    for i,seg in enumerate(pathList.segments):
         if(seg.seg_number <= lastSegComplete):
             numToDelete += 1
         else:
@@ -111,6 +111,8 @@ def main():
     rospy.Subscriber('point_list', PointListMsg, pointListCallback)
 
     naptime = rospy.Rate(RATE)
+
+    print "Entering main loop"
 
     while not rospy.is_shutdown():
 

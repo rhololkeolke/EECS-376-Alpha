@@ -16,7 +16,7 @@ import roslib; roslib.load_manifest('astar_alpha')
 import rospy
 
 #ros msg data types
-from msg_alpha.msg._Path_Points import Path_Points
+from msg_alpha.msg._PointList import PointList as Path_Points
 from geometry_msgs.msg._Point import Point as PointMsg
 
 #mathematics
