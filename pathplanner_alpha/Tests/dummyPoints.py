@@ -2,6 +2,7 @@
 
 import roslib; roslib.load_manifest('pathplanner_alpha')
 import rospy
+import csv
 
 from geometry_msgs.msg._PoseStamped import PoseStamped as PoseStampedMsg
 from geometry_msgs.msg._Point import Point as PointMsg
@@ -22,13 +23,14 @@ def appendToList(point):
 
 	pathList.points.append(point)
 
-def main():
+def main(fullList):
 	global pose
 	global pathList
 
 	rospy.init_node('pathplanner_alpha_dummyNode')
 	rospy.Subscriber('map_pos', PoseStampedMsg, poseCallback)
 	dummyPointPub = rospy.Publisher('point_list', PointListMsg)
+
 
 	pathList.new = True
 
@@ -39,31 +41,26 @@ def main():
 	point.y = pose.pose.position.y
 	appendToList(point)
 
-	point1 = PointMsg()
-	point1.x = 3.70
-	point1.y = 13.00
-	appendToList(point1)
-	
-	point2 = PointMsg()
-	point2.x = 3.70
-	point2.y = 13.75
-	appendToList(point2)
+	with open(fullList, 'rb') as csvFile:
+		dialect = csv.Sniffer().sniff(csvFile.read(1024)) # auto detect delimiters
+		csvFile.seek(0)
+		reader = csv.reader(csvFile, dialect) # open up a csv reader object with the csv file
 
-	point3 = PointMsg()
-	point3.x = 3.00
-	point3.y = 13.95
-	appendToList(point3)
-	
-	point4 = PointMsg()
-	point4.x = 2.60
-	point4.y = 14.40
-	appendToList(point4)
-	
+		for i,row in enumerate(reader):
 
-	point5 = PointMsg()
-	point5.x = 2.20
-	point5.y = 15.05
-	appendToList(point5)
+			point1 = PointMsg()
+			try:
+				point1.x = float(row[0])
+			except ValueError:
+				print "x ValueError"
+
+			try:
+				point1.y = float(row[1])
+			except ValueError:
+				print "y ValueError"
+			
+			appendToList(point1)
+	
 
 	while not rospy.is_shutdown(): 
             dummyPointPub.publish(pathList)
@@ -73,4 +70,11 @@ def main():
 
 
 if __name__ == "__main__":
-    main()	
+    import sys
+    import os
+    
+    if(len(sys.argv) > 1):
+        fileName = sys.argv[1]
+        fullPath = os.path.join('.',fileName)
+        
+        main(fullPath)
