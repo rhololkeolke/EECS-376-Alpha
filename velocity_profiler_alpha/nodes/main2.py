@@ -185,6 +185,8 @@ def computeLineTrajectory(seg,v_i,v_f):
     # sAccel <= 0
     # Otherwise sAccel > 0
     sAccel = (pow(seg.max_speeds.linear.x,2) - pow(v_i,2))/(2*seg.accel_limit*seg.seg_length)
+
+    sLeft = 1.0
     
     # Compute Deceleration segment
     # Essentially finding the intersection of the line passing through the point (1,v_f)
@@ -272,7 +274,10 @@ def computeLineTrajectory(seg,v_i,v_f):
             vTrajSegs.append(decelSeg)
 
     print "sAccel: %f" % sAccel
-    print "sConst: %f" % (sLeft + sAccel)
+    if(sLeft is not None):
+        print "sConst: %f" % (sLeft + sAccel)
+    else:
+        print "sConst: %f" % sAccel
     print "sDecel: %f" % sDecel
     return (vTrajSegs, wTrajSegs, max(v_f,seg.min_speeds.linear.x))
 

@@ -65,8 +65,10 @@ def segStatusCallback(data):
 
     # delete the number of items from the front of the list
     # this is assuming the segment numbers are in order
-    if(numToDelete > 0):
+    if(numToDelete > 1):
         del pathList.segments[0:numToDelete-1]
+    elif(numToDelete == 1):
+        del pathList.segments[0]
 
 def pointListCallback(data):
     global desPoints
@@ -86,6 +88,7 @@ def addSegToList(pathSeg):
     segNumber += 1
 
     pathSeg.seg_number = segNumber
+    pathSeg.seg_type = 1
     pathSeg.max_speeds.linear.x = .25
     pathSeg.min_speeds.linear.x = 0
     pathSeg.accel_limit = .125
@@ -129,6 +132,7 @@ def main():
             yaw = m.atan2((desPoints[segNumber+1].y-desPoints[segNumber].y),(desPoints[segNumber+1].x-desPoints[segNumber].x))
 
             pathSeg.init_tan_angle = yawToQuat(yaw)
+            pathSeg.ref_point = desPoints[segNumber]
 
             #if(theta > m.pi/6):
                 #SPIN TO NEW ANGLES

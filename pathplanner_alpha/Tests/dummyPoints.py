@@ -20,7 +20,7 @@ def poseCallback(poseData):
 def appendToList(point):
 	global pathList
 
-	pathList.cells.append(point)
+	pathList.points.append(point)
 
 def main():
 	global pose
@@ -66,13 +66,10 @@ def main():
 	appendToList(point5)
 
 	while not rospy.is_shutdown(): 
-	
+            dummyPointPub.publish(pathList)
+            pathList.new = False
 
-
-		dummyPointPub.publish(pathList)
-		pathList.new = False
-
-		naptime.sleep()
+            naptime.sleep()
 
 
 if __name__ == "__main__":
