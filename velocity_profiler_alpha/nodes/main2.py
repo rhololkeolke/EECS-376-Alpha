@@ -451,7 +451,7 @@ def getDesiredVelocity(vTrajSeg,wTrajSeg):
     elif(vTrajSeg.segType == TrajSeg.DECEL):
         #print "Using velocity deceleration segment"
         vCmd = getDesiredVelDecel(vTrajSeg, currSeg.segDistDone)
-        print "vCmd: %f" % vCmd
+        #print "vCmd: %f" % vCmd
    
     if(wTrajSeg.segType == TrajSeg.ACCEL):
         #print "Using omega acceleration segment"
@@ -567,7 +567,7 @@ def getDesiredVelDecel(seg, segDistDone, cmdType=0):
     else:
         if(d_max < 0.0):
             vScheduled = 2*(1-segDistDone)*pathSeg.seg_length*abs(d_max)
-            print "vScheduled:%f" % vScheduled
+            #print "vScheduled:%f" % vScheduled
         else:
             vScheduled = -1*2*(1-segDistDone)*abs(pathSeg.seg_length)*abs(d_max)
 
@@ -758,7 +758,7 @@ def main():
     else:
         waitTime = rospy.Duration(3.0)
     
-    print "Entering main loop"
+    print "Velocity Profiler entering main loop"
     
     currSeg = State(dt=1/RATE)
     while not rospy.is_shutdown():

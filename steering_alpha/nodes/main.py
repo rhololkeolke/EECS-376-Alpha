@@ -69,7 +69,7 @@ def pathListCallback(pathList):
         minSegNumber = pathList.segments[-1].seg_number
     else:
         # if there are no path segments specified then there is no current segment
-        print "No Segments specified in pathList"
+        #print "No Segments specified in pathList"
         currSeg = None
         return
 
@@ -144,7 +144,7 @@ def main():
     rospy.Subscriber('map_pos', PoseStampedMsg, poseCallback)
     rospy.Subscriber('seg_status', SegStatusMsg, segStatusCallback)
 
-    print "Entering main loop"
+    print "Steering entering main loop"
     
     Kd = 0.5
     Ktheta = 1.0

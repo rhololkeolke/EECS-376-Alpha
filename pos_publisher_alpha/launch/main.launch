@@ -1,0 +1,3 @@
+<launch>
+	<node pkg="pos_publisher_alpha" type="main" name="pos_publisher_main" output="screen"/>
+</launch>
