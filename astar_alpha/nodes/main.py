@@ -44,14 +44,14 @@ def closedListCallback(listData):
 def poseCallback(poseData):
     global pose
     pose = poseData
-'''
+
 #This function receives the (x,y,z) coordinates of the robot's goal in map frame coordinate for the A* search
 #@param the goal
 #@type list
 def goalCallback(goalData):
     global goal
     goal = goalData
-'''
+
 
 #A class that stores the x,y position of a node as well as its path cost and parent node
 class Node(object):
@@ -261,14 +261,16 @@ class Astar(object):
     #Run through the a* search algorithim and find the best path
     #TODO: Include case when there is not available path
     def search(self):
-        
+        global goal
+
 
         start = self.getNode(9,15) #(9,15)?
-        goal= self.getNode(78,89) #(1,25),(78,90)?
+        end = self.getNode(goal[0],goal[1])
+#        goal= self.getNode(78,89) #(1,25),(78,90)?
 
         #To ensure that heuristic() can access the goal point
         self.start = start
-        self.goal = goal
+        self.goal = end
 
 
         #add starting node to the open list Q
