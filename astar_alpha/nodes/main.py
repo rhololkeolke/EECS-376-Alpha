@@ -17,6 +17,7 @@ import rospy
 
 #ros msg data types
 from msg_alpha.msg._Path_Points import Path_Points
+from msg_alpha.msg._Goal import Goal
 from geometry_msgs.msg._Point import Point as PointMsg
 
 #mathematics
@@ -31,19 +32,26 @@ import random
 
 pose = None
 closedList = None
+goal = None
 
-
-def closedListCallback(data):
+#A function that receives data from the cost map about what points should be on the closed list in the A* Search
+def closedListCallback(listData):
     global closedList
-    closedList = data
+    closedList = listData
     
 
+#A function that receives the current position of the robot 
 def poseCallback(poseData):
     global pose
     pose = poseData
-
-
-
+'''
+#This function receives the (x,y,z) coordinates of the robot's goal in map frame coordinate for the A* search
+#@param the goal
+#@type list
+def goalCallback(goalData):
+    global goal
+    goal = goalData
+'''
 
 #A class that stores the x,y position of a node as well as its path cost and parent node
 class Node(object):
@@ -81,7 +89,7 @@ class Astar(object):
         self.cl = cl #closed list
         self.cDict = {} #closed list dictionary
         self.convertToDict() #convert closed list into dictionary
-        #self.transformToGrid()
+        self.transformToGrid()
         self.oDict = {} 
         self.completeDict = {} #dictionary storing all nodes for getNode() function
         self.start = None
@@ -110,8 +118,6 @@ class Astar(object):
         self.cl = cl
 
 
-
-        
     #initialize a grid of corordinates 
     #@param None
     #@return None
@@ -343,7 +349,7 @@ class Astar(object):
 
     def transformToMap(self,pathList):
 
-        pathListPub = rospy.Publisher('point_list', Path_Points)     #Data should be published to the obstacles topics using the Obstacles message type                            
+        pathListPub = rospy.Publisher('point_list', Path_Points)     #Data should be published to the obstacles topics using the Obstacles message type   
         pathData = Path_Points() #initalize an Obstacle message                   
         
         transList = [] #list transformed into map coordinates
@@ -415,10 +421,19 @@ def main():
 #    olCl = test()
  #   cl = olCl[1] #closed list
   #  ol = olCl[0]
+  #            rospy.spin() 
+
+
     while not rospy.is_shutdown():
-#            rospy.spin() 
-        a = Astar(closedList)
-        a.search()
+
+        #As long as a closed list exists run the A* search
+        if type(closedList) is NoneType:
+            print "Waiting for the costmap to pass in a closed list"
+
+        else:
+            print "Starting a search from %f %f" (pose[0], pose[1])
+            a = Astar(closedList)
+            a.search()
 
      
 if __name__ == '__main__':
