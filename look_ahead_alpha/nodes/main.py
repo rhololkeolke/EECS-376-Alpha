@@ -69,9 +69,6 @@ def straight(scanData):
         obsData.exists = False
         obsData.distance = 0.0
 
-    obsData.wall_dist_right = scanData[0]
-    obsData.wall_dist_left = scanData[180]
-
     obsPub.publish(obsData)
     #print len(scanData)
 

@@ -3,5 +3,5 @@
 #Used to determine whether or not an obstacle exists
 bool exists
 float64 distance
-
+float64 ping_angle
 
