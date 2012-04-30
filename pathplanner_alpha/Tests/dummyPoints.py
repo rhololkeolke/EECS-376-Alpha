@@ -36,10 +36,10 @@ def main(fullList):
 
 	naptime = rospy.Rate(RATE)
 
-	point = PointMsg()
-	point.x = pose.pose.position.x
-	point.y = pose.pose.position.y
-	appendToList(point)
+	#point = PointMsg()
+	#point.x = pose.pose.position.x
+	#point.y = pose.pose.position.y
+	#appendToList(point)
 
 	with open(fullList, 'rb') as csvFile:
 		dialect = csv.Sniffer().sniff(csvFile.read(1024)) # auto detect delimiters
