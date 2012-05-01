@@ -51,7 +51,7 @@ def closedListCallback(listData):
 #A function that receives the current position of the robot 
 def poseCallback(poseData):
     global pose
-    pose = (poseData.x, poseData.y)
+    pose = (poseData.position.x, poseData.position.y)
 
 #This function receives the (x,y,z) coordinates of the robot's goal in map frame coordinate for the A* search
 #@param the goal
