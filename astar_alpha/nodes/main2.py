@@ -6,13 +6,76 @@ from nav_msgs.msg._GridCells import GridCells as GridCellsMsg
 from geometry_msgs.msg._Point import Point as PointMsg
 from msg_alpha.msg._PointList import PointList as PointListMsg
 
-from math import ceil
+from math import ceil, floor, sqrt
 
 RATE = 20
 
 corner1 = None
 corner2 = None
 numCells = None
+
+
+class Astar():
+    def __init__(self, corner1, corner2, numCells):
+        '''
+        Constructor for Astar class.
+        
+        corner1 is a geometry_msg Point
+        corner2 is a geometry_msg Point
+        numCells is an integer
+        path is a list of geometry_msg Point messages
+        '''
+        
+        self.corner1 = corner1
+        self.corner2 = corner2
+        self.numCells = numCells
+        self.path = []
+        
+        self.grid = createGrid()
+
+    def recomputeNeeded(closedList):
+        newGrid = 
+
+    def createGrid():
+        '''
+        This method uses the specified corners and the numCells to
+        create a 2d array that will store the values used in the astar
+        search
+        '''
+        # empty list
+        mapArray = list()
+
+        for i in range(self.numCells):
+            mapArray.append(list())
+            for j in range(self.numCells):
+                mapArray[i].append(0) # 0 is blank, 1 is path, -1 is obstacle
+
+        return mapArray
+
+        
+class Space():
+    def __init__(self,point,goal,parent=None):
+        '''
+        Constructor for space class. This class will be used in astar method.
+        point is a tuple of the form (x,y) where x and y are the coordinates of the space.
+        goal is a tuple of the form (goalx, goaly) where goalx and goaly are the coordinates of the goal space
+        parent is an instance of space 
+        '''
+        self.point = point
+        self.parent = None
+        
+        self.h = sqrt(pow(point[0]-goal[0],2) + pow(point[1]-goal[1],2))
+        
+        if parent is not None:
+            self.g = parent.g + 1
+        else:
+            self.g = 0
+
+    def f(self):
+        return self.g + self.h
+
+    def __lt__(self, other):
+        return self.f() < other.f()
 
 def closedListCallback(data):
     pass
@@ -25,12 +88,15 @@ def populateGrid(closedList, path, grid):
     will be used in the calculations. Otherwise the populated grid will be discarded
     '''
     
-    xLength = int(ceil(abs(corner1.x-corner2.x))/numCells)
-    yLength = int(ceil(abs(corner1.y-corner2.y))/numCells)
+    xStep = floor(abs(corner1.x - corner2.x)/numCells)
+    yStep = floor(abs(corner1.y - corner2.y)/numCells)
 
     # fill in the squares in the grid that are included in the current path
     if path is not None:
-        pass
+        for point in path:
+            xIndex = int(floor(point.x/xStep))
+            yIndex = int(floor(point.y/yStep))
+            grid[xIndex][yIndex] = 1
 
     recalculate = False
 
@@ -38,25 +104,14 @@ def populateGrid(closedList, path, grid):
         # add the point to the grid
         # if the cell is occupied by a path point
         # then set the recalculate flag
-        pass 
+        xIndex = int(floor(point.x/xStep))
+        yIndex = int(floor(point.y/yStep))
+        if(grid[xIndex][yIndex] == 1):
+            recalculate = True
+        grid[xIndex][yIndex] = -1
 
     return (recalculate,grid)
 
-def createGrid():
-    '''
-    This method uses the specified corners and the numCells to
-    create a 2d array that will store the values used in the astar
-    search
-    '''
-    # empty list
-    mapArray = list()
-
-    for i in range(numCells):
-        mapArray.append(list())
-        for j in range(numCells):
-            mapArray[i].append(0) # 0 is blank, 1 is path, -1 is obstacle
-
-    return mapArray
             
 
 def main():
