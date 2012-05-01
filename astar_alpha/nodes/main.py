@@ -37,20 +37,28 @@ goal = None
 #A function that receives data from the cost map about what points should be on the closed list in the A* Search
 def closedListCallback(listData):
     global closedList
-    closedList = listData
     
+    points = []
 
+    for p in listData.cells:
+        point = (p.x,p.y)
+    points.append(point)
+
+    print points
+    closedList = points
+    
+    
 #A function that receives the current position of the robot 
 def poseCallback(poseData):
     global pose
-    pose = poseData
+    pose = (poseData.x, poseData.y)
 
 #This function receives the (x,y,z) coordinates of the robot's goal in map frame coordinate for the A* search
 #@param the goal
 #@type list
 def goalCallback(goalData):
     global goal
-    goal = goalData
+    goal = (goalData.x,goalData.y)
 
 
 #A class that stores the x,y position of a node as well as its path cost and parent node
@@ -413,19 +421,13 @@ def main():
 
     pathPointPub = rospy.Publisher('point_list',Path_Points) #publish to the "point_list" topic using the "Path_Points" message
     pathData = Path_Points()
-    rospy.Subscriber('costmap_alpha/costmap/inflatedobstacles',PointMsg,closedListCallback)
+    rospy.Subscriber('costmap_alpha/costmap/inflated_obstacles',PointMsg,closedListCallback) #tells the node which points on the map are obstalces
+    rospy.Subscriber('map_pos',PointMsg,poseCallback) #tells the node the robots current position in map space
+    rospy.Subscriber('goal',PointMsg,goalCallback) #tells the node the desired destination in map space
 
 
-    if closedList == None:
-        print "A* has no closed points"
-    #Initialize Test Data
 
-#    olCl = test()
- #   cl = olCl[1] #closed list
-  #  ol = olCl[0]
-  #            rospy.spin() 
-
-
+    
     while not rospy.is_shutdown():
 
         #As long as a closed list exists run the A* search
