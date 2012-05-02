@@ -1,0 +1,17 @@
+<package>
+  <description brief="goal_publisher">
+
+     goal_publisher
+
+  </description>
+  <author></author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/goal_publisher</url>
+  <depend package="rospy"/>
+  <depend package="roscpp"/>
+  <depend package="cwru_base"/>
+
+</package>
+
+
