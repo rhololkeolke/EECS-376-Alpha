@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 #include <ros/ros.h>
 #include <iostream>
 #include "lib_blob.h"
@@ -55,7 +54,10 @@ using namespace cv;
 ros::Publisher             cloud_pub_;
 image_transport::Publisher image_pub_;
 string window_name_;
+
 cv_bridge::CvImagePtr cv_ptr; //conversion variable for ROS Image to cvImage
+cv::Mat output;
+
 
 class KinectNode {
 public:
@@ -95,6 +97,7 @@ KinectNode::KinectNode():
   private_nh.param("zTolHigh",params[9],10);
   private_nh.param("gridSize",params[10], 255);
 
+  try {
 
   std::cout << params[0] << params[1] << params[2] << params[3] << params[4] << params[5] << std::endl;
   std::cout << dilationIterations << std::endl;
@@ -103,7 +106,10 @@ KinectNode::KinectNode():
   blobPub = nh_.advertise<msg_alpha::BlobDistance>("blob_dist",1);
 }
 
+  cv::Mat temp;
 
+    //Make a vector of Mats to hold the invidiual B,G,R channels
+    vector<Mat> mats;
 
 /* Function to receive Kinect Data
    @param The Image from the center
@@ -113,6 +119,8 @@ KinectNode::KinectNode():
 */
 void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
 {
+  tfl = new tf::TransformListener();
+  string global_frame_ = "map";
 
   //Convert the image from ROS Format to OpenCV format
   try	{
@@ -124,7 +132,32 @@ void KinectNode::imageCallback(const sensor_msgs::ImageConstPtr& image_msg)
   }
 }
 
+  PointCloudXYZRGB cloud;
+  pcl::fromROSMsg(*cloud_msg, cloud);
 
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr originalCloud = cloud;
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr filteredRCloud (new pcl::PointCloud<pcl::PointXYZRGB>);
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr filteredGCloud (new pcl::PointCloud<pcl::PointXYZRGB>);
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr filteredColorCloud (new pcl::PointCloud<pcl::PointXYZRGB>);
+
+  pcl::PassThrough<pcl::PointXYZRGB> Rpass;
+  Rpass.setInputCloud (originalCloud);
+  Rpass.setFilterFieldName ("r");
+  Rpass.setFilterLimits (253, 255);
+  Rpass.filter (*filteredRCloud);
+
+  pcl::PassThrough<pcl::PointXYZRGB> Gpass;
+  Gpass.setInputCloud (filteredRCloud);
+  Gpass.setFilterFieldName ("g");
+  Gpass.setFilterLimits (253, 255);
+  Gpass.filter (*filteredGCloud);
+
+  pcl::PassThrough<pcl::PointXYZRGB> Bpass;
+  Bpass.setInputCloud (filteredGCloud);
+  Bpass.setFilterFieldName ("b");
+  Bpass.setFilterLimits (253, 255);
+  Bpass.filter (*filteredColorCloud);
+<<<<<<< HEAD
 /*
   Function to Highlight the path strap from Kinect Data
   @param none
@@ -147,6 +180,8 @@ void KinectNode::detectStrap()
 
     //Split the input into 3 separate channels
     split(temp, mats);
+
+  //std::cout << mats.size() << std::endl;
    
     //create the range of HSV values that determine the color we desire to threshold based on launch file params
     cv::Scalar lowerBound = cv::Scalar(params[0],params[2],params[4]);

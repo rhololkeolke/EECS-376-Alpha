@@ -1,5 +1,5 @@
 <launch>
 	<node pkg="costmap_alpha" type="costmap_alpha" respawn="false" name="costmap_alpha">
-		<rosparam file="costmap_common_params.yaml" command="load" ns="costmap" />
+		<rosparam file="costmap_alpha/costmap_params.yaml" command="load" ns="costmap" />
 	</node>
 </launch>

@@ -1,0 +1,28 @@
+<!-- This is the main launch file for all of team alpha's nodes-->
+<launch>
+
+	<!-- Kinect Nodes -->
+	<include file="$(find kinect_alpha)/launch/main.launch" />
+	
+	<!-- Pos Publisher-->
+	<include file="$(find pos_publisher_alpha)/launch/main.launch" />
+
+	<!-- Costmap Nodes -->
+	<include file="$(find costmap_alpha)/launch/main.launch" />
+
+	<!-- A* Node -->
+	<!--<include file="$(find astar_alpha)/launch/main.launch" />-->
+	
+	<!-- Path Publisher Node -->
+	<include file="$(find pathplanner_alpha)/launch/main.launch" />
+
+	<!-- Velocity Profiler Node -->
+	<include file="$(find velocity_profiler_alpha)/launch/main.launch" />
+	
+	<!-- Steering Node -->
+	<include file="$(find steering_alpha)/launch/main.launch" />
+
+	<!-- Look Ahead Node -->
+	<include file="$(find look_ahead_alpha)/launch/main.launch" />
+	<remap from="base_laser1_scan" to="base_scan"/>
+</launch>
