@@ -16,7 +16,7 @@ import roslib; roslib.load_manifest('astar_alpha')
 import rospy
 
 #ros msg data types
-from msg_alpha.msg._Path_Points import Path_Points
+from msg_alpha.msg._PointList import PointList
 from msg_alpha.msg._Goal import Goal
 from geometry_msgs.msg._Point import Point as PointMsg
 
@@ -37,6 +37,8 @@ goal = None
 #A function that receives data from the cost map about what points should be on the closed list in the A* Search
 def closedListCallback(listData):
     global closedList
+
+    print "I'm in the closedListCallback"
     
     points = []
 
@@ -50,16 +52,18 @@ def closedListCallback(listData):
     
 #A function that receives the current position of the robot 
 def poseCallback(poseData):
+
+    print "I'm in poseCallback"
     global pose
     pose = (poseData.position.x, poseData.position.y)
-
+'''
 #This function receives the (x,y,z) coordinates of the robot's goal in map frame coordinate for the A* search
 #@param the goal
 #@type list
 def goalCallback(goalData):
     global goal
     goal = (goalData.x,goalData.y)
-
+'''
 
 #A class that stores the x,y position of a node as well as its path cost and parent node
 class Node(object):
@@ -269,17 +273,17 @@ class Astar(object):
     #Run through the a* search algorithim and find the best path
     #TODO: Include case when there is not available path
     def search(self):
-        global goal
+        #global goal
 
 
         start = self.getNode(9,15) #(9,15)?
-        end = self.getNode(goal[0],goal[1])
-#        goal= self.getNode(78,89) #(1,25),(78,90)?
+        #end = self.getNode(goal[0],goal[1])
+        goal= self.getNode(78,89) #(1,25),(78,90)?
 
         #To ensure that heuristic() can access the goal point
         self.start = start
-        self.goal = end
-
+        #self.goal = end
+        self.goal = goal
 
         #add starting node to the open list Q
         self.openQ.put_nowait((start.f,start))
@@ -359,8 +363,8 @@ class Astar(object):
 
     def transformToMap(self,pathList):
 
-        pathListPub = rospy.Publisher('point_list', Path_Points)     #Data should be published to the obstacles topics using the Obstacles message type   
-        pathData = Path_Points() #initalize an Obstacle message                   
+        pathListPub = rospy.Publisher('point_list', PointMsg)     #Data should be published to the "point_list topic using the geometry_msgs/Point data type
+        pathData = PathList() #initalize an Obstacle message                   
         
         transList = [] #list transformed into map coordinates
 
@@ -419,26 +423,32 @@ def main():
     global closedList
     rospy.init_node('n')  #initialize node with the name n                                                                                          
 
-    pathPointPub = rospy.Publisher('point_list',Path_Points) #publish to the "point_list" topic using the "Path_Points" message
-    pathData = Path_Points()
+#    pathPointPub = rospy.Publisher('point_list',PointMsg) #publish to the "point_list" topic using the "Path_Points" message
+ #   pathData = Path_Points()
     rospy.Subscriber('costmap_alpha/costmap/inflated_obstacles',PointMsg,closedListCallback) #tells the node which points on the map are obstalces
     rospy.Subscriber('map_pos',PointMsg,poseCallback) #tells the node the robots current position in map space
-    rospy.Subscriber('goal',PointMsg,goalCallback) #tells the node the desired destination in map space
+#    rospy.Subscriber('goal',PointMsg,goalCallback) #tells the node the desired destination in map space
 
 
-
+    print "About to enter while not rospy.is_shutdown():"
     
     while not rospy.is_shutdown():
 
-        #As long as a closed list exists run the A* search
-        if type(closedList) is NoneType:
-            print "Waiting for the costmap to pass in a closed list"
+
+        while type(closedList) is not NoneType:
+            '''
+            if type(closedList) is NoneType:
+               print "Waiting for the costmap to pass in a closed list"
 
         else:
+        '''
+            
+
             print "Starting a search from %f %f" (pose[0], pose[1])
             a = Astar(closedList)
             a.search()
-
+            
+    rospy.sleep(1.0)
      
 if __name__ == '__main__':
     main()
