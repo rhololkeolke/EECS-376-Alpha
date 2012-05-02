@@ -8,7 +8,7 @@
 	<include file="$(find pos_publisher_alpha)/launch/main.launch" />
 	
 	<!-- Costmap Nodes -->
-	<include file="$(find costmap_alpha)/launch/main.launch" />
+	<include file="$(find costmap_alpha)/launch/main_sim.launch" />
 
 	<!-- A* Node -->
 	<include file="$(find astar_alpha)/launch/main.launch" />

@@ -1,0 +1,8 @@
+<launch>
+
+	<!-- Our costmap node -->
+	<node pkg="costmap_alpha" type="costmap_alpha" respawn="false" name="costmap_alpha">
+	      <rosparam file="costmap_alpha/costmap_params_lidar_only.yaml" command="load" ns="costmap" />
+	</node>
+
+</launch>
