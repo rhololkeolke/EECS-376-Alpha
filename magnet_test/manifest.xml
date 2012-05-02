@@ -1,0 +1,17 @@
+<package>
+  <description brief="magnet_test">
+
+     magnet_test
+
+  </description>
+  <author>jinx</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/magnet_test</url>
+  <depend package="rospy"/>
+  <depend package="msg_alpha"/>
+  <depend package="phidgets"/>
+
+</package>
+
+
