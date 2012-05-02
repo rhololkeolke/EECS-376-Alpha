@@ -33,6 +33,7 @@ import random
 pose = None
 closedList = None
 goal = None
+RATE = 20.0
 
 #A function that receives data from the cost map about what points should be on the closed list in the A* Search
 def closedListCallback(listData):
@@ -43,19 +44,20 @@ def closedListCallback(listData):
     points = []
 
     for p in listData.cells:
-        point = (p.x,p.y)
+        point = ((int)p.x,(int)p.y)
     points.append(point)
 
     print points
     closedList = points
     
-    
+
 #A function that receives the current position of the robot 
 def poseCallback(poseData):
 
     print "I'm in poseCallback"
     global pose
     pose = (poseData.position.x, poseData.position.y)
+
 '''
 #This function receives the (x,y,z) coordinates of the robot's goal in map frame coordinate for the A* search
 #@param the goal
@@ -426,29 +428,32 @@ def main():
 #    pathPointPub = rospy.Publisher('point_list',PointMsg) #publish to the "point_list" topic using the "Path_Points" message
  #   pathData = Path_Points()
     rospy.Subscriber('costmap_alpha/costmap/inflated_obstacles',PointMsg,closedListCallback) #tells the node which points on the map are obstalces
-    rospy.Subscriber('map_pos',PointMsg,poseCallback) #tells the node the robots current position in map space
+#    rospy.Subscriber('map_pos',PointMsg,poseCallback) #tells the node the robots current position in map space
 #    rospy.Subscriber('goal',PointMsg,goalCallback) #tells the node the desired destination in map space
+    
+    naptime = rospy.Rate(RATE)
+
 
 
     print "About to enter while not rospy.is_shutdown():"
     
     while not rospy.is_shutdown():
 
-
+        
         while type(closedList) is not NoneType:
             '''
             if type(closedList) is NoneType:
                print "Waiting for the costmap to pass in a closed list"
 
-        else:
-        '''
+               else:
+               '''
             
-
+            
             print "Starting a search from %f %f" (pose[0], pose[1])
             a = Astar(closedList)
             a.search()
             
-    rospy.sleep(1.0)
+        naptime.sleep()
      
 if __name__ == '__main__':
     main()
