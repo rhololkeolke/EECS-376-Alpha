@@ -125,14 +125,16 @@ def main():
             segNumber = 0
             pathList.segments = []
 
-        if(len(desPoints) > segNumber+1):
+        print "len(desPoints) %i" % len(desPoints)
+        print "len(pathList.segments) %i" % len(pathList.segments)
+        if(len(desPoints)-1 > len(pathList.segments)):
             pathSeg = PathSegmentMsg()
             
-            
-            yaw = m.atan2((desPoints[segNumber+1].y-desPoints[segNumber].y),(desPoints[segNumber+1].x-desPoints[segNumber].x))
+            num = len(pathList.segments)
+            yaw = m.atan2((desPoints[num+1].y-desPoints[num].y),(desPoints[num+1].x-desPoints[num].x))
 
             pathSeg.init_tan_angle = yawToQuat(yaw)
-            pathSeg.ref_point = desPoints[segNumber]
+            pathSeg.ref_point = desPoints[num]
 
             #if(theta > m.pi/6):
                 #SPIN TO NEW ANGLES
@@ -140,8 +142,8 @@ def main():
 
             #Calculate the length of the given segment
             #Add angle
-            xDist = m.pow((desPoints[segNumber].x - desPoints[segNumber+1].x),2)
-            yDist = m.pow((desPoints[segNumber].y - desPoints[segNumber+1].y),2)
+            xDist = m.pow((desPoints[num].x - desPoints[num+1].x),2)
+            yDist = m.pow((desPoints[num].y - desPoints[num+1].y),2)
             pathSeg.seg_length = m.sqrt(xDist + yDist)
 
             addSegToList(pathSeg)

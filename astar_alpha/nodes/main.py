@@ -143,6 +143,7 @@ def main():
 
     pathPointPub = rospy.Publisher('point_list', PointListMsg)
 
+    first_run = True
     pointList = PointListMsg()
     while not rospy.is_shutdown():
         pointList.new = newPath
@@ -165,8 +166,8 @@ def main():
             pointList.points.append(pathPoint)
 
         if newPath:
-            newPath = False
-
+            newPath = False            
+            
         pathPointPub.publish(pointList)
 
         naptime.sleep()
