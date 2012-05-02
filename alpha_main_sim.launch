@@ -2,7 +2,7 @@
 <launch>
 
 	<!-- Kinect Nodes -->
-	<include file="$(find kinect_alpha)/launch/main.launch" />
+	<!--<include file="$(find kinect_alpha)/launch/main.launch" />-->
 
 	<!-- Pos Publisher-->
 	<include file="$(find pos_publisher_alpha)/launch/main.launch" />
@@ -11,7 +11,7 @@
 	<include file="$(find costmap_alpha)/launch/main.launch" />
 
 	<!-- A* Node -->
-	<!--<include file="$(find astar_alpha)/launch/main.launch" />-->
+	<include file="$(find astar_alpha)/launch/main.launch" />
 	
 	<!-- Path Publisher Node -->
 	<include file="$(find pathplanner_alpha)/launch/main.launch" />
