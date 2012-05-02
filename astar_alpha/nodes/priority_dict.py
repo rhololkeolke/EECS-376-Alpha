@@ -47,7 +47,7 @@ class priority_dict(dict):
         while k not in self or self[k] != v:
             v, k = heappop(heap)
         del self[k]
-        return k
+        return v
 
     def __setitem__(self, key, val):
         # We are not going to remove the previous value from the heap,
