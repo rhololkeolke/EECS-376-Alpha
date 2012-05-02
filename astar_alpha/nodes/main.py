@@ -42,6 +42,7 @@ def closedListCallback(listData):
     
     points = []
 
+    #add each point to the closed list and round the (x,y) coordianes down
     for p in listData.cells:
         point = ((int)p.x,(int)p.y)
     points.append(point)

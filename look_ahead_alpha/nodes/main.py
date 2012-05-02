@@ -11,13 +11,14 @@ from msg_alpha.msg._Obstacles import Obstacles
 
 scanData=[]
 RATE = 20
-BOX_WIDTH = 0.5
-BOX_HEIGHT = 1.0
+#BOX_WIDTH = 0.5
+#BOX_HEIGHT = 1.0
 angleSwitch = math.atanh(BOX_WIDTH) * 180/math.pi
 ping_angle = None #the angle at which the lidar scanner picks up an obstacle
+pathList = []
 
 #Receives laser data from the base_scan topic and places the data into an array
-def laserCallback(data):
+def laserCallback(laserData):
     #copy each element in the base_scan array to scanData[]
     #the i is always within the length of the base_scan array
     obsPub = rospy.Publisher('obstacles', Obstacles)     #Data should be published to the obstacles topics using the Obstacles message type                         
@@ -28,15 +29,45 @@ def laserCallback(data):
     #print len(data.ranges)
     obsPub.publish(obsData)
     
-    straight(data.ranges)
+    straight(laserData.ranges)
     #print len(scanData)
 
-#Determine if there are obstacles along a straight path        
-def straight(scanData):
+def pathListCallback(pathListData):
+
+    global pathList
+
+    for s in pathListData:
+
+        pathList.append(s)
+
+def checkAlongPath():
+    
+    global pathList
+    distanceChecked = 0.0 #current distance along the path the robot has checked
+    checkLimit = 1.0 #path should only be checked up to 1m.
+
+    while distanceChecked < 1.0:
+        
+        #get the length of the current path segment
+        for s in pathList:
+            segLength = s.seg_length
+            distanceChecked += segLength
+            straight(segLength)
+    
+        
+    
+
+#Determine if there are obstacles along a path segment
+#@param the laser scan ranges data
+#@param the length of the path segment to check
+def straight(scanData,segLength):
     obsPub = rospy.Publisher('obstacles', Obstacles)     #Data should be published to the obstacles topics using the Obstacles message type
     obsData = Obstacles() #initalize an Obstacle message
     closestObs = 90 # the range of the lidar scanner is 80m therefore no data should be beyond this value
     global ping_angle #refernce to the global
+
+    BOX_WIDTH = 0.5
+    BOX_HEIGHT = segLength
 
 
     #Check to see if a lidar ping is less than cos(T)/Width if so there is an obstacle
@@ -72,6 +103,8 @@ def straight(scanData):
     obsPub.publish(obsData)
     #print len(scanData)
 
+
+
 def main():
     global BOX_WIDTH, BOX_HEIGHT
 
@@ -89,6 +122,8 @@ def main():
         BOX_HEIGHT = 1.0
 
     rospy.Subscriber("base_scan",LaserScan,laserCallback)    
+    rospy.Subscriber("path",PathListMsg,pathListCallback)
+    
     
     rospy.spin()
 
