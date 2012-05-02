@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
-import roslib; roslib.load_manifest('look_ahead_alpha')
+import roslib; roslib.load_manifest('astar_alpha')
+
+import rospy
 
 from nav_msgs.msg._GridCells import GridCells as GridCellsMsg
 from geometry_msgs.msg._Point import Point as PointMsg
@@ -56,7 +58,7 @@ def poseCallback(pose):
 
 def main():
     global corner1, corner2, numCells
-    global searcher
+    global searcher, newPath
 
     rospy.init_node('astar_alpha_main')
 
