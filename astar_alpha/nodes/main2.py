@@ -5,117 +5,58 @@ import roslib; roslib.load_manifest('look_ahead_alpha')
 from nav_msgs.msg._GridCells import GridCells as GridCellsMsg
 from geometry_msgs.msg._Point import Point as PointMsg
 from msg_alpha.msg._PointList import PointList as PointListMsg
+from msg_alpha.msg._Goal import Goal as GoalMsg
+
+from astar import Astar
 
 from math import ceil, floor, sqrt
 
 RATE = 20
 
+position = None
+
 corner1 = None
 corner2 = None
 numCells = None
 
+searcher = None
 
-class Astar():
-    def __init__(self, corner1, corner2, numCells):
-        '''
-        Constructor for Astar class.
-        
-        corner1 is a geometry_msg Point
-        corner2 is a geometry_msg Point
-        numCells is an integer
-        path is a list of geometry_msg Point messages
-        '''
-        
-        self.corner1 = corner1
-        self.corner2 = corner2
-        self.numCells = numCells
-        self.path = []
-        
-        self.grid = createGrid()
+newPath = True
 
-    def recomputeNeeded(closedList):
-        newGrid = 
+def goalCallback(data):
+    global searcher, newPath
+    if(data.new):
+        if(searcher is None):
+            return
+        searcher.start = (position.x,position.y)
+        newPath = searcher.updateGoal((data.goal.x,data.goal.y))
 
-    def createGrid():
-        '''
-        This method uses the specified corners and the numCells to
-        create a 2d array that will store the values used in the astar
-        search
-        '''
-        # empty list
-        mapArray = list()
-
-        for i in range(self.numCells):
-            mapArray.append(list())
-            for j in range(self.numCells):
-                mapArray[i].append(0) # 0 is blank, 1 is path, -1 is obstacle
-
-        return mapArray
-
-        
-class Space():
-    def __init__(self,point,goal,parent=None):
-        '''
-        Constructor for space class. This class will be used in astar method.
-        point is a tuple of the form (x,y) where x and y are the coordinates of the space.
-        goal is a tuple of the form (goalx, goaly) where goalx and goaly are the coordinates of the goal space
-        parent is an instance of space 
-        '''
-        self.point = point
-        self.parent = None
-        
-        self.h = sqrt(pow(point[0]-goal[0],2) + pow(point[1]-goal[1],2))
-        
-        if parent is not None:
-            self.g = parent.g + 1
-        else:
-            self.g = 0
-
-    def f(self):
-        return self.g + self.h
-
-    def __lt__(self, other):
-        return self.f() < other.f()
-
-def closedListCallback(data):
-    pass
-
-def populateGrid(closedList, path, grid):
-    '''
-    Given a list of closed points and a path and a grid
-    This function will fill in the new grid with the path and check if a new path
-    needs to be calculated. If a new path needs to be calculated then the populated grid
-    will be used in the calculations. Otherwise the populated grid will be discarded
-    '''
+def inflatedObstaclesCallback(data):
+    global searcher, newPath
     
-    xStep = floor(abs(corner1.x - corner2.x)/numCells)
-    yStep = floor(abs(corner1.y - corner2.y)/numCells)
+    if(searcher is None):
+        return
 
-    # fill in the squares in the grid that are included in the current path
-    if path is not None:
-        for point in path:
-            xIndex = int(floor(point.x/xStep))
-            yIndex = int(floor(point.y/yStep))
-            grid[xIndex][yIndex] = 1
+    # converting to the tuple format is really inefficient
+    # should change the astar method to expect to be able to
+    # access the coorindates with .x and .y
+    closedPoint = list()
+    for point in data.cells:
+        searcher.start = (position.x,position.y)
+        closedPoints.append((point.x,point.y))
 
-    recalculate = False
+    newPath = searcher.updateClosedList(closedPoints)
 
-    for point in closedList:
-        # add the point to the grid
-        # if the cell is occupied by a path point
-        # then set the recalculate flag
-        xIndex = int(floor(point.x/xStep))
-        yIndex = int(floor(point.y/yStep))
-        if(grid[xIndex][yIndex] == 1):
-            recalculate = True
-        grid[xIndex][yIndex] = -1
-
-    return (recalculate,grid)
-
-            
+def poseCallback(pose):
+    '''
+    Updates the robot's best estimate on position and orientation
+    '''
+    global position
+    position = pose.pose.position
 
 def main():
     global corner1, corner2, numCells
+    global searcher
 
     rospy.init_node('astar_alpha_main')
 
@@ -123,50 +64,72 @@ def main():
 
     # corner 1 and corner 2 specify the area in the map
     # that astar will consider
+
+    # Corner1
     if rospy.has_param('corner1x'):
         corner1x = rospy.get_param('corner1x')
     else:
-        corner1x = 0.0 #CHANGE ME
+        corner1x = -6.25
 
     if rospy.has_param('corner1y'):
         corner1y = rospy.get_param('corner1y')
     else:
-        corner1y = 0.0 #CHANGE ME
+        corner1y = 8.2
 
+    # Corner2
     if rospy.has_param('corner2x'):
         corner2x = rospy.get_param('corner2x')
     else:
-        corner2x = 10.0 #CHANGE ME
+        corner2x = 15.75
 
     if rospy.has_param('corner2y'):
         corner2y = rospy.get_param('corner2y')
     else:
-        corner2y = 10.0 #CHANGE ME
+        corner2y = 28.2
 
-    corner1 = PointMsg()
-    corner1.x = corner1x
-    corner1.y = corner1y
+    corner1 = (corner1x,corner1y)
 
-    corner2 = PointMsg()
-    corner2.x = corner2x
-    corner2.y = corner2y
+    corner2 = (corner2x,corner2y)
+
 
     # numCells specifies the number of cells to divide the
     # specified astar search space into
     if rospy.has_param('numCells'):
         numCells = rospy.get_param('numCells')
     else:
-        numCells = rospy.get_param('numCells')
+        numCells = 100
 
     # topic that the node looks for the closed points on
     if rospy.has_param('inflatedTopic'):
         inflatedTopic = rospy.get_param('inflatedTopic')
     else:
-        inflatedTopic = 'inflated_obstacles'
+        inflatedTopic = '/costmap_alpha/costmap/inflated_obstacles'
 
-    rospy.Subscriber(inflatedTopic,GridCellsMsg,closedListCallback)
+    # topic that the node looks for goal messages on
+    if rospy.has_param('goalTopic'):
+        goalTopic = rospy.get_param('goalTopic')
+    else:
+        goalTopic = 'goal_point'
 
-    rospy.spin()
+    # initialize an instance of the Astar class
+    searcher = Astar(corner1,corner2,numCells)
+    naptime = rospy.Rate(RATE)
+    
+    rospy.Subscriber(goalTopic,GoalMsg,goalCallback)
+    rospy.Subscriber(inflatedTopic,GridCellsMsg,inflatedObstaclesCallback)
+
+    pathPointPub = rospy.Publisher('point_list', PointListMsg)
+
+    pointList = PointListMsg()
+    while not rospy.is_shutdown():
+        pointList.new = newPath
+        pointList.points = searcher.path
+        if newPath:
+            newPath = False
+
+        pathPointPub.publish(pointList)
+
+        naptime.sleep()
 
 if __name__ == '__main__':
     main()
