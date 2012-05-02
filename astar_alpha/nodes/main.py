@@ -6,6 +6,7 @@ import rospy
 
 from nav_msgs.msg._GridCells import GridCells as GridCellsMsg
 from geometry_msgs.msg._Point import Point as PointMsg
+from geometry_msgs.msg._PoseStamped import PoseStamped as PoseStampedMsg
 from msg_alpha.msg._PointList import PointList as PointListMsg
 from msg_alpha.msg._Goal import Goal as GoalMsg
 
@@ -27,8 +28,10 @@ newPath = True
 
 def goalCallback(data):
     global searcher, newPath
-    if(data.new):
-        if(searcher is None):
+    
+    if(searcher.goal is None):
+        print "Updating goal"
+        if(searcher is None or position is None):
             return
         searcher.start = (position.x,position.y)
         newPath = searcher.updateGoal((data.goal.x,data.goal.y))
@@ -36,18 +39,23 @@ def goalCallback(data):
 def inflatedObstaclesCallback(data):
     global searcher, newPath
     
-    if(searcher is None):
+    if(searcher is None or position is None):
         return
+
+    print "Updating closed List"
 
     # converting to the tuple format is really inefficient
     # should change the astar method to expect to be able to
     # access the coorindates with .x and .y
-    closedPoint = list()
+    closedPoints = list()
     for point in data.cells:
         searcher.start = (position.x,position.y)
         closedPoints.append((point.x,point.y))
 
-    newPath = searcher.updateClosedList(closedPoints)
+    searcher.updateClosedList(closedPoints,recompute=False)
+    searcher.computePath()
+    newPath = True
+    
 
 def poseCallback(pose):
     '''
@@ -117,15 +125,45 @@ def main():
     searcher = Astar(corner1,corner2,numCells)
     naptime = rospy.Rate(RATE)
     
+    print "corner1: "
+    print corner1
+    print ""
+    print "corner2: "
+    print corner2
+    print ""
+    print "numCells: %i" % numCells
+    print ""
+    print "goal topics: %s" % goalTopic
+    print ""
+    print "inflatedTopic: %s" % inflatedTopic
+
     rospy.Subscriber(goalTopic,GoalMsg,goalCallback)
     rospy.Subscriber(inflatedTopic,GridCellsMsg,inflatedObstaclesCallback)
+    rospy.Subscriber('map_pos', PoseStampedMsg, poseCallback)
 
     pathPointPub = rospy.Publisher('point_list', PointListMsg)
 
     pointList = PointListMsg()
     while not rospy.is_shutdown():
         pointList.new = newPath
-        pointList.points = searcher.path
+        
+        print "searcher.start"
+        print searcher.start
+        print ""
+        print "searcher.goal"
+        print searcher.goal
+        print ""
+        print "searcher.path"
+        print searcher.path
+        print ""
+
+        pointList.points = []
+        for point in searcher.path:
+            pathPoint = PointMsg()
+            pathPoint.x = point[0]
+            pathPoint.y = point[1]
+            pointList.points.append(pathPoint)
+
         if newPath:
             newPath = False
 

@@ -46,8 +46,11 @@ class Astar():
         with the default value of True the path will be recomputed
         '''
         self.goal = goal
+
+        print "In updateGoal"
         
         if recompute:
+            print "About to run computePath"
             self.computePath() # compute the path using the new goal and the saved start point
             return True
         else:
@@ -64,12 +67,19 @@ class Astar():
         and false otherwise
         '''
 
+        print "In updateClosedList"
+
         # update the grid with all of the closed points
         (conflict, self.grid) = self.populateGrid(closedList)
+        
+        print "populated the grid"
+        print "conflict"
+        print conflict
         
         # if there was a conflict and recompute was set to true then call the 
         # computePath method
         if conflict and recompute:
+            print "About to run computePath"
             self.computePath()
             return True
         else:
@@ -146,7 +156,9 @@ class Astar():
         '''
         from priority_dict import priority_dict as PriorityDict
         from space import Space
-        
+
+        print "In computePath"
+
         # see if there is a start point
         # if there isn't then just return
         # also save the start point if it is new
@@ -178,11 +190,25 @@ class Astar():
             for j,cell in enumerate(self.grid[i]):
                 closedList[i].append(cell)
 
+        print "goal in map"
+        print goal
+        print ""
+        print "start in map"
+        print start
+        print ""
+
         try:
             goal = self.transformMapToGrid(self.goal)
             start = self.transformMapToGrid(start)
         except Exception:
             return
+
+        print "goal in grid"
+        print goal
+        print ""
+        print "start in grid"
+        print start
+        print ""
 
         # starting node in the search tree
         root = Space((start[0],start[1]),(goal[0],goal[1]))
