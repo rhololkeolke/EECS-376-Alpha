@@ -3,6 +3,7 @@
 #include <costmap_2d/costmap_2d_ros.h>
 #include <costmap_2d/costmap_2d_publisher.h>
 #include <string>
+using namespace std;
 
 int main(int argc, char** argv){
 
