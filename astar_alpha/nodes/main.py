@@ -32,11 +32,13 @@ def goalCallback(data):
     # if there is no goal or the goal has changed and
     # the stay put flag is not set
 
+    new = False
+
     if((searcher.goal is None or (searcher.goal[0] != data.goal.x or searcher.goal[1] != data.goal.y)) and not data.none):
         if(searcher is None or position is None):
             return
         searcher.start = (position.x,position.y)
-        newPath = searcher.updateGoal((data.goal.x,data.goal.y))
+        new = searcher.updateGoal((data.goal.x,data.goal.y))
     elif(data.none):
         # otherwise stay put so set goal to none
         searcher.goal = None
@@ -44,7 +46,11 @@ def goalCallback(data):
             # only need to run computePath if
             # there is an existing path
             searcher.computePath()
-            newPath = True
+            new = True
+
+    print "updated goal recomputed a path: %s" % new
+
+    newPath = newPath or new
 
 def inflatedObstaclesCallback(data):
     global searcher, newPath
@@ -60,7 +66,11 @@ def inflatedObstaclesCallback(data):
         searcher.start = (position.x,position.y)
         closedPoints.append((point.x,point.y))
 
-    newPath = searcher.updateClosedList(closedPoints,recompute=False)
+    new = searcher.updateClosedList(closedPoints)
+
+    print "inflated obstacles recomputed a path: %s" % new
+
+    newPath = newPath or new
     
 def poseCallback(pose):
     '''

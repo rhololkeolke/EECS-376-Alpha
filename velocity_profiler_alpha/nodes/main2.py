@@ -220,7 +220,7 @@ def computeLineTrajectory(seg,v_i,v_f):
             temp = TrajSeg(TrajSeg.DECEL,1.0,seg.max_speeds.linear.x,v_f,seg.seg_number)
             vTrajSegs.append(temp)
         else: # there is some constant velocity during this segment
-            temp = TrajSeg(TrajSeg.CONST,sDecel,seg.max_speeds.linear.x,seg.max_speeds.linear.x,seg.seg_number)
+            temp = TrajSeg(TrajSeg.CONST,min(sDecel,1.0),seg.max_speeds.linear.x,seg.max_speeds.linear.x,seg.seg_number)
             vTrajSegs.append(temp)
             temp = TrajSeg(TrajSeg.DECEL,1.0,seg.max_speeds.linear.x,v_f,seg.seg_number)
             vTrajSegs.append(temp)
@@ -231,7 +231,7 @@ def computeLineTrajectory(seg,v_i,v_f):
                 temp = TrajSeg(TrajSeg.DECEL,1.0,v_i,seg.max_speeds.linear.x,seg.seg_number)
                 vTrajSegs.append(temp)
             else: # there is a section of constant velocity
-                temp = TrajSeg(TrajSeg.DECEL,sAccel,v_i,seg.max_speeds.linear.x,seg.seg_number)
+                temp = TrajSeg(TrajSeg.DECEL,min(sAccel,1.0),v_i,seg.max_speeds.linear.x,seg.seg_number)
                 vTrajSegs.append(temp)
                 temp = TrajSeg(TrajSeg.CONST,1.0,seg.max_speeds.linear.x,seg.max_speeds.linear.x,seg.seg_number)
                 vTrajSegs.append(temp)
@@ -239,7 +239,7 @@ def computeLineTrajectory(seg,v_i,v_f):
             temp = TrajSeg(TrajSeg.ACCEL,1.0,v_i,seg.max_speeds.linear.x,seg.seg_number)
             vTrajSegs.append(temp)
         else: # some constant velocity
-            temp = TrajSeg(TrajSeg.ACCEL,sAccel,v_i,seg.max_speeds.linear.x,seg.seg_number)
+            temp = TrajSeg(TrajSeg.ACCEL,min(sAccel,1.0),v_i,seg.max_speeds.linear.x,seg.seg_number)
             vTrajSegs.append(temp)
             temp = TrajSeg(TrajSeg.CONST,1.0,seg.max_speeds.linear.x,seg.max_speeds.linear.x,seg.seg_number)
             vTrajSegs.append(temp)
@@ -249,13 +249,13 @@ def computeLineTrajectory(seg,v_i,v_f):
             sAccel = (pow(seg.max_speeds.linear.x,2)-pow(v_i,2))/(2*seg.decel_limit*seg.seg_length)
             if(sAccel > 1.0): # decelerating the entire time
                 sAccel = 1.0
-            temp = TrajSeg(TrajSeg.DECEL,sAccel,v_i,seg.max_speeds.linear.x,seg.seg_number)
+            temp = TrajSeg(TrajSeg.DECEL,min(sAccel,1.0),v_i,seg.max_speeds.linear.x,seg.seg_number)
             vTrajSegs.append(temp)
         elif(sAccel > 1.0): # will accelerate the whole time
             temp = TrajSeg(TrajSeg.ACCEL,1.0,v_i,seg.max_speeds.linear.x,seg.seg_number)
             vTrajSegs.append(temp)
         else:
-            temp = TrajSeg(TrajSeg.ACCEL,sAccel,v_i,seg.max_speeds.linear.x,seg.seg_number)
+            temp = TrajSeg(TrajSeg.ACCEL,min(sAccel,1.0),v_i,seg.max_speeds.linear.x,seg.seg_number)
             vTrajSegs.append(temp)
 
         sLeft -= sAccel
@@ -271,7 +271,7 @@ def computeLineTrajectory(seg,v_i,v_f):
         
         if(sLeft > 0.0): # there is anything left in s then that is how long to do constant velocity for
             sAccel = (pow(seg.max_speeds.linear.x,2) - pow(v_i,2))/(2*seg.accel_limit*seg.seg_length)
-            temp = TrajSeg(TrajSeg.CONST,sAccel+sLeft,seg.max_speeds.linear.x,seg.max_speeds.linear.x,seg.seg_number)
+            temp = TrajSeg(TrajSeg.CONST,min(sAccel+sLeft,1.0),seg.max_speeds.linear.x,seg.max_speeds.linear.x,seg.seg_number)
             vTrajSegs.append(temp)
 
         if(decelSeg is not None): # if there was a decel segment defined then add it to the vTrajSeg list
@@ -364,7 +364,7 @@ def computeSpinTrajectory(seg,w_i,w_f):
             temp = TrajSeg(TrajSeg.DECEL,1.0,seg.max_speeds.angular.z,w_f_orig,seg.seg_number)
             wTrajSegs.append(temp)
         else: # there is some constant velocity during this segment
-            temp = TrajSeg(TrajSeg.CONST,sDecel,seg.max_speeds.angular.z,seg.max_speeds.angular.z,seg.seg_number)
+            temp = TrajSeg(TrajSeg.CONST,min(sDecel,1.0),seg.max_speeds.angular.z,seg.max_speeds.angular.z,seg.seg_number)
             wTrajSegs.append(temp)
             temp = TrajSeg(TrajSeg.DECEL,1.0,seg.max_speeds.angular.z,w_f_orig,seg.seg_number)
             wTrajSegs.append(temp)
@@ -375,7 +375,7 @@ def computeSpinTrajectory(seg,w_i,w_f):
                 temp = TrajSeg(TrajSeg.DECEL,1.0,w_i_orig,seg.max_speeds.angular.z,seg.seg_number)
                 wTrajSegs.append(temp)
             else: # there is a section of constant velocity
-                temp = TrajSeg(TrajSeg.DECEL,sAccel,w_i_orig,seg.max_speeds.angular.z,seg.seg_number)
+                temp = TrajSeg(TrajSeg.DECEL,min(sAccel,1.0),w_i_orig,seg.max_speeds.angular.z,seg.seg_number)
                 wTrajSegs.append(temp)
                 temp = TrajSeg(TrajSeg.CONST,1.0,seg.max_speeds.angular.z,seg.max_speeds.angular.z,seg.seg_number)
                 wTrajSegs.append(temp)
@@ -393,13 +393,13 @@ def computeSpinTrajectory(seg,w_i,w_f):
             sAccel = (pow(max_speed,2)-pow(w_i,2))/(2*decel_limit*seg_length)
             if(sAccel > 1.0): # decelerating the entire time
                 sAccel = 1.0
-            temp = TrajSeg(TrajSeg.DECEL,sAccel,w_i_orig,seg.max_speeds.angular.z,seg.seg_number)
+            temp = TrajSeg(TrajSeg.DECEL,min(sAccel,1.0),w_i_orig,seg.max_speeds.angular.z,seg.seg_number)
             wTrajSegs.append(temp)
         elif(sAccel > 1.0): # will accelerate the whole time
             temp = TrajSeg(TrajSeg.ACCEL,1.0,w_i_orig,seg.max_speeds.angular.z,seg.seg_number)
             wTrajSegs.append(temp)
         else:
-            temp = TrajSeg(TrajSeg.ACCEL,sAccel,w_i_orig,seg.max_speeds.angular.z,seg.seg_number)
+            temp = TrajSeg(TrajSeg.ACCEL,min(sAccel,1.0),w_i_orig,seg.max_speeds.angular.z,seg.seg_number)
             wTrajSegs.append(temp)
 
         sLeft -= sAccel
@@ -417,7 +417,7 @@ def computeSpinTrajectory(seg,w_i,w_f):
         
         if(sLeft > 0.0): # there is anything left in s then that is how long to do constant velocity for
             sAccel = (pow(max_speed,2) - pow(w_i,2))/(2*accel_limit*seg_length)
-            temp = TrajSeg(TrajSeg.CONST,sAccel+sLeft,seg.max_speeds.angular.z,seg.max_speeds.angular.z,seg.seg_number)
+            temp = TrajSeg(TrajSeg.CONST,min(sAccel+sLeft,1.0),seg.max_speeds.angular.z,seg.max_speeds.angular.z,seg.seg_number)
             wTrajSegs.append(temp)
 
         if(decelSeg is not None): # if there was a decel segment defined then add it to the vTrajSeg list
