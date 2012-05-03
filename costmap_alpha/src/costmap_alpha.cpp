@@ -2,11 +2,14 @@
 #include <tf/transform_listener.h>
 #include <costmap_2d/costmap_2d_ros.h>
 #include <costmap_2d/costmap_2d_publisher.h>
+#include <string>
+using namespace std;
 
 int main(int argc, char** argv){
 
+	string arg1 = string(argv[1]);
 	//initialize ROS
-	ros::init(argc, argv, "costmap_alpha");
+	ros::init(argc, argv, arg1);
 
 	//create a Transform Listener
 	tf::TransformListener tf(ros::Duration(10));
@@ -16,11 +19,7 @@ int main(int argc, char** argv){
 
 	//create a ROS wrapper for the costmap, passing it a name and a reference to a TransformListener
 	//which will configure itself based on parameters
-	costmap_2d::Costmap2DROS costmap_ros("costmap", tf);
-//	costmap_2d::Costmap2DPublisher(n, 1, "map");
-
-	//create a timer for our silly print callback that will call it once a second
-//	ros::Timer timer = n.createTimer(ros::Duration(1.0), boost::bind(doSomething, _1, boost::ref(costmap_ros)));
+	costmap_2d::Costmap2DROS costmap_ros(arg1, tf);
 
 	//start processing data
 	ros::spin();
