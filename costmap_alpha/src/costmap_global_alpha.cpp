@@ -6,7 +6,7 @@
 int main(int argc, char** argv){
 
 	//initialize ROS
-	ros::init(argc, argv, "costmap_alpha");
+	ros::init(argc, argv, "costmap_global_alpha");
 
 	//create a Transform Listener
 	tf::TransformListener tf(ros::Duration(10));
@@ -16,7 +16,7 @@ int main(int argc, char** argv){
 
 	//create a ROS wrapper for the costmap, passing it a name and a reference to a TransformListener
 	//which will configure itself based on parameters
-	costmap_2d::Costmap2DROS costmap_ros("costmap", tf);
+	costmap_2d::Costmap2DROS costmap_ros("costmap_global", tf);
 
 	//start processing data
 	ros::spin();
