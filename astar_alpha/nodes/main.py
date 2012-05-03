@@ -139,10 +139,10 @@ def main():
     if rospy.has_param('inflatedTopic'):
         inflatedTopic = rospy.get_param('inflatedTopic')
     else:
-        inflatedTopic = '/costmap_alpha/costmap_local/inflated_obstacles'
+        inflatedTopic = '/costmap_local_alpha/costmap_local/inflated_obstacles'
 
     # topic that the node looks for the closed points of the static map on
-    if rospy.has_para('wallsTopic'):
+    if rospy.has_param('wallsTopic'):
         wallsTopic = rospy.get_param('wallsTopic')
     else:
         wallsTopic = '/costmap_alpha/costmap_global/inflated_obstacles'
