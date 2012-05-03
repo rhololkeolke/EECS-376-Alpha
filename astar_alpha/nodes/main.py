@@ -26,6 +26,8 @@ searcher = None
 
 newPath = True
 
+wallPoints = []
+
 def goalCallback(data):
     global searcher, newPath
     
@@ -66,11 +68,20 @@ def inflatedObstaclesCallback(data):
         searcher.start = (position.x,position.y)
         closedPoints.append((point.x,point.y))
 
+    closedPoints = closedPoints + wallPoints
+
     new = searcher.updateClosedList(closedPoints)
 
     print "inflated obstacles recomputed a path: %s" % new
 
     newPath = newPath or new
+
+def wallsCallback(data):
+    global searcher, newPath, wallPoints
+
+    wallPoints = list()
+    for point in data.cells:
+        wallPoints.append((point.x,point.y))
     
 def poseCallback(pose):
     '''
@@ -128,7 +139,13 @@ def main():
     if rospy.has_param('inflatedTopic'):
         inflatedTopic = rospy.get_param('inflatedTopic')
     else:
-        inflatedTopic = '/costmap_alpha/costmap/inflated_obstacles'
+        inflatedTopic = '/costmap_alpha/costmap_local/inflated_obstacles'
+
+    # topic that the node looks for the closed points of the static map on
+    if rospy.has_para('wallsTopic'):
+        wallsTopic = rospy.get_param('wallsTopic')
+    else:
+        wallsTopic = '/costmap_alpha/costmap_global/inflated_obstacles'
 
     # topic that the node looks for goal messages on
     if rospy.has_param('goalTopic'):
@@ -154,6 +171,7 @@ def main():
 
     rospy.Subscriber(goalTopic,GoalMsg,goalCallback)
     rospy.Subscriber(inflatedTopic,GridCellsMsg,inflatedObstaclesCallback)
+    rospy.Subscriber(wallsTopic, GridCellsMsg, wallsCallback)
     rospy.Subscriber('map_pos', PoseStampedMsg, poseCallback)
 
     pathPointPub = rospy.Publisher('point_list', PointListMsg)
