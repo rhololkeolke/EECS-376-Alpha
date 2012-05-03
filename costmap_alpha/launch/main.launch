@@ -1,10 +1,10 @@
 <launch>
 
 	<!-- Our costmap node -->
-	<node pkg="costmap_alpha" type="costmap_alpha" respawn="false" name="costmap_alpha">
-	      <rosparam file="costmap_alpha/costmap_params_window.yaml" args="costmap_window" command="load" ns="costmap_window" />
-	</node>
-	<node pkg="costmap_alpha" type="costmap_alpha" respawn="false" name="costmap_alpha">
-	      <rosparam file="costmap_alpha/costmap_params_static.yaml" args="costmap_static" command="load" ns="costmap_static" />
+	<node pkg="costmap_alpha" type="costmap_alpha" respawn="true" name="costmap_alpha">
+	      <rosparam file="costmap_alpha/costmap_common_params.yaml" command="load" ns="costmap_local" />
+	      <rosparam file="costmap_alpha/costmap_common_params.yaml" command="load" ns="costmap_global" />
+	      <rosparam file="costmap_alpha/costmap_local_params.yaml" command="load"/>
+	      <rosparam file="costmap_alpha/costmap_global_params.yaml" command="load"/>
 	</node>
 </launch>
