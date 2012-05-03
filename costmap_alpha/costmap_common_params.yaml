@@ -13,6 +13,6 @@ transform_tolerance: 0.1
 max_obstacle_height: 3.1
 footprint: [[0.3048, 0.3048], [0.3048, -0.3048], [-0.711, -0.3048], [-0.711, 0.3048]]
 
-footprint_padding: 0.1
+footprint_padding: 0.5
 cost_scaling_factor: 11.8
 lethal_cost_threshold: 100
