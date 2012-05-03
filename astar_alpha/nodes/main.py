@@ -29,8 +29,7 @@ newPath = True
 def goalCallback(data):
     global searcher, newPath
     
-    if(searcher.goal is None):
-        print "Updating goal"
+    if(searcher.goal is None or (searcher.goal[0] != data.goal.x or searcher.goal[1] != data.goal.y)):
         if(searcher is None or position is None):
             return
         searcher.start = (position.x,position.y)
@@ -42,8 +41,6 @@ def inflatedObstaclesCallback(data):
     if(searcher is None or position is None):
         return
 
-    print "Updating closed List"
-
     # converting to the tuple format is really inefficient
     # should change the astar method to expect to be able to
     # access the coorindates with .x and .y
@@ -52,11 +49,8 @@ def inflatedObstaclesCallback(data):
         searcher.start = (position.x,position.y)
         closedPoints.append((point.x,point.y))
 
-    searcher.updateClosedList(closedPoints,recompute=False)
-    searcher.computePath()
-    newPath = True
+    newPath = searcher.updateClosedList(closedPoints,recompute=False)
     
-
 def poseCallback(pose):
     '''
     Updates the robot's best estimate on position and orientation

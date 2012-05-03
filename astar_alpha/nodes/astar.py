@@ -47,10 +47,9 @@ class Astar():
         '''
         self.goal = goal
 
-        print "In updateGoal"
+        print "Updating goal..."
         
         if recompute:
-            print "About to run computePath"
             self.computePath() # compute the path using the new goal and the saved start point
             return True
         else:
@@ -67,19 +66,14 @@ class Astar():
         and false otherwise
         '''
 
-        print "In updateClosedList"
+        print "Updating closed list"
 
         # update the grid with all of the closed points
         (conflict, self.grid) = self.populateGrid(closedList)
         
-        print "populated the grid"
-        print "conflict"
-        print conflict
-        
         # if there was a conflict and recompute was set to true then call the 
         # computePath method
         if conflict and recompute:
-            print "About to run computePath"
             self.computePath()
             return True
         else:
@@ -96,7 +90,15 @@ class Astar():
         '''
         newGrid = self.createGrid()
 
-        conflict = False
+        # see if there is currently a path
+        if(len(self.path) == 0):
+            # if there is no path then
+            # might as well try and recompute
+            conflict = True
+        else:
+            # only want to recompute if something
+            # is in the way of our current path
+            conflict = False
         # fill in the squares in the grid that are included in the current path
         for point in closedList:
             try:
@@ -157,7 +159,7 @@ class Astar():
         from priority_dict import priority_dict as PriorityDict
         from space import Space
 
-        print "In computePath"
+        print "Computing path..."
 
         # see if there is a start point
         # if there isn't then just return
@@ -190,25 +192,11 @@ class Astar():
             for j,cell in enumerate(self.grid[i]):
                 closedList[i].append(cell)
 
-        print "goal in map"
-        print goal
-        print ""
-        print "start in map"
-        print start
-        print ""
-
         try:
             goal = self.transformMapToGrid(self.goal)
             start = self.transformMapToGrid(start)
         except Exception:
             return
-
-        print "goal in grid"
-        print goal
-        print ""
-        print "start in grid"
-        print start
-        print ""
 
         # starting node in the search tree
         root = Space((start[0],start[1]),(goal[0],goal[1]))
