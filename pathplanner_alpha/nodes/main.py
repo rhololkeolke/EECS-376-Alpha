@@ -33,6 +33,8 @@ segNumber = 0
 
 pathList = PathListMsg()
 
+pathPub = None
+
 desPoints = []
 
 def yawToQuat(angle):
@@ -78,6 +80,8 @@ def pointListCallback(data):
 
     if(data.new or desPoints == []):
         pathList.segments = []
+        pathSegPub.publish(pathList)
+        naptime.sleep()
         desPoints = data.points
 
 
@@ -107,6 +111,7 @@ def main():
     global segAbort
     global pathList
     global naptime
+    global pathSegPub
 
     rospy.init_node('path_planner_alpha_main')
     pathSegPub = rospy.Publisher('path', PathListMsg)

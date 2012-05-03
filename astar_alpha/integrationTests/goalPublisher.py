@@ -8,7 +8,7 @@ from geometry_msgs.msg._Point import Point as PointMsg
 
 RATE = 20.0
 
-def main(x,y):
+def main(x=None,y=None):
     global goal
 
     rospy.init_node('astar_alpha_goal_publisher')
@@ -21,11 +21,15 @@ def main(x,y):
 
     goal.new = True
 
-    goal_point = PointMsg()
-    goal_point.x = x
-    goal_point.y = y
+    
+    if(x is None or y is None):
+        goal.none = True
+    else:
+        goal_point = PointMsg()
+        goal_point.x = x
+        goal_point.y = y
 
-    goal.goal = goal_point
+        goal.goal = goal_point
     
     while not rospy.is_shutdown():
         goalPub.publish(goal)
@@ -37,7 +41,17 @@ if __name__ == "__main__":
     import sys
     
     if(len(sys.argv) == 3):
-        x = float(sys.argv[1])
-        y = float(sys.argv[2])
+        try:
+            x = float(sys.argv[1])
+            y = float(sys.argv[2])
+            main(x,y)
+        except ValueError:
+            print "Non floats detected."
+            print "Publishing blank path segments"
+            
+            main()
+    else:
+        print "Non floats detected."
+        print "Publishing blank path segments"
         
-        main(x,y)
+        main()

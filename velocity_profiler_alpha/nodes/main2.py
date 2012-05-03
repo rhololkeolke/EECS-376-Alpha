@@ -74,8 +74,12 @@ def pathListCallback(pathlist):
     and recomputes the trajectory with the new segments
     '''
     global pathSegments
+    
     # look and see if there are any changes
-    changes = False
+    if(len(pathlist.segments) == 0):
+        changes = True
+    else:
+        changes = False
     for seg in pathlist.segments:
         if(pathSegments.get(seg.seg_number) is None): # if None then we have never seen this path segment before
             pathSegments[seg.seg_number] = seg # add this path segment to the dictionary

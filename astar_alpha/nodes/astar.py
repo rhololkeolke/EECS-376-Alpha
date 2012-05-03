@@ -166,6 +166,9 @@ class Astar():
         # also save the start point if it is new
         if start is None:
             if(self.start is None):
+                # clear the path and quit
+                self.path = []
+                self.__pathDict = dict()
                 return
             else:
                 start = self.start
@@ -178,6 +181,9 @@ class Astar():
         # if it is new
         if goal is None:
             if(self.goal is None):
+                # clear the path and quit
+                self.path = []
+                self.__pathDict = dict()
                 return
             else:
                 goal = self.goal
@@ -196,6 +202,9 @@ class Astar():
             goal = self.transformMapToGrid(self.goal)
             start = self.transformMapToGrid(start)
         except Exception:
+            # clear the path and quit
+            self.path = []
+            self.__pathDict = dict()
             return
 
         # starting node in the search tree
@@ -242,6 +251,7 @@ class Astar():
         if goalSpace is None:
             # no path could be found
             # clear the old path
+            print "No path found!"
             self.path = []
             self.__pathDict = dict()
             return
