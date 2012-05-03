@@ -37,7 +37,7 @@ def goalCallback(data):
             return
         searcher.start = (position.x,position.y)
         newPath = searcher.updateGoal((data.goal.x,data.goal.y))
-    else:
+    elif(data.none):
         # otherwise stay put so set goal to none
         searcher.goal = None
         if(len(searcher.path) > 0):

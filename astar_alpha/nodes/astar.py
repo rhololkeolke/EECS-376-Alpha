@@ -45,9 +45,9 @@ class Astar():
         Will update the saved goal location. If recompute is left
         with the default value of True the path will be recomputed
         '''
-        self.goal = goal
+        print "Updating goal"
 
-        print "Updating goal..."
+        self.goal = goal
         
         if recompute:
             self.computePath() # compute the path using the new goal and the saved start point
@@ -251,7 +251,6 @@ class Astar():
         if goalSpace is None:
             # no path could be found
             # clear the old path
-            print "No path found!"
             self.path = []
             self.__pathDict = dict()
             return
@@ -269,6 +268,7 @@ class Astar():
 
         # now flip the path so that it is in the correct order
         self.path = reversePath[::-1] # for all elements in reversePath in steps of negative 1 from the end
+
 
         # put the path in dictionary form so that the updatedClosedList can take advantage of the path information    
         # there are better more pythonic ways of doing this, but this should work
