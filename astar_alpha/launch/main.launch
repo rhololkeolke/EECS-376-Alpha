@@ -5,7 +5,5 @@
 	      <param name="corner2x" type="double" value="15.75"/>
 	      <param name="corner2y" type="double" value="28.2"/>
 	      <param name="numCells" type="int" value="100"/>
-	      <param name="inflatedTopic" type="string" value="/costmap_alpha/costmap/inflated_obstacles"/>
-	      <param name="goalTopic" type="string" value="goal_point"/>
 	</node>
 </launch>

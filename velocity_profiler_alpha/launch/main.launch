@@ -2,5 +2,5 @@
 <launch>
 
 	<!-- Main velocity profiler node -->
-	<node pkg="velocity_profiler_alpha" type="main2.py" name="velocity_profiler_main" output="screen"/>
+	<node pkg="velocity_profiler_alpha" type="main2.py" name="velocity_profiler_main" output="screen" respawn="true"/>
 </launch>

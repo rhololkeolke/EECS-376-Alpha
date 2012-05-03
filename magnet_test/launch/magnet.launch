@@ -1,0 +1,8 @@
+<!---->
+<launch>
+
+    <!-- Static transform from Harlie's base to the magnet -->
+        <node pkg="tf" type="static_transform_publisher" name="magnet_tf_pub" respawn="true"
+         args="15.25 0.0 6.98 0.0 1.57 0.0 base_link magnet_link 100" />
+
+</launch>
