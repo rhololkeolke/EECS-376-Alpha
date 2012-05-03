@@ -4,6 +4,6 @@
 	      <param name="corner1y" type="double" value="8.2"/>
 	      <param name="corner2x" type="double" value="15.75"/>
 	      <param name="corner2y" type="double" value="28.2"/>
-	      <param name="numCells" type="int" value="100"/>
+	      <param name="numCells" type="int" value="50"/>
 	</node>
 </launch>
