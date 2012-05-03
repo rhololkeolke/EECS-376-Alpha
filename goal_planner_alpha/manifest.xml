@@ -1,0 +1,16 @@
+<package>
+  <description brief="goal_planner_alpha">
+
+     goal_planner_alpha
+
+  </description>
+  <author>David Jannotta</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/goal_planner_alpha</url>
+  <depend package="rospy"/>
+  <depend package="msg_alpha"/>
+
+</package>
+
+
