@@ -241,7 +241,8 @@ class BrushFire():
         
         print pathList
         for i,point in enumerate(pathList):
-            pathList[i] = self.transformGridToMap(point)
+            pathList[i] = self.transformLocalToGlobal(point)
+            pathList[i] = self.transformGridToMap(pathList[i])
 
         self.pathList = pathList
 
