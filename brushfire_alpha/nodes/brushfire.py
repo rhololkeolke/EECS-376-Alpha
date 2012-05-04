@@ -57,11 +57,15 @@ class BrushFire():
         This local map will be used by the brushfire algorithm.
         '''
 
+        print "(%i,%i)" % (x,y)
         # Get the robot's current position in the global grid
         self.robot = self.transformMapToGrid((x,y))
 
-        self.localx = (self.robot[0]-self.size,self.robot[0]+self.size)
-        self.localy = (self.robot[1]-self.size,self.robot[1]+self.size)
+        print "robot"
+        print self.robot
+
+        self.localx = (self.robot[0]-self.size-1,self.robot[0]+self.size)
+        self.localy = (self.robot[1]-self.size-1,self.robot[1]+self.size)
         
         # will store the local map
         localMap = list()
@@ -70,8 +74,10 @@ class BrushFire():
             localMap.append(list())
             for j in range(self.localy[0],self.localy[1]):
                 if(i >= 0 and i < self.numCells and j >= 0 and j < self.numCells):
+                    print "(%i, %i) within global map" % (i,j)
                     localMap[-1].append(self.globalMap[i][j])
                 else:
+                    print "(%i, %i) outside global map" % (i,j)
                     localMap[-1].append(1)
 
         self.localMap = localMap
@@ -128,7 +134,7 @@ class BrushFire():
         return this as a list of tuples
         '''
 
-        height = 2*self.size
+        height = 2*self.size+1
         neighbors = list()
 
         # up
@@ -189,7 +195,7 @@ class BrushFire():
         seenZero = True
         # if there are no zeros seen in a loop, we are done with brushfire
         value = 1
-        while seenZero or value >= 2*self.size+1:
+        while seenZero and value <= 2*self.size+1:
             seenZero = False
             for r,row in enumerate(localMap):
                 for c,cell in enumerate(row):
@@ -241,22 +247,23 @@ class BrushFire():
         Displays the current local map as ASCII art
         '''
         printSpacedCharacter = self.printSpacedCharacter
-        numSpaces = 3
+        numSpaces = 4
 
         if(self.localMap is None):
             return 'None'
 
-        display = '-'*numSpaces
+        display = ' '*numSpaces
         display += '|'
 
         # print the column headings
-        for i in range(self.size):
+        for i in range(2*self.size+1):
             display += printSpacedCharacter(i,numSpaces)
 
         display = display + '\n'
 
+        display += '-'*(numSpaces+1)
         # add a horizontal rule
-        for i in range(self.size):
+        for i in range(2*self.size+1):
             display += '-'*numSpaces
 
         display = display + '\n'
@@ -267,7 +274,10 @@ class BrushFire():
                 # print row heading
                 if(j == 0):
                     display += printSpacedCharacter(i,numSpaces) + '|'
-                display += printSpacedCharacter(cell,numSpaces)
+                if(j == self.size and i == self.size):
+                    display += printSpacedCharacter('R',numSpaces)
+                else:
+                    display += printSpacedCharacter(cell,numSpaces)
             display += '\n'
 
         return display
