@@ -4,8 +4,7 @@
 The look ahead node is responsible for obstacle detection. The node
 subscribes to lidar data and uses trigonometric functions to check for
 obstacles within a bounded box.  The box's dimensions are currently 1m
-in front of the robot and .25m on either side. \todo[color=blue]{Check
-  the size of the box}.
+in front of the robot and .25m on either side. 
 
 The node constantly publishes to the obstacles topic using a custom
 message type of ``Obstacle''.  The Obstacle message and the
@@ -13,8 +12,7 @@ subscribers of the obstacle topic are described in Custom Message
 Specifications section.
 
 In order to perform its job the Look Ahead node subscribes to the
-lidar data published with message type sensor\_msgs/laserscan
-\todo[color=blue]{Find out laser message data type}. This message
+lidar data published with message type sensor\_msgs/laserscan. This message
 includes information about each laser ping's distance and intensity as
 well as information about the laser range finder device itself.  In
 our case, the lidar is set to do 181 pings on every sweep with spacing
