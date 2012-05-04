@@ -1,0 +1,19 @@
+<package>
+  <description brief="eecs_376_alpha">
+
+     eecs_376_alpha
+
+  </description>
+  <author>mark</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/eecs_376_alpha</url>
+  <depend package="roscpp"/>
+  <depend package="rospy"/>
+  <depend package="msg_alpha"/>
+  <depend package="cwru_sim_stage"/>
+  <depend package="tf"/>
+
+</package>
+
+

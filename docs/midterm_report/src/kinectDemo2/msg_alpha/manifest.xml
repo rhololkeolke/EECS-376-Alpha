@@ -1,0 +1,17 @@
+<package>
+  <description brief="msg_alpha">
+
+     msg_alpha
+
+  </description>
+  <author>Devin Schwab</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/msg_alpha</url>
+  <depend package="roscpp"/>
+  <depend package="rospy"/>
+  <depend package="cwru_base"/>
+
+</package>
+
+
