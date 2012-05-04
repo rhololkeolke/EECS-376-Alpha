@@ -10,6 +10,8 @@ from geometry_msgs.msg._PoseStamped import PoseStamped as PoseStampedMsg
 from msg_alpha.msg._PointList import PointList as PointListMsg
 from msg_alpha.msg._Goal import Goal as GoalMsg
 
+import re
+
 from astar import Astar
 
 from math import ceil, floor, sqrt
@@ -27,6 +29,10 @@ searcher = None
 newPath = True
 
 wallPoints = []
+
+# regex
+localPattern = re.compile('costmap_local')
+globalPattern = re.compile('costmap_global')
 
 def goalCallback(data):
     global searcher, newPath
@@ -55,34 +61,34 @@ def goalCallback(data):
     newPath = newPath or new
 
 def inflatedObstaclesCallback(data):
-    global searcher, newPath
-    
-    if(searcher is None or position is None):
-        return
-
-    # converting to the tuple format is really inefficient
-    # should change the astar method to expect to be able to
-    # access the coorindates with .x and .y
-    closedPoints = list()
-    for point in data.cells:
-        searcher.start = (position.x,position.y)
-        closedPoints.append((point.x,point.y))
-
-    closedPoints = closedPoints + wallPoints
-
-    new = searcher.updateClosedList(closedPoints)
-
-    print "inflated obstacles recomputed a path: %s" % new
-
-    newPath = newPath or new
-
-def wallsCallback(data):
     global searcher, newPath, wallPoints
-
-    wallPoints = list()
-    for point in data.cells:
-        wallPoints.append((point.x,point.y))
     
+    if re.search(globalPattern,str(data._connection_header)):
+        print "Walls!"
+        wallPoints = list()
+        for point in data.cells:
+            wallPoints.append((point.x,point.y))
+    elif re.search(localPattern,str(data._connection_header)):
+        print "Sensors"
+        if(searcher is None or position is None):
+            return
+
+        # converting to the tuple format is really inefficient
+        # should change the astar method to expect to be able to
+        # access the coorindates with .x and .y
+        closedPoints = list()
+        for point in data.cells:
+            searcher.start = (position.x,position.y)
+            closedPoints.append((point.x,point.y))
+            
+            closedPoints = closedPoints + wallPoints
+            
+            new = searcher.updateClosedList(closedPoints)
+
+            print "inflated obstacles recomputed a path: %s" % new
+
+            newPath = newPath or new
+
 def poseCallback(pose):
     '''
     Updates the robot's best estimate on position and orientation
@@ -141,12 +147,6 @@ def main():
     else:
         inflatedTopic = '/costmap_local_alpha/costmap_local/inflated_obstacles'
 
-    # topic that the node looks for the closed points of the static map on
-    if rospy.has_param('wallsTopic'):
-        wallsTopic = rospy.get_param('wallsTopic')
-    else:
-        wallsTopic = '/costmap_alpha/costmap_global/inflated_obstacles'
-
     # topic that the node looks for goal messages on
     if rospy.has_param('goalTopic'):
         goalTopic = rospy.get_param('goalTopic')
@@ -171,7 +171,6 @@ def main():
 
     rospy.Subscriber(goalTopic,GoalMsg,goalCallback)
     rospy.Subscriber(inflatedTopic,GridCellsMsg,inflatedObstaclesCallback)
-    rospy.Subscriber(wallsTopic, GridCellsMsg, wallsCallback)
     rospy.Subscriber('map_pos', PoseStampedMsg, poseCallback)
 
     pathPointPub = rospy.Publisher('point_list', PointListMsg)
