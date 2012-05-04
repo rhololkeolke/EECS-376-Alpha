@@ -1,4 +1,5 @@
 class BrushFire():
+    import math
     def __init__(self, c1, c2, numCells, size=10, goal=None):
         self.globalc1 = c1
         self.globalc2 = c2
@@ -182,6 +183,7 @@ class BrushFire():
         '''
         Given a square grid of obstacles runs brushfire and returns grid
         '''
+        localMap = self.localMap
         self.height = len(localMap)
         seenZero = True
         # if there are no zeros seen in a loop, we are done with brushfire
@@ -201,7 +203,28 @@ class BrushFire():
         take grid of points passed through brushfire and returns list of points
         to follow
         '''
-        pass
+        goal = self.goal
+        localMap = self.localMap
+        gridGoal = self.transformMapToGrid(goal)
+        center = len(localMap)//2+1
+        robot = (center,center)
+        robotGrid = self.transformLocalToGrid(robot)
+        robotDist = abs(math.sqrt((gridGoal[0] - gridPoint[0])^2 + (gridGoal[1]
+            - gridPoint[1])^2))
+        minDist = None
+        highestPoint = None
+        for point in self.getNeighbors(robot):
+            gridPoint = self.transformLocalToGrid(point)
+            pointDist = abs(math.sqrt((gridGoal[0] - gridPoint[0])^2 + (gridGoal[1] -
+                gridPoint[1])^2))
+            if localMap[point[0]][point[1]] == highestPoint:
+                if pointDist < minDist:
+                    minDist = pointDist
+                    hightestPoint = point
+            elif localMap[point[0]][point[1]] > highestPoint:
+                highestPoint = point
+                minDist = pointDist
+        return highestPoint
 
     def updateGoal(self, goal):
         '''
