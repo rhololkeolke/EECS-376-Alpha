@@ -1,0 +1,37 @@
+\section{Astar Node}
+
+The Astar node is responsible for generating the most optimal path given a list of closed points from a rolling costmap and a goal from the goal publisher.
+
+\subsection{Theory of Operation}
+After a costmap is generated it publishes to the topic inflated\_obstacles. The Astar node listens to that topic and converts each obstacle's map position into the node's own grid frame. AStar also listens to the goal\_point topic to find out the desired destination in map coordinates. The goal point is also converted to the node's grid frame. The node takes the obstacle points and adds them to a closed list. From the closed list the Astar node is able to generate the most optimal path to the goal point.
+
+
+\subsubsection{AStar Algorithm}
+The robot's starting position is added to the open list. The neighbooring location on the map with the lowest F is added to the open list and then switched to the closed list. For each adjacent location:
+
+\begin{itemize} 
+\item If the space is an obstacle or on the closed list ignore it.
+\item If it is not on the open list add it to the open list. Make the current square the parent of the square and update the cost, heuristic, and sum of the cost and heuristic.
+\item If a list is on the open list already check to see if the path through this location is better than the current location.
+\end{itemize}
+
+The search stops when the the goal location is in the closed list meaning the path has been found or when the goal location is not found and there are no more points in the closed list meaning there is no path to the goal.
+
+The algorithim then generates the path path by tracing back the pointers to the parents.
+
+ This algorithm takes a number
+of inputs such as:
+\begin{itemize}
+\item
+  A list of closed points in map coordinates
+\item
+  A goal location in map coordinates
+\item
+  The current position of the robot in map coordinates
+\end{itemize}
+
+
+\subsection{Implementation}
+To improve the smoothness of path generation we included a launch parameter called ``numCells'' which increases the number of grid spaces generated in the node's grid frame. 
+
+
