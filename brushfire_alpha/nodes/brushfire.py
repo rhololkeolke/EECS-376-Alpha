@@ -217,18 +217,23 @@ class BrushFire():
             - gridPoint[1])^2))
         minDist = None
         highestPoint = None
-        for point in self.getNeighbors(robot):
-            gridPoint = self.transformLocalToGrid(point)
-            pointDist = abs(math.sqrt((gridGoal[0] - gridPoint[0])^2 + (gridGoal[1] -
-                gridPoint[1])^2))
-            if localMap[point[0]][point[1]] == highestPoint:
-                if pointDist < minDist:
+        pathList = []
+        lastPoint = robot
+        while not (lastPoint[0] == 0 or lastPoint[0] == 2*self.size+1 or
+            lastPoint[1] == 0 or lastPoint[1] == 2*self.size+1):
+            for point in self.getNeighbors(robot):
+                gridPoint = self.transformLocalToGrid(point)
+                pointDist = abs(math.sqrt((gridGoal[0] - gridPoint[0])^2 + (gridGoal[1] -
+                    gridPoint[1])^2))
+                if localMap[point[0]][point[1]] == highestPoint:
+                    if pointDist < minDist:
+                        minDist = pointDist
+                        hightestPoint = point
+                elif localMap[point[0]][point[1]] > highestPoint:
+                    highestPoint = point
                     minDist = pointDist
-                    hightestPoint = point
-            elif localMap[point[0]][point[1]] > highestPoint:
-                highestPoint = point
-                minDist = pointDist
-        return highestPoint
+            pathList.append(highestPoint)
+            lastPoint = highestPoint
 
     def updateGoal(self, goal):
         '''
@@ -282,5 +287,3 @@ class BrushFire():
         spacedString += (numSpaces - len(spacedString))*' '
         
         return spacedString
-            
-        
