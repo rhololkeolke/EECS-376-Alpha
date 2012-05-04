@@ -77,7 +77,10 @@ class BrushFire():
 
         self.localMap
 
-    def transformGridToMap(self, point, c1, c2, numCells):
+    def transformGridToMap(self, point):
+        c1 = self.c1
+        c2 = self.c2
+        numCells = self.numCells
         if(point[0] < 0 or point[0] >= numCells):
             raise IndexError
         if(point[1] < 0 or point[1] >= numCells):
@@ -92,7 +95,10 @@ class BrushFire():
 
         return (x,y)
 
-    def transformMapToGrid(self, point, c1, c2, numCells):
+    def transformMapToGrid(self, point):
+        c1 = self.c1
+        c2 = self.c2
+        numCells = self.numCells
         # width and height of grid cells
         xStep = float(abs(c1[0] - c2[0]))/numCells
         yStep = float(abs(c1[1] - c2[1]))/numCells
@@ -109,6 +115,13 @@ class BrushFire():
             raise IndexError
         
         return (xIndex,yIndex)
+
+    def transformLocalToGlobal(self, point):
+        '''
+        Transform a point in the localMap to the corresponding
+        point in the globalMap
+        '''
+        return (point[0]+self.localx[0],point[1]+self.localy[0])
 
     def getNeighbors(self, point):
         '''
