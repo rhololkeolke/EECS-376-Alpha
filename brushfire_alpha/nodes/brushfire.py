@@ -41,7 +41,7 @@ class BrushFire():
             try:
                 # see if the point has a corresponding point in the grid
                 gridPoint = self.transformMapToGrid(point)
-                globalMap[gridPoint[0]][gridPoint[1]] = -1
+                globalMap[gridPoint[0]][gridPoint[1]] = 1
             except IndexError:
                 # if the point isn't in the grid then ignore it
                 pass
@@ -58,10 +58,10 @@ class BrushFire():
         '''
 
         # Get the robot's current position in the global grid
-        self.robot = self.transformMapToGrid((x,y), self.globalc1, self.globalc2, self.numCells)
+        self.robot = self.transformMapToGrid((x,y))
 
-        self.localx = (self.robot[0]-size,self.robot[0]+size)
-        self.localy = (self.robot[1]-size,self.robot[1]+size)
+        self.localx = (self.robot[0]-self.size,self.robot[0]+self.size)
+        self.localy = (self.robot[1]-self.size,self.robot[1]+self.size)
         
         # will store the local map
         localMap = list()
@@ -74,7 +74,7 @@ class BrushFire():
                 else:
                     localMap[-1].append(1)
 
-        self.localMap
+        self.localMap = localMap
 
     def transformGridToMap(self, point):
         c1 = self.globalc1
@@ -127,54 +127,56 @@ class BrushFire():
         given a point in grid space find all of viable neighbors
         return this as a list of tuples
         '''
+
+        height = 2*self.size
         neighbors = list()
 
         # up
         x = point[0]
         y = point[1] + 1
-        if(y < self.height and y >=0 and x < self.height and x >= 0):
+        if(y < height and y >=0 and x < height and x >= 0):
             neighbors.append((x,y))
 
         # up right
         x = point[0] + 1
         y = point[1] + 1
-        if(y < self.height and y >=0 and x < self.height and x >= 0):
+        if(y < height and y >=0 and x < height and x >= 0):
             neighbors.append((x,y))
 
         # right
         x = point[0] + 1
         y = point[1]
-        if(y < self.height and y >=0 and x < self.height and x >= 0):
+        if(y < height and y >=0 and x < height and x >= 0):
             neighbors.append((x,y))
 
         # down right
         x = point[0] + 1
         y = point[1] - 1
-        if(y < self.height and y >=0 and x <self.height and x >= 0):
+        if(y < height and y >=0 and x < height and x >= 0):
             neighbors.append((x,y))
 
         # down
         x = point[0]
         y = point[1] - 1
-        if(y < self.height and y >=0 and x < self.height and x >= 0):
+        if(y < height and y >=0 and x < height and x >= 0):
             neighbors.append((x,y))
 
         # down left
         x = point[0] - 1
         y = point[1] - 1
-        if(y < self.height and y >=0 and x < self.height and x >= 0):
+        if(y < height and y >=0 and x < height and x >= 0):
             neighbors.append((x,y))
 
         # left
         x = point[0] - 1
         y = point[1]
-        if(y < self.height and y >=0 and x < self.height and x >= 0):
+        if(y < height and y >=0 and x < height and x >= 0):
             neighbors.append((x,y))
 
         # up left
         x = point[0] - 1
         y = point[1] + 1
-        if(y < self.height and y >=0 and x < self.height and x >= 0):
+        if(y < height and y >=0 and x < height and x >= 0):
             neighbors.append((x,y))
 
         return neighbors
@@ -184,19 +186,21 @@ class BrushFire():
         Given a square grid of obstacles runs brushfire and returns grid
         '''
         localMap = self.localMap
-        self.height = len(localMap)
         seenZero = True
         # if there are no zeros seen in a loop, we are done with brushfire
-        while seenZero:
+        value = 1
+        while seenZero or value >= 2*self.size+1:
             seenZero = False
             for r,row in enumerate(localMap):
-                for c,col in enumerate(localMap[r]):
-                    if localMap[r][c] == 0:
+                for c,cell in enumerate(row):
+                    if cell == value:
                         seenZero = True
                         neighbors = self.getNeighbors((r,c))
-                        for point in neighbors:
-                            localMap[point[0]][point[1]]+=1
-        return localMap
+                        for pr,pc in neighbors:
+                            if localMap[pr][pc] == 0:
+                                localMap[pr][pc] += value + 1
+            value +=1
+        self.localMap = localMap
 
     def computePath(self):
         '''
@@ -236,6 +240,7 @@ class BrushFire():
         '''
         Displays the current local map as ASCII art
         '''
+        printSpacedCharacter = self.printSpacedCharacter
         numSpaces = 3
 
         if(self.localMap is None):
@@ -267,7 +272,7 @@ class BrushFire():
 
         return display
     
-    def printSpacedCharacter(char, numSpaces):
+    def printSpacedCharacter(self, char, numSpaces):
         '''
         Takes in a number of spaces and chars and outputs
         the character with the correct spacing
