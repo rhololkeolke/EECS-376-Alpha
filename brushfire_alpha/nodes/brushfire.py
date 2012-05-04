@@ -215,14 +215,12 @@ class BrushFire():
         robot = (center,center)
         robotGrid = self.transformLocalToGlobal(robot)
         robotDist = abs(math.sqrt((gridGoal[0] - robotGrid[0])^2 + (gridGoal[1] - robotGrid[1])^2))
-        visited = dict()
         minDist = None
         highestPoint = None
         pathList = []
         lastPoint = robot
-        visited[robot] = True
         while not (lastPoint[0] == 0 or lastPoint[0] == 2*self.size+1 or lastPoint[1] == 0 or lastPoint[1] == 2*self.size+1):
-            for point in self.getNeighbors(robot):
+            for point in self.getNeighbors(lastPoint):
                 gridPoint = self.transformLocalToGlobal(point)
                 pointDist = abs(math.sqrt((gridGoal[0] - gridPoint[0])^2 + (gridGoal[1] - gridPoint[1])^2))
                 if highestPoint is None:
