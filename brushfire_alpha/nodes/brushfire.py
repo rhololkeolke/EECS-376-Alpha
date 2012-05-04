@@ -178,10 +178,11 @@ class BrushFire():
 
         return neighbors
 
-    def brushfire(self, localMap):
+    def brushfire(self):
         '''
         Given a square grid of obstacles runs brushfire and returns grid
         '''
+        localMap = self.localMap
         self.height = len(localMap)
         seenZero = True
         # if there are no zeros seen in a loop, we are done with brushfire
@@ -196,11 +197,20 @@ class BrushFire():
                             localMap[point[0]][point[1]]+=1
         return localMap
 
-    def computePath(self, localMap, goal):
+    def computePath(self):
         '''
         take grid of points passed through brushfire and returns list of points
         to follow
         '''
+        goal = self.goal
+        localMap = self.localMap
+        gridGoal = self.transformMapToGrid(goal)
+        center = len(localMap)//2+1
+        robot = (center,center)
+        robotGrid = self.transformLocalToGrid(robot)
+        for point in self.getNeighbors:
+            dist = sqrt((gridGoal[0] - robotGrid[0])^2 + (gridGoal[1] -
+                robotGrid[1])^2)
 
     def updateGoal():
         pass
