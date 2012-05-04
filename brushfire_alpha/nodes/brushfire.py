@@ -57,12 +57,8 @@ class BrushFire():
         This local map will be used by the brushfire algorithm.
         '''
 
-        print "(%i,%i)" % (x,y)
         # Get the robot's current position in the global grid
         self.robot = self.transformMapToGrid((x,y))
-
-        print "robot"
-        print self.robot
 
         self.localx = (self.robot[0]-self.size-1,self.robot[0]+self.size)
         self.localy = (self.robot[1]-self.size-1,self.robot[1]+self.size)
@@ -74,10 +70,8 @@ class BrushFire():
             localMap.append(list())
             for j in range(self.localy[0],self.localy[1]):
                 if(i >= 0 and i < self.numCells and j >= 0 and j < self.numCells):
-                    print "(%i, %i) within global map" % (i,j)
                     localMap[-1].append(self.globalMap[i][j])
                 else:
-                    print "(%i, %i) outside global map" % (i,j)
                     localMap[-1].append(1)
 
         self.localMap = localMap
@@ -213,33 +207,41 @@ class BrushFire():
         take grid of points passed through brushfire and returns list of points
         to follow
         '''
+        import math
         goal = self.goal
         localMap = self.localMap
         gridGoal = self.transformMapToGrid(goal)
         center = len(localMap)//2+1
         robot = (center,center)
-        robotGrid = self.transformLocalToGrid(robot)
-        robotDist = abs(math.sqrt((gridGoal[0] - gridPoint[0])^2 + (gridGoal[1]
-            - gridPoint[1])^2))
+        robotGrid = self.transformLocalToGlobal(robot)
+        robotDist = abs(math.sqrt((gridGoal[0] - robotGrid[0])^2 + (gridGoal[1] - robotGrid[1])^2))
+        visited = dict()
         minDist = None
         highestPoint = None
         pathList = []
         lastPoint = robot
-        while not (lastPoint[0] == 0 or lastPoint[0] == 2*self.size+1 or
-            lastPoint[1] == 0 or lastPoint[1] == 2*self.size+1):
+        visited[robot] = True
+        while not (lastPoint[0] == 0 or lastPoint[0] == 2*self.size+1 or lastPoint[1] == 0 or lastPoint[1] == 2*self.size+1):
             for point in self.getNeighbors(robot):
-                gridPoint = self.transformLocalToGrid(point)
-                pointDist = abs(math.sqrt((gridGoal[0] - gridPoint[0])^2 + (gridGoal[1] -
-                    gridPoint[1])^2))
-                if localMap[point[0]][point[1]] == highestPoint:
+                gridPoint = self.transformLocalToGlobal(point)
+                pointDist = abs(math.sqrt((gridGoal[0] - gridPoint[0])^2 + (gridGoal[1] - gridPoint[1])^2))
+                if highestPoint is None:
+                    minDist = pointDist
+                    highestPoint = point
+                elif localMap[point[0]][point[1]] == localMap[highestPoint[0]][highestPoint[1]]:
                     if pointDist < minDist:
                         minDist = pointDist
-                        hightestPoint = point
-                elif localMap[point[0]][point[1]] > highestPoint:
+                        highestPoint = point
+                elif localMap[point[0]][point[1]] > localMap[highestPoint[0]][highestPoint[1]]:
                     highestPoint = point
                     minDist = pointDist
             pathList.append(highestPoint)
             lastPoint = highestPoint
+        
+        for i,point in enumerate(pathList):
+            pathList[i] = self.transformGridToMap(point)
+
+        self.pathList = pathList
 
     def updateGoal(self, goal):
         '''

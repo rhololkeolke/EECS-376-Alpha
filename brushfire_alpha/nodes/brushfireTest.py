@@ -12,4 +12,6 @@ if __name__ == "__main__":
     brush.brushfire()
     print brush
 
-
+    brush.updateGoal((9.5,9.5))
+    brush.computePath()
+    print brush.pathList
