@@ -221,7 +221,7 @@ class BrushFire():
         pathList = []
         lastPoint = robot
         count = 0
-        while not (lastPoint[0] == 0 or lastPoint[0] == 2*self.size or lastPoint[1] == 0 or lastPoint[1] == 2*self.size):
+        while not (lastPoint[0] == 0 or lastPoint[0] == 2*self.size or lastPoint[1] == 0 or lastPoint[1] == 2*self.size) and count < 10:
             for point in self.getNeighbors(lastPoint):
                 gridPoint = self.transformLocalToGlobal(point)
                 pointDist = math.sqrt(pow((gridGoal[0] - gridPoint[0]),2) +
@@ -236,14 +236,19 @@ class BrushFire():
                 elif localMap[point[0]][point[1]] > localMap[highestPoint[0]][highestPoint[1]]:
                     highestPoint = point
                     minDist = pointDist
+            if(highestPoint == lastPoint):
+                break
             pathList.append(highestPoint)
             lastPoint = highestPoint
+            count += 1
         
-        print pathList
+        #print pathList
         for i,point in enumerate(pathList):
             pathList[i] = self.transformLocalToGlobal(point)
             pathList[i] = self.transformGridToMap(pathList[i])
 
+        print pathList
+        
         self.pathList = pathList
 
     def updateGoal(self, goal):
