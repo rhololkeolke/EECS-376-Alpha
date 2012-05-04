@@ -1,0 +1,16 @@
+<package>
+  <description brief="brushfire_alpha">
+
+     brushfire_alpha
+
+  </description>
+  <author>mark</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/brushfire_alpha</url>
+  <depend package="rospy"/>
+  <depend package="msg_alpha"/>
+
+</package>
+
+
