@@ -211,7 +211,7 @@ class BrushFire():
         goal = self.goal
         localMap = self.localMap
         gridGoal = self.transformMapToGrid(goal)
-        center = len(localMap)//2+1
+        center = len(localMap)//2
         robot = (center,center)
         robotGrid = self.transformLocalToGlobal(robot)
         robotDist = math.sqrt(pow((gridGoal[0] - robotGrid[0]),2) +
@@ -220,7 +220,8 @@ class BrushFire():
         highestPoint = None
         pathList = []
         lastPoint = robot
-        while not (lastPoint[0] == 0 or lastPoint[0] == 2*self.size+1 or lastPoint[1] == 0 or lastPoint[1] == 2*self.size+1):
+        count = 0
+        while not (lastPoint[0] == 0 or lastPoint[0] == 2*self.size or lastPoint[1] == 0 or lastPoint[1] == 2*self.size):
             for point in self.getNeighbors(lastPoint):
                 gridPoint = self.transformLocalToGlobal(point)
                 pointDist = math.sqrt(pow((gridGoal[0] - gridPoint[0]),2) +
@@ -238,6 +239,7 @@ class BrushFire():
             pathList.append(highestPoint)
             lastPoint = highestPoint
         
+        print pathList
         for i,point in enumerate(pathList):
             pathList[i] = self.transformGridToMap(point)
 
