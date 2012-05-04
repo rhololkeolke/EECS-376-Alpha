@@ -1,5 +1,5 @@
 class BrushFire():
-    def __init__(self, ):
+    def __init__(self, c1, c2):
         pass
     def updateGlobalGrid():
         pass
@@ -84,7 +84,12 @@ class BrushFire():
                             localMap[point[0]][point[1]]+=1
         return localMap
 
-    def computePath():
-        pass
+    def computePath(self, localMap, goal):
+        '''
+        take grid of points passed through brushfire and returns list of points
+        to follow
+        '''
+        
+
     def updateGoal():
         pass
