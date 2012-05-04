@@ -4,7 +4,7 @@ class BrushFire():
         self.globalc2 = c2
         self.numCells = numCells
 
-        self.globalMap = createGrid(numCells)
+        self.globalMap = self.createGrid(numCells)
 
         self.localMap = None
         self.localx = None
@@ -34,14 +34,12 @@ class BrushFire():
         and adding them to the global obstacle list
         '''
         globalMap = self.globalMap
-        c1 = self.globalc1
-        c2 = self.globalc2
         numCells = self.numCells
 
         for point in obstacles:
             try:
                 # see if the point has a corresponding point in the grid
-                gridPoint = self.transformMapToGrid(point, c1, c2, numCells)
+                gridPoint = self.transformMapToGrid(point)
                 globalMap[gridPoint[0]][gridPoint[1]] = -1
             except IndexError:
                 # if the point isn't in the grid then ignore it
@@ -59,7 +57,7 @@ class BrushFire():
         '''
 
         # Get the robot's current position in the global grid
-        self.robot = transformMapToGrid((x,y), self.globalc1, self.globalc2, self.numCells)
+        self.robot = self.transformMapToGrid((x,y), self.globalc1, self.globalc2, self.numCells)
 
         self.localx = (self.robot[0]-size,self.robot[0]+size)
         self.localy = (self.robot[1]-size,self.robot[1]+size)
@@ -78,8 +76,8 @@ class BrushFire():
         self.localMap
 
     def transformGridToMap(self, point):
-        c1 = self.c1
-        c2 = self.c2
+        c1 = self.globalc1
+        c2 = self.globalc2
         numCells = self.numCells
         if(point[0] < 0 or point[0] >= numCells):
             raise IndexError
@@ -96,8 +94,8 @@ class BrushFire():
         return (x,y)
 
     def transformMapToGrid(self, point):
-        c1 = self.c1
-        c2 = self.c2
+        c1 = self.globalc1
+        c2 = self.globalc2
         numCells = self.numCells
         # width and height of grid cells
         xStep = float(abs(c1[0] - c2[0]))/numCells
@@ -180,7 +178,7 @@ class BrushFire():
 
         return neighbors
 
-    def brushfire(self, localMap):
+    def brushfire(self):
         '''
         Given a square grid of obstacles runs brushfire and returns grid
         '''
@@ -198,12 +196,63 @@ class BrushFire():
                             localMap[point[0]][point[1]]+=1
         return localMap
 
-    def computePath(self, localMap, goal):
+    def computePath(self):
         '''
         take grid of points passed through brushfire and returns list of points
         to follow
         '''
-		pass
-
-    def updateGoal():
         pass
+
+    def updateGoal(self, goal):
+        '''
+        Will save the given goal point to the class
+        '''
+        self.goal = goal
+
+    def __str__(self):
+        '''
+        Displays the current local map as ASCII art
+        '''
+        numSpaces = 3
+
+        if(self.localMap is None):
+            return 'None'
+
+        display = '-'*numSpaces
+        display += '|'
+
+        # print the column headings
+        for i in range(self.size):
+            display += printSpacedCharacter(i,numSpaces)
+
+        display = display + '\n'
+
+        # add a horizontal rule
+        for i in range(self.size):
+            display += '-'*numSpaces
+
+        display = display + '\n'
+
+        # print the weights
+        for i,row in enumerate(self.localMap):
+            for j,cell in enumerate(row):
+                # print row heading
+                if(j == 0):
+                    display += printSpacedCharacter(i,numSpaces) + '|'
+                display += printSpacedCharacter(cell,numSpaces)
+            display += '\n'
+
+        return display
+    
+    def printSpacedCharacter(char, numSpaces):
+        '''
+        Takes in a number of spaces and chars and outputs
+        the character with the correct spacing
+        '''
+        spacedString = str(char)
+
+        spacedString += (numSpaces - len(spacedString))*' '
+        
+        return spacedString
+            
+        
