@@ -15,6 +15,9 @@ class BrushFire():
         self.goal = goal
         self.robotPos = None
 
+        self.pathList = None
+        self.localPathList = None
+
     def createGrid(self,numCells=50):
         '''
         This method uses the specified corners and the numCells to create a 2d array that will store the values used in the brushfire algorithm
@@ -58,7 +61,10 @@ class BrushFire():
         '''
 
         # Get the robot's current position in the global grid
-        self.robot = self.transformMapToGrid((x,y))
+        try:
+            self.robot = self.transformMapToGrid((x,y))
+        except IndexError:
+            print "Error robot apparently outside of grid"
 
         self.localx = (self.robot[0]-self.size-1,self.robot[0]+self.size)
         self.localy = (self.robot[1]-self.size-1,self.robot[1]+self.size)
@@ -241,7 +247,8 @@ class BrushFire():
             pathList.append(highestPoint)
             lastPoint = highestPoint
             count += 1
-        
+    
+        self.localPathList = pathList
         #print pathList
         for i,point in enumerate(pathList):
             pathList[i] = self.transformLocalToGlobal(point)
@@ -261,6 +268,24 @@ class BrushFire():
         '''
         Displays the current local map as ASCII art
         '''
+
+        class bcolors:
+            HEADER = '\033[95m'
+            OKBLUE = '\033[94m'
+            OKGREEN = '\033[92m'
+            WARNING = '\033[93m'
+            FAIL = '\033[91m'
+            ENDC = '\033[0m'
+
+            def disable(self):
+                self.HEADER = ''
+                self.OKBLUE = ''
+                self.OKGREEN = ''
+                self.WARNING = ''
+                self.FAIL = ''
+                self.ENDC = ''
+
+
         printSpacedCharacter = self.printSpacedCharacter
         numSpaces = 4
 
@@ -290,9 +315,14 @@ class BrushFire():
                 if(j == 0):
                     display += printSpacedCharacter(i,numSpaces) + '|'
                 if(j == self.size and i == self.size):
-                    display += printSpacedCharacter('R',numSpaces)
+                    display += bcolors.OKBLUE + printSpacedCharacter('R',numSpaces) + bcolors.ENDC
                 else:
-                    display += printSpacedCharacter(cell,numSpaces)
+                    if(cell == 1):
+                        display += bcolors.FAIL + printSpacedCharacter(cell,numSpaces) + bcolors.ENDC
+                    elif((i,j) in self.localPathList):
+                        display += bcolors.OKGREEN + printSpacedCharacter(cell,numSpaces) + bcolors.ENDC
+                    else:
+                        display += printSpacedCharacter(cell,numSpaces)
             display += '\n'
 
         return display

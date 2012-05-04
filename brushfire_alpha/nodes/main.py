@@ -9,6 +9,7 @@ from geometry_msgs.msg._Point import Point as PointMsg
 from geometry_msgs.msg._PoseStamped import PoseStamped as PoseStampedMsg
 from msg_alpha.msg._PointList import PointList as PointListMsg
 from msg_alpha.msg._Goal import Goal as GoalMsg
+from msg_alpha.msg._CentroidPoints import CentroidPoints as CentroidPointsMsg
 
 from brushfire import BrushFire
 
@@ -60,7 +61,7 @@ def main():
     corner2 = (15.75,28.2)
     numCells = 100
 
-    brush = BrushFire(corner1,corner2,numCells,size=15)
+    brush = BrushFire(corner1,corner2,numCells,size=7)
     naptime = rospy.Rate(RATE)
 
     print "corner1: "
@@ -74,12 +75,14 @@ def main():
     print ""
 
     rospy.Subscriber('goal_point',GoalMsg,goalCallback)
-    rospy.Subscriber('/costmap_alpha/costmap/obstacles', GridCellsMsg,obstaclesCallback)
+    rospy.Subscriber('/costmap_alpha/costmap/inflated_obstacles', GridCellsMsg,obstaclesCallback)
     rospy.Subscriber('map_pos',PoseStampedMsg, poseCallback)
 
     pathPointPub = rospy.Publisher('point_list',PointListMsg)
+    centroidPub = rospy.Publisher('centroid_point',CentroidPointsMsg)
 
     pointList = PointListMsg()
+    centroid = CentroidPointsMsg()
     while not rospy.is_shutdown():
         if(position is None or brush is None or brush.goal is None):
             naptime.sleep()
@@ -95,8 +98,16 @@ def main():
             pathPoint.y = point[1]
             pointList.points.append(pathPoint)
 
+        print brush
+
         #pointList.new = True
         pathPointPub.publish(pointList)
+
+        centroid.exists = True
+        if(len(pointList.points) > 0):
+            centroid.point = pointList.points[0]
+
+        centroidPub.publish(centroid)
 
         naptime.sleep()
 
