@@ -8,6 +8,8 @@ class BrushFire():
         self.globalMap = createGrid(numCells)
 
         self.localMap = None
+        self.localx = None
+        self.localy = None
         self.size = size
         
         self.goal = goal
@@ -26,23 +28,29 @@ class BrushFire():
                 globalMap[i].append(0) # 0 is blank
 
         return globalMap
-
-    def updateGlobalGrid(self, globalMap, c1, c2, obstacles):
+        
+    def updateGlobalGrid(self, obstacles):
         '''
         This method is responsible for taking in new obstacles
         and adding them to the global obstacle list
         '''
+        globalMap = self.globalMap
+        c1 = self.globalc1
+        c2 = self.globalc2
+        numCells = self.numCells
+
         for point in obstacles:
             try:
                 # see if the point has a corresponding point in the grid
-                gridPoint = self.transformMapToGrid(point, c1, c2, len(globalMap))
+                gridPoint = self.transformMapToGrid(point, c1, c2, numCells)
                 globalMap[gridPoint[0]][gridPoint[1]] = -1
             except IndexError:
                 # if the point isn't in the grid then ignore it
                 pass
-        return globalMap
 
-    def extractLocal(self, numCells, x, y, size=10):
+        self.globalMap = globalMap
+
+    def extractLocal(self, x, y):
         '''
         This method takes in an x and y location for the robot
         It then takes a subsection of the global that is 
@@ -51,43 +59,24 @@ class BrushFire():
         This local map will be used by the brushfire algorithm.
         '''
 
-        # Get the robot's current position
-        robot = transformMapToGrid((x,y), self.c1, self.c2, self.numCells)
+        # Get the robot's current position in the global grid
+        self.robot = transformMapToGrid((x,y), self.globalc1, self.globalc2, self.numCells)
+
+        self.localx = (self.robot[0]-size,self.robot[0]+size)
+        self.localy = (self.robot[1]-size,self.robot[1]+size)
         
         # will store the local map
         localMap = list()
 
-        # check and see if the local grid desired would be out of
-        # bounds when centered on the robot
-        # if it is then those out of bound spaces will need to
-        # be filled with 1's to denote obstacles
-        # this way the robot does not accidently try and steer to
-        # these nodes
-        rowUnderFlow = robot[0] - size
-        rowOverFlow = numCells - robot[0] - size
-        colUnderFlow = robot[1] - size
-        colOverFlow = numCells - robot[1] - size
+        for i in range(self.localx[0],self.localx[1]):
+            localMap.append(list())
+            for j in range(self.localy[0],self.localy[1]):
+                if(i >= 0 and i < self.numCells and j >= 0 and j < self.numCells):
+                    localMap[-1].append(self.globalMap[i][j])
+                else:
+                    localMap[-1].append(1)
 
-        # might need to be <=
-        if(rowOverFlow < 0):
-            # for each extra row needed
-            for i in range(-rowOverFlow):
-                # create a sub array filled with ones
-                temp = list()
-                for j in range(numCells):
-                    temp.append(1)
-                localMap.append(temp)
-        
-        localMap = localMap + globalMap[max(robot[0]-size,0):min(robot[0]+size,numCells)]
-                    
-
-        localMap = 
-        
-        # go through and slice out the desired columns
-        for i,row in enumerate(localMap):
-            localMap[i] = row[max(robot[1]-size,0):min(robot[1]+size,numCells)]
-
-        return (robot,localMap)
+        self.localMap
 
     def transformGridToMap(self, point, c1, c2, numCells):
         if(point[0] < 0 or point[0] >= numCells):
