@@ -13,6 +13,7 @@ from msg_alpha.msg._Goal import Goal as GoalMsg
 from brushfire import BrushFire
 
 from math import ceil, floor, sqrt
+from threading import Timer
 
 RATE = 20
 
@@ -21,6 +22,7 @@ position = None
 corner1 = None
 corner2 = None
 numCells = None
+pointList = PointListMsg()
 
 brush = None
 
@@ -49,10 +51,16 @@ def poseCallback(pose):
     global position
     position = pose.pose.position
 
+def resetPath():
+    pointlist.new = True
+    t = Timer(2.0, resetPath)
+    t.start()
+
 def main():
     global corner1, corner2, numCells
     global brush
     global position
+    global pointList
 
     rospy.init_node('brushfire_alpha_main')
 
@@ -80,10 +88,14 @@ def main():
     pathPointPub = rospy.Publisher('point_list',PointListMsg)
 
     pointList = PointListMsg()
+
+    t = Timer(2.0, resetPath)
+    t.start()
     while not rospy.is_shutdown():
         if(position is None or brush is None or brush.goal is None):
             naptime.sleep()
             continue
+
 
         brush.extractLocal(position.x,position.y)
         brush.brushfire()
@@ -95,8 +107,8 @@ def main():
             pathPoint.y = point[1]
             pointList.points.append(pathPoint)
 
-        #pointList.new = True
         pathPointPub.publish(pointList)
+        pointList.new = False
 
         naptime.sleep()
 
