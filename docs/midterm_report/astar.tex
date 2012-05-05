@@ -7,7 +7,7 @@ After a costmap is generated it publishes to the topic inflated\_obstacles. The 
 
 
 \subsubsection{AStar Algorithm}
-The robot's starting position is added to the open list. The neighbooring location on the map with the lowest F is added to the open list and then switched to the closed list. For each adjacent location:
+The robot's starting position is added to the open list. The neighboring location on the map with the lowest F is added to the open list and then switched to the closed list. For each adjacent location:
 
 \begin{itemize} 
 \item If the space is an obstacle or on the closed list ignore it.
@@ -17,7 +17,7 @@ The robot's starting position is added to the open list. The neighbooring locati
 
 The search stops when the the goal location is in the closed list meaning the path has been found or when the goal location is not found and there are no more points in the closed list meaning there is no path to the goal.
 
-The algorithim then generates the path path by tracing back the pointers to the parents.
+The algorithm then generates the path path by tracing back the pointers to the parents.
 
  This algorithm takes a number
 of inputs such as:
@@ -35,3 +35,8 @@ of inputs such as:
 To improve the smoothness of path generation we included a launch parameter called ``numCells'' which increases the number of grid spaces generated in the node's grid frame. 
 
 
+\subsection{Lessons Learned}
+While our software architecture helped us to properly distribute labor and the encapsulation of data between nodes,
+we neglected to make use of a contingency plan. Our production chain was broken at the costmap and our AStar node depended
+on the working costmap. If we could redo the final we would have had a backup plan to generate closed list points
+through our own code. For instance we could have used lidar data to generate wall points to go into the closed list of the AStar search node.

@@ -35,7 +35,7 @@ configuration file to prevent the need to recompile when new settings
 are desired.
 
 \subsubsection{Bounding Box Algorithm}
-To determine if a ping is within the box dimensions the trigonemetric
+To determine if a ping is within the box dimensions the trigonometric
 functions are used to determine the bounds of the box.  For each ping
 a maximum distance is computed.  If the ping distance is larger than this
 value then it is ignored. If the ping distance is less it is
@@ -128,20 +128,20 @@ possibility of a part failing.  In addition we can use the processor
 cycles, memory and network bandwidth that would be used by the translator node on
 other more interesting parts of the robot's software.
 
-\subsection{Future Plans}
-Currently the look ahead node only works for straight paths and arcs
-of relatively low curvature.  In the future we would like to change
-this so that the look ahead module works for arcs and potentially even
-spins.
+\subsection{Unimplemented Functions}
+Because of several code changes there are desirable features of look ahead that we planned on implementing, but did
+not have enough time to focus on.
 
-One way of doing this is to use the same bounding box algorithm to
-calculate the distances for the box at different points along the
-path.  After calculating the box, the box would be transformed back to
-the robots coordinate system and compared with the LIDAR pings.
 
-Another method would be to fatten the LIDAR pings and then make sure
-the path segments don't pass through the englarged pings.  This is the
-method we discussed in class.
+\subsubsection{Obstacle detection on arcs and spins}
+ \begin{enumerate}
+   \item We considered fattening LIDAR pings and ensuring that fattened LIDAR pings did not pass through the enlarged pings
+ 
+   \item Another option was to use the bounding box algorithim on a linearized arc path segment.
+   \item  The idea became unecessary because the steering node steers from map point to map point instead of by path segments.
+  \end{enumerate}
+
+
 
 
 

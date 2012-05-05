@@ -1,3 +1,19 @@
-There are presently two roslaunch files which launch the steering, velocity profiler, look ahead, and estop nodes. ``alpha$\textunderscore$simulator.launch''also starts Harlie's 2nd floor simulation launch file.``alpha$\textunderscore$robot.launch'' includes the no teleoperator and 2nd floor launch files. The launch files make starting the our robot code much faster than manually opening each node in a different terminal window.
+Roslaunch files made splitting our packages into separate nodes easier. 
+Instead of having to remember the correct executable s to run and the proper order, 
+we created one launch file that incorporated each of our nodes. 
+Within each node package there is a directory called launch containing its own launch file called main.launch. 
+There is a launch file that finds and runs each main.launch file for each package. 
+One issue that we had was the launch of the look_ahead node. In the simulator, 
+look_ahead subscribes to base_scan, but on Jinx look_ahead must subscribe to the topic base_laser1_scan. 
+In order to avoid having to edit and recompile our code for the module, we simply used the remap command to echo 
+the subscriptions from both base_scan and base_laser1_scan. With the remap command it did not matter 
+whether we were testing code on the simulator or on Jinx.
 
-Roslaunch does not guarantee the order in which the nodes specified in the launch file are opened.\cite{_roslaunch/architecture}  If our nodes cannot be added to a roslaunch file then we have designed them incorrectly. Each node should be capable of running in any order.  Roslaunch will be a kind of final check for encapsulation between nodes.  files are going to do more than cut down on the number of terminal windows we have to open and close after each compile, it will also serve as a marker to determine if our node structure is organized properly and there is enough data encapsulation between nodes. Since roslaunch ``does not provide any guarantees about what order nodes start in (ROS)'' we will have to be sure that our nodes are flexible enough to start in any order and that no node handling unecessary data. With the combination of ehancment and testability ROS launch files will be a very useful tool in the design implementations of our robot.
+While commands from the launch files were able to assist in the versatility of our code, we did run into issues 
+with launching files on Jinx. One issue was trying to use the find command to change into a package directory. The 
+launch file was not able to locate the package cwru_semi_stable, so that we would be able to
+ launch cwru_bringup_no_tele.launch. While the roscd command line tool was able to locate the package, 
+the find function of ROS Launch XML was not capable of locating the directory. We had to work around this by 
+writing a simple script to launch cwru_bringup_no_tele.launch and start_amcl_2ndfloor.launch.
+While ROS Launch XML is a great framework there could be better documentation and high consistency for ease of use.
+
