@@ -106,27 +106,6 @@ while staying within the minimum range, the robot will think the human
 is still there and wait forever. Obviously this is not ideal, however
 other sensors like the Kinect camera will help us avoid this small, but potentially dangerous problem.
 
-\subsubsection{Topic Name Change}
-We noticed that the topic of the lidar data is different between the
-simulator and the actual robot.  On the simulator the topic is
-``base\_scan'' and on the robot it is ``base\_laser1\_scan''.  Currently
-we make it easy to change the topic by modifying a constant at the top
-of the source file.  However, this solution requires a recompilation
-everytime the topic name is changed.
-
-To solve this problem we are planning on implementing a new node
-called topic\_translator.  This node will be responsible for
-publishing everything it receives from base\_scan to
-base\_laser1\_scan.  This node will only be run when testing via the
-simulator.  This will prevent us from having to recompile everytime
-the topic name changes.
-
-The reason we are not planning on going the other way around and
-translating from base\_laser1\_scan to base\_scan is because on the
-actual robot we want as few nodes as possible to minimize the
-possibility of a part failing.  In addition we can use the processor
-cycles, memory and network bandwidth that would be used by the translator node on
-other more interesting parts of the robot's software.
 
 \subsection{Unimplemented Functions}
 Because of several code changes there are desirable features of look ahead that we planned on implementing, but did
