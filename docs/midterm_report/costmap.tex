@@ -1,41 +1,65 @@
 \section{Costmap}
 
-What do I do?
+The costmap node is in charge of accepting the sensor data, filtering and 
+identifying obstacles and then publishing the results. This node is fairly 
+autonomous and simple. It only requires specific parameters and a simple C file 
+to launch it.
 
 \subsection{Theory of Operation}
 
+The costmap utilizes the built in Costmap2DROS class which in turn utilizes a 
+Costmap2DPublisher, a Costmap2D, a VoxelCostmap2D, and an ObservationBuffer.
+The costmap has two modes of operation. In global mode, the costmap will read 
+the wall and terrain data from the map server and store an internal 
+representation of the entire map. In local mode, the costmap functions as a 
+rolling window of obstacles.
 
 \subsubsection{Costmap Algorithm}
 
- This algorithm takes a number
-of inputs such as:
+The costmap object takes any number of inputs specified in the configuration 
+file.
 
 \begin{itemize}
-\item
-  stuff
-\item
-  stuff
-\item
-  stuff
+	\item The PointCloud2 input from the kinect.
+	\item The LaserScan input from the lidar.
+	\item the map input from the map server.
 \end{itemize}
 
+The costmap object also publishes a number of outputs containing obstacle data.
+
+\begin{itemize}
+	\item /obstacles publishes occupied cells in the costmap.
+	\item /inflated\_obstacles publishes the cells in the costmap that 
+		correspond to the occupied cells inflated by the inscribed radius of the 
+		robot.
+	\item /unknown\_space publishes the unknown cells in the costmap.
+	\item /voxel\_grid publishes voxel (3D) cells when requested by the
+		configuration.
+\end{itemize}
 
 \subsection{Implementation}
 
+The costmap implementation is simple enough for us. We simply need a node that
+instantiates the Costmap2DROS object. Then we must use the param directive in a 
+launch file to load the parameters to the namespace of the node.
 
 \subsection{Observations}
 
-
-\subsection{Observations}
-
+Unfortunately the costmap\_2d ROS package is poorly documented. The 
+configuration parameters are not fully described and expected behavior is often 
+not described at all. Lack of documentation and any functioning examples made 
+the development process extremely slow. We spent upward of 10 days trying to 
+figure out a working configuration. 
+We found that simply using a global costmap was infeasible because it was too 
+computationally intense and we would get obstacle updates every 10--30 
+seconds. Next we tried solely using the local, rolling map costmap. This also 
+gave us problems because at the time, our A* algorithm needed global wall data 
+to find the best route. Due to poor documentation and lack of time, we were 
+unable to implement a dual global local costmap for our final demo.
 
 \subsection{Future Plans}
 
 \begin{itemize}
-\item
-  stuff
-\item
-  stuff
-\item
-  stuff
+	\item
+		Implement dual global local costmap.
 \end{itemize}
