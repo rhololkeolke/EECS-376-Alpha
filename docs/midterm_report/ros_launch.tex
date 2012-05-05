@@ -3,17 +3,17 @@ Instead of having to remember the correct executable s to run and the proper ord
 we created one launch file that incorporated each of our nodes. 
 Within each node package there is a directory called launch containing its own launch file called main.launch. 
 There is a launch file that finds and runs each main.launch file for each package. 
-One issue that we had was the launch of the look_ahead node. In the simulator, 
-look_ahead subscribes to base_scan, but on Jinx look_ahead must subscribe to the topic base_laser1_scan. 
+One issue that we had was the launch of the look\_ahead node. In the simulator, 
+look\_ahead subscribes to base\_scan, but on Jinx look\_ahead must subscribe to the topic base\_laser1\_scan. 
 In order to avoid having to edit and recompile our code for the module, we simply used the remap command to echo 
-the subscriptions from both base_scan and base_laser1_scan. With the remap command it did not matter 
+the subscriptions from both base\_scan and base\_laser1\_scan. With the remap command it did not matter 
 whether we were testing code on the simulator or on Jinx.
 
 While commands from the launch files were able to assist in the versatility of our code, we did run into issues 
 with launching files on Jinx. One issue was trying to use the find command to change into a package directory. The 
-launch file was not able to locate the package cwru_semi_stable, so that we would be able to
- launch cwru_bringup_no_tele.launch. While the roscd command line tool was able to locate the package, 
+launch file was not able to locate the package cwru\_semi\_stable, so that we would be able to
+ launch cwru\_bringup\_no\_tele.launch. While the roscd command line tool was able to locate the package, 
 the find function of ROS Launch XML was not capable of locating the directory. We had to work around this by 
-writing a simple script to launch cwru_bringup_no_tele.launch and start_amcl_2ndfloor.launch.
+writing a simple script to launch cwru\_bringup\_no\_tele.launch and start\_amcl\_2ndfloor.launch.
 While ROS Launch XML is a great framework there could be better documentation and high consistency for ease of use.
 
