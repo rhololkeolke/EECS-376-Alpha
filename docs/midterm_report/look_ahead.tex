@@ -35,7 +35,7 @@ configuration file to prevent the need to recompile when new settings
 are desired.
 
 \subsubsection{Bounding Box Algorithm}
-To determine if a ping is within the box dimensions the trigonemetric
+To determine if a ping is within the box dimensions the trigonometric
 functions are used to determine the bounds of the box.  For each ping
 a maximum distance is computed.  If the ping distance is larger than this
 value then it is ignored. If the ping distance is less it is
@@ -106,42 +106,21 @@ while staying within the minimum range, the robot will think the human
 is still there and wait forever. Obviously this is not ideal, however
 other sensors like the Kinect camera will help us avoid this small, but potentially dangerous problem.
 
-\subsubsection{Topic Name Change}
-We noticed that the topic of the lidar data is different between the
-simulator and the actual robot.  On the simulator the topic is
-``base\_scan'' and on the robot it is ``base\_laser1\_scan''.  Currently
-we make it easy to change the topic by modifying a constant at the top
-of the source file.  However, this solution requires a recompilation
-everytime the topic name is changed.
 
-To solve this problem we are planning on implementing a new node
-called topic\_translator.  This node will be responsible for
-publishing everything it receives from base\_scan to
-base\_laser1\_scan.  This node will only be run when testing via the
-simulator.  This will prevent us from having to recompile everytime
-the topic name changes.
+\subsection{Unimplemented Functions}
+Because of several code changes there are desirable features of look ahead that we planned on implementing, but did
+not have enough time to focus on.
 
-The reason we are not planning on going the other way around and
-translating from base\_laser1\_scan to base\_scan is because on the
-actual robot we want as few nodes as possible to minimize the
-possibility of a part failing.  In addition we can use the processor
-cycles, memory and network bandwidth that would be used by the translator node on
-other more interesting parts of the robot's software.
 
-\subsection{Future Plans}
-Currently the look ahead node only works for straight paths and arcs
-of relatively low curvature.  In the future we would like to change
-this so that the look ahead module works for arcs and potentially even
-spins.
+\subsubsection{Obstacle detection on arcs and spins}
+ \begin{enumerate}
+   \item We considered fattening LIDAR pings and ensuring that fattened LIDAR pings did not pass through the enlarged pings
+ 
+   \item Another option was to use the bounding box algorithim on a linearized arc path segment.
+   \item  The idea became unecessary because the steering node steers from map point to map point instead of by path segments.
+  \end{enumerate}
 
-One way of doing this is to use the same bounding box algorithm to
-calculate the distances for the box at different points along the
-path.  After calculating the box, the box would be transformed back to
-the robots coordinate system and compared with the LIDAR pings.
 
-Another method would be to fatten the LIDAR pings and then make sure
-the path segments don't pass through the englarged pings.  This is the
-method we discussed in class.
 
 
 
