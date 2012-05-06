@@ -100,4 +100,4 @@ Unfortunately we were not able to finish this demo by the time it was due. This 
 
 In this demo the plan was to run a goal planner that published major waypoints and switched modes from obstacle avoidance to magnet pickup.  The waypoints from the goal planner would be used by a path finding algorithm such as A* or brushfire. The points from these algorithms would then be converted to path segments by path planner. These path segments would be turned into a trajectory by velocity profiler and corrections would be applied by steering.
 
-In order to help pick up the magnet we made a transform to the magnet_frame which we obtained via tape measurements. The idea was when trying to line up with the metal the robot would check if the metal was at 0.0 in the magnet frame. If not it would apply corrections as necessary.
+In order to help pick up the magnet we made a transform to the magnet\_frame which we obtained via tape measurements. The idea was when trying to line up with the metal the robot would check if the metal was at 0.0 in the magnet frame. If not it would apply corrections as necessary.
