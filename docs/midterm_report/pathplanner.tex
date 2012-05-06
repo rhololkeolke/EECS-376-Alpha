@@ -1,15 +1,15 @@
 \section{Pathplanner Node}
 
-The path planner subscribes to the message published by the astar or the brushfire nodes, depending on which is in use at the time. The node then determines a series of short paths and publishes a list of them.
+The path planner subscribes to the message published by a path finder node. For our project we attempted to used both the A* and the brushfire algorithm. The two can be used interchangeably and any other algorithm can be used as long as it publishes a list of points to go to in the other they are supposed to be visited. This node takes those points and converts them to path segments.
 
 \subsubsection{Path Planning Algorithm}
-The algorith takes in the points published by the astar and brushfire nodes. Using these points, it calculates both the length and heading of the individual segments.
+The algorithm takes in the points published by the A* and brushfire nodes. Using these points, it calculates both the length and heading of the individual segments.
 
 \subsection{Implementation}
-
+We are currently only using line segments, meaning our path is really a poly line. We should be able to smooth the path and use arcs and spins as necessary, but the steering algorithm did a good enough job of smoothing the line segments that this was not a priority.
 
 \subsection{Observations}
-
+It would be ideal if the path planner were a little more intelligent. For instance if there are many points that are nearly in a line then it would be nice to have path planner publish the best fitting line segment to those points. This means we can have very fine grained point specifications on parts of the path that have a lot of zig-zags in it, and have coarser control on the straighter sections. This would speed up velocity profiler and save cycles in that node.
 
 \subsection{Future Plans}
-One of the main flaws of the current path planner is that given points with enough space between them, it will ultimately propduce an uneven, rough path. This is primarily because the current point publishing node publishes a list of points which are very close together. This issue can be solved with the use of a smoothing algorithm. In the next itteration of the code, this will be implemented.
+One of the main flaws of the current path planner is that given points with enough space between them, it will ultimately produce an uneven, rough path. This is primarily because the current point publishing node publishes a list of points which are very close together. This issue can be solved with the use of a smoothing algorithm. In the next iteration of the code, this will be implemented.
