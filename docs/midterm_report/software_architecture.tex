@@ -14,11 +14,9 @@ The main document we are basing our software architecture off of is
 the following:
 
 \FloatBarrier
-\begin{figure}[h]
-  \includegraphics[width=8.0in]{software_architecture_diagram}
-  \caption{Planned Software Architecture}
-\end{figure}
+\missingfigure{Attach the updated software architecture drawing}
 \FloatBarrier
+
 
 This figure clearly shows the different nodes we have planned, the
 communication message types being passed between them, and areas of
@@ -35,113 +33,100 @@ To help guide us while writing our nodes we wrote a small
 specification for each class seen in the software architecture diagram.
 
 \subsection{Velocity Profiler}
-This node is at the heart of the robot.  Nothing gets done without the
-velocity profiler node running.  This node is responsible for taking
-in path segments and calculating spatial trajectories.  The desired
-velocities at each point along the path must obey all of the path
-constraints specified by the path segment.  Path segments must be
+\todo[color=red,inline]{This needs to be updated with a more accurate discription}
+This nodes is responsible for taking in a list of path segments through the PathList and PathSegment message. After receiving the specified path, velocity profiler calculates the optimum trajectory based on the velocity and acceleration constraints in specified in the path segments. In the process of computing the optimum trajectory velocity profiler will blend multiple segments into a single seamless trajectory. After the trajectory is computed velocity profiler is responsible for sending the desired velocity at each point to steering.
 
 \subsubsection{Requirements}
 \begin{enumerate}
-  \item Velocity Profiler must accept PathSegment messages from
-    Path Planner
-    \item Velocity Profiler must calculate spatial trajectories from
-      the accepted PathSegment messages
-      \begin{enumerate}
-        \item Velocity Profiler must obey all of the path constraints
-          specified in every accepted PathSegment message
-         \end {enumerate}
-\item Velocity Profiler must respond to Obstacle messages from Look
-  Ahead
-  \begin{enumerate}
-    \item Velocity Profiler must stop and wait at an obstacle for a
-      specified amount of time
-      \item Velocity Profiler must alert Path Planner if an obstacle
-        has not moved after a specified time
-      \end{enumerate}
-      \item Velocity Profiler must publish a desired velocity based on
-        the robots current position
-      \item Velocity Profiler must stop when the E-Stop is enabled
-        \item Velocity Profiler must resume a plan after the E-Stop is
-  disabled
-  \end{enumerate}
+  \item Velocity Profiler must accept PathList messages
+  \item Velocity Profiler must calculate spatial trajectories from
+        the accepted PathSegment messages
+        \begin{enumerate}
+           \item Velocity Profiler must obey all of the path constraints
+                 specified in every accepted PathSegment message
+        \end {enumerate}
+  \item Velocity Profiler must respond to Obstacle messages from Look
+        Ahead
+        \begin{enumerate}
+           \item Velocity Profiler must stop and wait at an obstacle for a
+                 specified amount of time
+           \item Velocity Profiler must alert Path Planner if an obstacle
+                 has not moved after a specified time
+        \end{enumerate}
+   \item Velocity Profiler must publish a desired velocity based on the computed trajectory
+   \item Velocity Profiler must stop when the E-Stop is enabled
+   \item Velocity Profiler must resume a plan after the E-Stop is
+         disabled
+\end{enumerate}
       
-  \subsection{Look Ahead}
-  This node enables obstacle detection. As the name implies it is
-  responsible for ``looking'' ahead for obstacles along the path.
-  Currently it uses the LIDAR but other sensors such as the Kinect
-  could be used to either augment or replace the LIDAR sensor data.
+\subsection{Look Ahead}
+
+This node enables reactive obstacle detection. As the name implies it is responsible for ``looking'' ahead for obstacles along the path. Currently it uses the LIDAR but using either the costmap or custom code this could be expanded for other sensors such as the Kinect.
 
   \subsubsection{Requirements}
   \begin{enumerate}
-  \item Look Ahead will parse the data from the LIDAR
-  \item Look Ahead will detect objects within a minimum of 1 m
-    \item Look Ahead will exclude obstacle detection of all objects
-      outside of the planned path
-      \end{enumerate}
+     \item Look Ahead will parse the data from the LIDAR
+     \item Look Ahead will detect objects within a minimum of 1 m along the specified path
+     \item Look Ahead will exclude obstacle detection of all objects
+           outside of the planned path
+  \end{enumerate}
 
-  \subsection{Steering}
+\subsection{Steering}
+  \todo[color=red,inline]{Should add a little better description}
   This node is responsible for correcting the small differences
-  between desired and actual heading.
-  
-  \subsubsection{Requirements}
-
-  \begin{enumerate}
-  \item Steering will accept paths from Path Planner
-    \item Steering will correct the desired velocities from Velocity
-      Profiler
-    \item Steering will use a non-linear steering algorithm
-      \item Steering will stop correcting the path when an obstacle is
-detected
-\item Steering will stop correcting the path when the E-Stop is pressed.
-    \end{enumerate}
-
-  \subsection{Path Planner}
-  This node is responsible for using the robot sensors to detect the
-  environment and plan a path between the robots starting position and
-  the goal
+  between desired and actual heading. It takes in a desired velocity and scales
+  its own steering around that value based on the segment type.
 
   \subsubsection{Requirements}
-
   \begin{enumerate}
-\item Path Planner will use the pre-loaded map to calculate a possible
-  path
-\item Path Planner will send out the calculated path in segments
-\item Path Planner will respond to requests for new paths
-  \item Path Planner will respond to sensory input to plan new
-    segments in unknown environments
-    \item Path Planner will auto-update planned paths based on
-      unexpected obstacles
-    \end{enumerate}
+     \item Steering will accept a list of paths
+     \item Steering will correct the desired velocities from Velocity
+           Profiler
+     \item Steering will obey stopping commands in the desired velocity
+     \item Steering will stop correcting the path when the E-Stop is pressed.
+  \end{enumerate}
+
+\subsection{Path Planner}
+
+This node is responsible for taking in a set of path points and converting it to a list of path segments that form a path through the desired points. It is allowed to throw out conflicting data and select path segment parameters such as the speed.
+
+  \subsubsection{Requirements}
+  \begin{enumerate}
+    \item Path Planner will receive a list of path points
+    \item Path Planner will send out the calculated path in segments
+    \item Path Planner will respond to requests for new paths
+    \item Path Planner will correct its computed path based on new information in the path point list
+  \end{enumerate}
 
 \todo[color=green,inline]{Fill in new node specifications}
-  
-  \subsection{Kinect}
+\subsection{Path Finder}
+
      \subsubsection{Requirments}
      \begin{enumerate}
        \item stuff
-       \end{enumerate}
+     \end{enumerate}
+ 
+\subsection{Kinect}
 
-  \subsection{Position Publisher}
-     \subsubsection{Requirments}
-     \begin{enumerate}
-       \item stuff
-       \end{enumerate}
+  \subsubsection{Requirments}
+  \begin{enumerate}
+    \item stuff
+  \end{enumerate}
 
+\subsection{Costmap}
 
-     \subsection{Costmap}
-     \subsubsection{Requirments}
-     \begin{enumerate}
-       \item stuff
-       \end{enumerate}
+  \subsubsection{Requirments}
+  \begin{enumerate}
+    \item stuff
+  \end{enumerate}
        
 
-  \subsection{A Star Search}
-    \subsubsection{Requirments}
-     \begin{enumerate}
-       \item stuff
-       \end{enumerate}
+\subsection{A Star Search}
 
+   \subsubsection{Requirments}
+   \begin{enumerate}
+     \item stuff
+   \end{enumerate}
 
 \todo[color=red,inline]{Check the definitions of new message specifications.}
 
