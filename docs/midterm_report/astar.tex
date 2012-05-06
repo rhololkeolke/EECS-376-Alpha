@@ -15,9 +15,9 @@ The robot's starting position is added to the open list. The neighboring locatio
 \item If a list is on the open list already check to see if the path through this location is better than the current location.
 \end{itemize}
 
-The search stops when the the goal location is in the closed list meaning the path has been found or when the goal location is not found and there are no more points in the closed list meaning there is no path to the goal.
+The search stops when one of the goal locations is the next item on the open list or the open list is empty. When the open list is empty no path exists.
 
-The algorithm then generates the path path by tracing back the pointers to the parents.
+The algorithm then generates the path by tracing back the pointers to the parents.
 
  This algorithm takes a number
 of inputs such as:
@@ -32,11 +32,13 @@ of inputs such as:
 
 
 \subsection{Implementation}
-To improve the smoothness of path generation we included a launch parameter called ``numCells'' which increases the number of grid spaces generated in the node's grid frame. 
+To make the algorithm run faster and yet still be flexible we specify two parameters in the launch file called c1 and c2. These represent two corners. There is also a parameter called numCells. These corners define a grid that spans the area of a rectangle with the corners specifying the corners of the rectangle. The number of cells in the grid is numCells by numCells. This meant we could specify an A* search over a specific area in the map instead of examining the entire map. This allows the search space to be cut down significantly and allows for a finer grained search in the area of interest.
 
+\subsection{Observations}
+We noticed that when the A* algorithm was responding to obstacle stimulus from the sensors it would try to get as close to the obstacle as possible. This was because all of the states in our grid had the same cost of 1. If we were to actually use this we would have given a step cost of the inverse of the distance to the closest obstacle. We would also have to modify our heuristic to make sure it remained admissible. We would use the bounds on our hallway to scale the Euclidean distance heuristic so that it was guaranteed to be at least as small as any path that could actually be found.
 
 \subsection{Lessons Learned}
 While our software architecture helped us to properly distribute labor and the encapsulation of data between nodes,
-we neglected to make use of a contingency plan. Our production chain was broken at the costmap and our AStar node depended
+we neglected to make use of a contingency plan. Our production chain was broken at the costmap and our A* node depended
 on the working costmap. If we could redo the final we would have had a backup plan to generate closed list points
-through our own code. For instance we could have used lidar data to generate wall points to go into the closed list of the AStar search node.
+through our own code. For instance we could have used LIDAR data to generate wall points to go into the closed list of the A* search node.
