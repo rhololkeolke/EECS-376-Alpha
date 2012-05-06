@@ -27,6 +27,14 @@ used will be found in the rest of this section.
 
 \input{stacks_packages}
 
+\section{Keeping the Nodes in Sync}
+
+Each node runs in its own process which means its possible for the nodes to get out of sync, especially if messages are lost. Lost messages were a problem for us because the nodes do not check if anyone is actually set up to listen to their messages. That meant that if a publishing node started publishing data before the listener the lost messages would cause unexpected behavior in the nodes.
+
+To get around this we added flags to custom message type, such as the new flag. These flags allowed us to continually publish old information until it was no longer valid. The nodes listening to the messages would not consider the information new unless they had no information or the new flag was set. This meant that even if the original message was missed on startup the nodes would eventually get back in sync.
+
+We went with this approach because we were not aware of ROS services at the time we designed the messages and interfaces. ROS services would have allowed us to block until a service became available. It also would have allowed us to get new information on demand. For instance instead of raising an abort flag in segment status when the specified path could not be executed, we could have called a service on the path planner node that computed a new path. This would have saved on bandwidth and made syncing the nodes simpler.
+
 \section{Node Specifications}
 
 To help guide us while writing our nodes we wrote a small
