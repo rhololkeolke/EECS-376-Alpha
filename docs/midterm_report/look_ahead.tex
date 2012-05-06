@@ -20,7 +20,7 @@ of 1 degree per ping.  This works out to a sweep from -90$^\circ$ to
 90$^\circ$ in the robots base coordinate frame.
 
 When an obstacle is detected in the box the obstacles boolean in the
-Obstalce message type is set to true. The algorithm also calculates
+Obstacle message type is set to true. The algorithm also calculates
 the closest of the obstacle pings and puts that number in the distance field
 of the Obstacle message type. When no obstacles are detected obstacles
 is set to false and distance is set to 0.0.
@@ -47,6 +47,7 @@ thresholds is returned as the distance.
   \centering
   \includegraphics[height=4.5in]{Look_Ahead_Bounding_Box.png}
   \caption{Calculations for laser ping distances}
+  \label{fig:lookAheadLaserPingDistances}
 \end{figure}
 \FloatBarrier
 
@@ -69,56 +70,16 @@ equations shown in figure 3.
 \subsection{Observations}
 
 \subsubsection{Lidar Problems}
-Because of the LIDAR's limited angular range, it is not very useful
-for obstacle detection during turning.  The positioning of the LIDAR
-unit prevents it from seeing obstacles to its side or behind it. While
-we have the ability to decide if a turn is safe before we reaching the
-starting point, we don't
-have the ability to detect a new obstacle after the turn has started.
 
-In addition we need to verify that the LIDAR gives consistent and
-accurate data during turns.  The LIDAR method uses a rotating mirror
-to send out and detect laser pings.\cite{deyle_sick_2008}
-Theoretically the added rotation of the robot could ``smear'' the
-LIDAR data.  Because we haven't used it during turns we have not
-confirmed whether this is the case, but as we add the capabilities for
-arcs this potential effect will become more important.
+Sometimes the LIDAR data would drop out. To fix this problem we would restart the computer and it would usually comeback once the computer had started back up. We are not sure what is causing the problem, however, one of our theories is that multiple people trying to run their code causes the problem. If one person starts the cwru\_bringup\_no\_tele launch file then the two will conflict and the console will print LIDAR timeout messages. After this occurs its possible that internal state variables become corrupted and so the LIDAR code on the robot fails to act properly until a restart.
 
-Another peculiarity of the LIDAR is the minimum range.  After an
-object gets too close it disappears from the LIDAR.  This is most
-likely because the circuitry of the LIDAR cannot detect the return
-pulses fast enough to caclulate the data and so it filters them out.
-Luckily it appears as if the minimum range is quite close. We found
-the cutoff range to be around 0.1 m.
-
-This range is not a problem from the robot's perspective because the
-robot should never try to get close enough to object for this to
-become an issue.  However, the opposite may not always be true. If the
-robot stops for an approaching humand the human walks right up to the
-robot without knowing the LIDAR limitations the robot may think the
-human has disappeared and continue on its path.
-
-The only potential solution we can see to this is to implement a
-detection algorithm that examines where objects disappear, if the
-object disappears by the robot's minimum range the robot can assume
-the object is still there.  However, if the person leaves the range
-while staying within the minimum range, the robot will think the human
-is still there and wait forever. Obviously this is not ideal, however
-other sensors like the Kinect camera will help us avoid this small, but potentially dangerous problem.
-
+Another theory is that bugs in the various groups' code such as memory leaks and segfaults leave subprocesses running in the background. These zombie processes may be causing interference. Between the wo the first theory seems more likely. Especially since the bringup launch script can be run in a background process or through a screen session.
 
 \subsection{Unimplemented Functions}
-Because of several code changes there are desirable features of look ahead that we planned on implementing, but did
-not have enough time to focus on.
 
+Before spring break we had plans to update look ahead so that it could detect obstacles before going into a spin segment and so that it could detect obstacles more accurately on an arc. We had planned on taking in the path segment list and detecting when the next segment would be a spin. If we detected any obstacles in the area the robot would move through while executing the spin we would stop on the segment before the spin and wait until the obstacle moved or we replanned. This would have avoided the part of the problem with the LIDAR's blind spots.
 
-\subsubsection{Obstacle detection on arcs and spins}
- \begin{enumerate}
-   \item We considered fattening LIDAR pings and ensuring that fattened LIDAR pings did not pass through the enlarged pings
- 
-   \item Another option was to use the bounding box algorithim on a linearized arc path segment.
-   \item  The idea became unecessary because the steering node steers from map point to map point instead of by path segments.
-  \end{enumerate}
+In addition for the last demo we found that because of the very small path segment distances our bounding box algorithm, would often give responses too late to do anything but a hard stop. Our current approach is to stop the robot only if the distance to the closest obstacle is within our path segment distance. This needs to be changed to within some distance along the entire path. With the short segments published by our path planner the robot won't stop until its so close its essentially already collided with it. However, if the costmap were working this may become a moot point as that should allow us to detect all obstacles including ones from the kinect and dynamically steer around them.
 
 
 
