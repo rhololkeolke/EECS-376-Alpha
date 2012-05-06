@@ -1,17 +1,19 @@
 \section{ROS Packaging and Stacks}
 
 We have been utilizing ROS stacks to manage our individual ROS packages.
-We will try to use a single package per node. This will encourage
+We used a single package per node. This encouraged
 appropriate message passing between nodes and make sure they are not too
 tightly coupled.
 
 Another benefit is that rosmake will build packages that don't depend
 on one another in parallel.  This decreases the build time by a small
-amount, which is especially useful when making small changes during testing.
+amount, which is especially useful when making small changes during testing. For the packages that we were not modifying such as cwru\_base we added a ROS\_NOBUILD file to the main directory. This is simply an empty file with the name ROS\_NOBUILD. When rosmake is run any package containing one of these in the main directory will be skipped.  This dramatically sped up compile times.
 
 Stacks utilize a \texttt{stack.xml} file which contains dependencies to
 be included for every package. The ROS stack will automatically build
 all packages within it's root directory.
+
+Stacks are also useful for separating out groups of packages that have similar functions.  In our case we could have separated the path planner, path finder, steering, velocity profiler, and costmap into a single movement stack. Then other stacks could simply include our stack and get all of the benefits of our movement code.
 
 Complete documentation can be found at 
 \url{http://www.ros.org/wiki/Stacks}
