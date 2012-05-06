@@ -5,9 +5,13 @@ We used a single package per node. This encouraged
 appropriate message passing between nodes and make sure they are not too
 tightly coupled.
 
+This was extremely beneficial for custom messages. Because the messages are namespaced according to the package they are in when we originally split our package into multiple packages we had problems with the message types staying in sync. Putting all the messages in a single message package guaranteed that all nodes that needed the message had the same definition to work with.
+
 Another benefit is that rosmake will build packages that don't depend
 on one another in parallel.  This decreases the build time by a small
 amount, which is especially useful when making small changes during testing. For the packages that we were not modifying such as cwru\_base we added a ROS\_NOBUILD file to the main directory. This is simply an empty file with the name ROS\_NOBUILD. When rosmake is run any package containing one of these in the main directory will be skipped.  This dramatically sped up compile times.
+
+One thing to keep in mind when creating packages is that rosrun will get confused if multiple packages in of the ROS\_PACKAGE\_PATH directories are named the same thing. This was a problem on the robot with multiple groups having similar packages and nodes. To fix this we appended \_alpha to all of our package names. We would recommend everyone in the class do this to avoid conflicts and confusion.
 
 Stacks utilize a \texttt{stack.xml} file which contains dependencies to
 be included for every package. The ROS stack will automatically build
