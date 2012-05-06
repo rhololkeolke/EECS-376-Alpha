@@ -53,7 +53,17 @@ Week 16 & Integration of New Nodes \\ \hline
 \end{figure}
 \FloatBarrier
 
-After spring break we refactored our code in python and sought to farmiliarize ourselves with image processing libraries to be prepared for the final demo.
+\section{Language Selection}
+
+One of our biggest complaints from the first half of the semester was the fact that the C++ took so long to compile. We would spend 3 minutes waiting for our code to compile only to find that we had forgotten a semicolon on a single line. This really cut into a productivity. In addition the need to deal with memory and threading made our code difficult to write and debug.
+
+To solve this after spring break we transitioned all of the code we possible could to python. Python takes care of memory management for us. Python's default data structures are all thread safe by default. In addition the rospy libraries take care of executing the callbacks in a separate thread. There is no need to call spin or spinOnce.
+
+Python also solved our compilation issues.  If something was wrong we only needed to change it and save the file before running it again. We noticed no difference between the speed of our python code and our C++ code. In fact, while we have not done any real testing our code may be faster in Python simply because the underlying implementation of Python has been heavily optimized. While we believe we could have beaten Python with optimized C++ code we were not actively optimizing our code.
+
+The only thing that could not be written in python were the Kinect nodes, the costmap node, and anything dealing with the PCL library. The Kinect node could not be written in python because the special image transport subscriber is not available in python. However, the opencv library has excellent python bindings. The costmap node could not be written in python because they don't provide wrappers. The PCL library could not be written in Python for the same reason.
+
+We would strongly recommend advocating Python as the language of choice to future classes. The language allows one to focus more on the logic and algorithms running the robot and less on the mundane solved tasks of memory management and threading.
 
 \section{Tools}
 
