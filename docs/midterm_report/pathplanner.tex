@@ -1,24 +1,9 @@
 \section{Pathplanner Node}
 
-What do I do?
-
-\subsection{Theory of Operation}
-
+The path planner subscribes to the message published by the astar or the brushfire nodes, depending on which is in use at the time. The node then determines a series of short paths and publishes a list of them.
 
 \subsubsection{Path Planning Algorithm}
- This algorithm takes a number
-of inputs such as:
-
-
-\begin{itemize}
-\item
-  stuff
-\item
-  stuff
-\item
-  stuff
-\end{itemize}
-
+The algorith takes in the points published by the astar and brushfire nodes. Using these points, it calculates both the length and heading of the individual segments.
 
 \subsection{Implementation}
 
@@ -26,16 +11,5 @@ of inputs such as:
 \subsection{Observations}
 
 
-\subsection{Observations}
-
-
 \subsection{Future Plans}
-
-\begin{itemize}
-\item
-  stuff
-\item
-  stuff
-\item
-  stuff
-\end{itemize}
+One of the main flaws of the current path planner is that given points with enough space between them, it will ultimately propduce an uneven, rough path. This is primarily because the current point publishing node publishes a list of points which are very close together. This issue can be solved with the use of a smoothing algorithm. In the next itteration of the code, this will be implemented.
