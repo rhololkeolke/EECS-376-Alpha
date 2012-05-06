@@ -6,6 +6,7 @@ import rospy
 from msg_alpha.msg._BlobDistance import BlobDistance
 from geometry_msgs.msg._Twist import Twist as TwistMsg
 
+# add some deadzone to the middle of the image to prevent jitter
 THRESHHOLD = 320
 distance = 0
 
@@ -14,7 +15,7 @@ def distanceCallback(dist):
 	distance = dist.dist
 
 def main():
-
+	# standard ros code
 	rospy.init_node('kinect_move_alpha')
 	desVelPub = rospy.Publisher('cmd_vel', TwistMsg)
 

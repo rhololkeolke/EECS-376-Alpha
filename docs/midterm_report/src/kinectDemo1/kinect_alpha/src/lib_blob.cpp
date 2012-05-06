@@ -83,13 +83,15 @@ void blobfind(int vals[], const cv::Mat& src, cv::Mat& out, int& point)
 
   dilate(out, out, Mat(), Point(-1,-1), 30);
 
+  // create images to store the blob data in
   IplImage temp1 = out;
   IplImage temp2 = temp;
   IplImage *labelImg=cvCreateImage(cvGetSize(&temp1), IPL_DEPTH_LABEL, 1);
   CvBlobs blobs;
-  unsigned int result=cvLabel(&temp1, labelImg, blobs);
+  unsigned int result=cvLabel(&temp1, labelImg, blobs); // label the blobs (basically segment the image)
   cvRenderBlobs(labelImg, blobs, &temp2, &temp2);
 
+  // find the biggest blob
   CvLabel greatestBlob = cvGreaterBlob(blobs);
   CvPoint2D64f center;
   center.x = src.size().width/2;
