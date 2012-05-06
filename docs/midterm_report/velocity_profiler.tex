@@ -67,16 +67,6 @@ The code used to generate this figure is included in the report, but you can vie
 
 \subsection{Observations}
 
-We are using an AsyncSpinner to service our callbacks.  Using the
-AsyncSpinner means we do not have to call spin or spinOnce, however,
-it complicates the callbacks because now they are running on separate,
-non-blocking threads.
+Keeping track of segment completion the way velocity profile does allows our path planner to be a little sloppy in the path segments its publishing. The path segments don't have to start exactly where the robot is at and there can be small gaps and offsets between the different path segments. Steering will correct any path offsets and orientation errors and the velocity profiler will simply keep track of how close it is to the end along the specified segment.
 
-During our testing we noticed that the information from single packets
-would be lost.  We were testing Velocity Profiler with a dummy path
-publisher node that published at a significantly slower rate than
-velocity profiler's main loop.  Yet, the individual packets would
-sometimes get skipped by velocity profiler's callback function.
-
-We are still investigating the cause of this, but think it may have to
-do with the use of AsynSpinner to service the callbacks.
+As mentioned in the algorithm description having a hard cutoff between negative and positive segment distance done values for arcs and spins can cause problems for long segments. One way to solve this is to use short segments like we did. Another way is to combine the original integration algorithm with our current algorithm. At the beginning of the algorithm the integration data is really accurate, however, as the robot moves the integration data gets less and less error. To account for this each algorithm could be used in something like a Kalman filter or particle filter. At the beginning of the segment the ``believability'' of the integration will be very high and will dominate, as the robot moves this believability will decay and eventually the new algorithm will dominate.
