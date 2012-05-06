@@ -139,7 +139,6 @@ This node is responsible for commanding the movement nodes in order to accomplis
     \item Goal planner shall give the movement nodes waypoints to navigate to
   \end{enumerate}
 
-\todo[color=red,inline]{Check the definitions of new message specifications.}
 \section{Custom Message Specifications}
 
 \subsection{SegStatus}
@@ -265,10 +264,7 @@ base\_scan is used in the simulator\\
 \noindent Used to send out LIDAR data from the cRIO.
 
 \subsection{seg\_status}
-Velocity profiler publishes the status of its current segment on this
-topic.  Nodes such as steering subscribe to it.
-
-\todo[inline]{Check over descriptions}
+Velocity profiler publishes the status of what part of the desired path it is executing.  Nodes such as steering subscribe to it.
 
 \subsection{path}
 Path Publisher publishes the planned path segments in a PathList message to this topic.  The
