@@ -270,17 +270,21 @@ topic.  Nodes such as steering subscribe to it.
 
 \todo[inline]{Check over descriptions}
 
-\subsection{path\_seg}
-Path Publisher publishes the planned path segments to this topic.  The
+\subsection{path}
+Path Publisher publishes the planned path segments in a PathList message to this topic.  The
 published segments are used by steering, velocity\_profiler and other nodes.
 
 \subsection{point\_list}
-AStar publishes a list of points for the pathplanner to generate path segments from.
+The path finder node publishes a list of points for the pathplanner to generate path segments from.
+
 \subsection{goal\_point}
-The goal publisher sends a goal to the AStar node that determines the end point of the A star search.
-\subsection{path}
-The path list determiend by the path planner.
+The goal publisher sends a goal to the path finder node that determines the end point of the desired points list.
+
 \subsection{obstacles}
 Look ahead publishes whether or not there is an obstacle within the bounded box area directly in front of the robot.
+
 \subsection{motors\_enabled}
 Estop publishes whether or not the estop is off.
+
+\subsection{map\_pos}
+Publishes the current location of the robot in map space. This prevents all of nodes from having to do the odom to map transformation. It also allows us to rostopic echo the topic to easily verify that the robot knows its own position.
