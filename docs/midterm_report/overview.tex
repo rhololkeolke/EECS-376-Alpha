@@ -4,45 +4,35 @@
 
 The members of the alpha team and their respective roles are:
 
-Devin Schwab - Group Leader, Velocity Profiler, A* Search
+Devin Schwab - Group Leader, Velocity Profiler/Brushfire, A* Search
 
-Mark Shultz - Steering, Kinect Sensor, Costmap
+Mark Shultz - Steering, Kinect Sensor, Costmap, Brushfire
 
-David Jannotta - Path Planning
+David Jannotta - Path Planning, Goal Planner
 
-Eddie Massey III - Sensors\\
+Eddie Massey III - Look Ahead, A* Search\\
 
-Each team member was given a specific node to work on.  This allows us
-to work in parallel as the interfaces to our nodes are defined in the
-software architecture. Along with the main tasks various other tasks
-have been assigned.
+In general each team member was given a specific node to work on. This allowed us to work in parallel as the interfaces to our nodes were defined prior to each node being created. However, there was some overlap between who worked on what node based on group member's expertise and availability.  For instance the Brushfire node was worked on by both Mark and Devin.
 
-For instance Eddie has been tasked with creating a ROS Launch file
-(see Tools section) and Mark has been tasked with creating our package
-structure (see Packaging and Stacks section).
-
+In addition to the actual coding work various other tasks were assigned. This included things like the creation of launch files, the collection of bag files and documentation.
 
 \section{Project Goals}
-\todo[color=blue,inline]{Should the goal be changed?}
-The main goal for the semester is to program a robot that is capable
-of taking in sensory information from the environment and then use
-that information to autonomously plan goals and execute them.  To
-accomplish this overall goal multiple capabilities will need to be
-added to the robot.  These capabilities include:
+The main goal for this semester was the final project. The final project involved navigating through an environment with unknown obstacles to a piece of metal, picking up the piece of metal and navigating back to the start. To accomplish this the robot needed the following capabilities:
 
 \begin{enumerate}
-\item Take in goal destinations and calculate a path based on stored
-  map information and current location
-\item Autocorrect path when obstacles are detected
-\item Correct trajectory using a steering algorithm
-\item Detect objects using the Kinect camera and autonomously plan
-  actions based on the data
+     \item Take in goal destination and calculate a path to the location based on stored map information and current location
+     \item Detect objects using sensors such as the Microsoft Kinect
+     \item Update the overall plan as new obstacles are detected
+     \item Calculate a trajectory along the desired path
 \end{enumerate}
 
 \todo[color=green,inline]{Fill out more information about each subtask}
 
+\newpage
 \section{Schedule and Milestones}
 
+\FloatBarrier
+\begin{figure}[h]
 \begin{longtable}{|l|l|}
   \hline {\bf Week} & {\bf Goal} \\ \hline
 Weeks 1-3 & Familiarization with ROS \\ \hline
@@ -60,11 +50,12 @@ Week 14 & Costmap Integration \\ \hline
 Week 15 & Path Planning Algorithims \\ \hline
 Week 16 & Integration of New Nodes \\ \hline
 \end{longtable}
+\end{figure}
+\FloatBarrier
 
 After spring break we refactored our code in python and sought to farmiliarize ourselves with image processing libraries to be prepared for the final demo.
 
 \section{Tools}
-
 
 \subsection{Git}
 
@@ -86,27 +77,31 @@ demo is merged into master and tagged for future reference.
 
 \input{ros_launch}
 
-\todo[color=blue,inline]{Is GTest still necessary?}
-\subsection{GTest}
+\subsection{Unit Testing}
+
+Because of the complexity of each node and the system as a whole it can be extremely difficult to debug. The best practice is to prevent bugs from manifesting in the first place. Unit testing is an approach to help catch bugs before they become lost in the system. It involves writing a suite of automated tests for each function in the nodes. In general it is best to write the tests before the actual code is written as this forces the developer to think through all of the implementation decisions before writing any code. However, due to the highly dynamic nature of our code base and the compressed time in which we had to do demos we do not have a comprehensive unit testing suite.
+
+Also, while unit testing is an excellent tool to catch bugs before they happen and prevent regressions in functionality it should be noted that they are not fool proof.  For instance the unit tests will not cover every case, and so it is possible that edge case bugs can still slip through into the final project. In addition if the unit tests have bugs then the functionality of the code it is testing cannot be properly evaluated. However, most tests are quite simple compared to the actual code implementation and so bugs that do appear in the test are usually far easier to catch than those that are in the real software.
+
+In our project we used two unit testing frameworks: GTest and PyTest
+
+\subsubsection{GTest}
 
 GTest is Google's C++ Unit testing
 framework.\cite{google_googletest} ROS recommends
-its use for unit testing needs.  We are currently using it to test
-helper classes, but would like to expand its use to other parts of our
-code, including the main nodes.
+its use for unit testing needs. At the beginning of the semester we were using it to test 
+helper classes, but after the switch to python we did not use it as much. However, it would still have been useful for the nodes that dealt with the Kinect as we could not use python for those modules.
 
-The use of unit testing help solidify development by forcing us to
-think about the interfaces of our classes before we start coding.
-This in theory leads to cleaner, better designed code.  In addition
-when adding new features or fixing bugs it is possible to break
-previously implemented features.  Running the unit test suite after
-each build will alert us of any regressions.
+\subsubsection{PyTest}
 
-We would like to be able to write automated test suites for our code
-that actually simulate the outcome in Stage. However, so far this is
-just an idea.  If implemented it would allow us to systematically test
-our code in the simulator and potentially automatically collect data.
-For example when picking the steering constants had we had a way to
-automate the simulator we could have written a short program to
-autotune the robot.  Granted, it would still have to tweaked when it
-ran on the real bot due to differences between simulation and the real world.
+PyTest is included with standard python distributions so it is easy to set up and run a test on any computer with python.  Python is easier to do unit testing with because of duck typing.  Duck typing refers to the phrase, ``If it looks like a duck and quacks like a duck, it must be a duck.'' \cite{python_duck_typing} This refers to python's weak typing. In strongly typed languages such as C++ in order for a method to accept a parameter it must be the type defined in the function. In python the type doesn't matter, the only thing that matters is if the parameter implements the methods that are called on the parameter. This means multiple classes can be passed into a single method as long as they all implement the same methods. This is similar to Java's interface concept, except the interfaces do not need to be explicitly specified.
+
+The reason duck typing is useful is that we can easily write small prototyping classes for our own classes and for ROS classes. These classes can provide a very limited simulation of what the real class would provide. This means that even functions which depend on things which are difficult to control , such as network communications, can be tested by writing a mockup class.
+
+\subsection{Integration Testing}
+
+While Unit testing works great for functions and small pieces of classes and nodes, it does not necessarily lend itself to testing the integration of multiple nodes. Especially when the other nodes have not been implemented yet. Also the unit testing is not easily used with the simulator. Additionally, certain tests can only be run in the simulator.
+
+To get around this problem we created small prototype nodes that would take in user input either from the command line or csv files and interact with the other nodes based on this. For instance to test the velocity profiler class a path publisher prototype was created. This prototype took in a csv file that specified a list of path segments and it published them using the PathList message. This allowed velocity profiler to be tested before the nodes on the other side of the interface were actually completed.
+
+Our integration tests are contained in folders called integrationTests within each node's package.
