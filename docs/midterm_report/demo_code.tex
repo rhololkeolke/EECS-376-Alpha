@@ -73,9 +73,31 @@ all 5 paths have been completed.
 \todo[color=green,inline]{Update Demo Descriptions}
 
 \section{Obstacle Avoidance Demo}
+The source code for the obstacle avoidance demo is included in src/obstacle\_avoidance
+
+Because of our transition to python we were not able to devote as much time to developing the avoidance demo code. Putting this on top of our new algorithms for velocity profiler meant that a lot of bugs were introduced in the obstacle avoidance. Many of these were addressed when velocity profiler was rewritten for the final demo.
+
+For this demo we are still publishing static waypoints as in the last demo. However, when an obstacle is detected by the LIDAR in the robots path, the robot will stop for 3 seconds. If the obstacle has not moved after 3 seconds the robot assumes the obstacle is not going to move. It then sends an abort signal to the path publisher. The path publisher then creates two arcs to move the robot over to the opposite side of the hallway.  The path publisher then starts publishing short straight segments until the LIDAR no longer detects an obstacle on its preferred side of the hallway. It will then publish two more arc segments which put the robot back on its original path.
 
 \section{Kinect Demo 1}
+The source code for the first Kinect demo is included in src/kinect\_demo1
+
+For this demo we detect blobs of orange using RGB image data from the Kinect camera. We then find the centroid of the largest blob and publish its offset from the center of the camera. We then apply a proportionality constant to that number and use it to adjust the steering spin commands.
 
 \section{Kinect  Demo 2}
+The source code for the second Kinect demo is included in src/kinect\_demo2
+
+For this demo we filter the image using HSV values and then using depth information for points in a certain z-range.  The points are then sorted into bins and the centroid of the closest bin containing points is used as the next point in the strap path.
+
+The steering node simply steers to that point published. If no centroid is detected steering will spin in a circle until the strap is detected again. The robot will drive up an down the strap until its batteries run out or it is stopped.
+
+A video of this demonstration is posted at \url{http://www.youtube.com/watch?v=iIT8uX7mIvI}
 
 \section{Final}
+The source code for the final demo is included in src/final
+
+Unfortunately we were not able to finish this demo by the time it was due. This is mostly due to fighting with the costmap.
+
+In this demo the plan was to run a goal planner that published major waypoints and switched modes from obstacle avoidance to magnet pickup.  The waypoints from the goal planner would be used by a path finding algorithm such as A* or brushfire. The points from these algorithms would then be converted to path segments by path planner. These path segments would be turned into a trajectory by velocity profiler and corrections would be applied by steering.
+
+In order to help pick up the magnet we made a transform to the magnet_frame which we obtained via tape measurements. The idea was when trying to line up with the metal the robot would check if the metal was at 0.0 in the magnet frame. If not it would apply corrections as necessary.
