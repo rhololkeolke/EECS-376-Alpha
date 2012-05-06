@@ -1,39 +1,27 @@
 \section{Kinect Node}
 
-What do I do?
+The Kinect node contains 2 main programs. A blob finder used in the first Kinect demo and the strap following code that was used in the strap following demo.
 
 \subsection{Theory of Operation}
 
+The Kinect node contains multiple discreet binaries that the other nodes can start up and receive information from if needed. We did this because it made sense to group all of the Kinect code in a single place, yet it also made sense to make separate executables for the wide range of vision applications available.
 
 \subsubsection{Kinect Algorithm}
- This algorithm takes a number
-of inputs such as:
 
+The blob finder used only image data. OpenCV was used to process the received image data. The blob finder started by converting the received image into a binary image based on the RGB thresholds set in the launch file. Then we eroded the image and dilated what was left. We then ran a segmentation and blob detection algorithm on the filtered image. From the detected blobs we selected the largest and published its centroid in terms of image pixels from the center in the horizontal direction.
 
-\begin{itemize}
-\item
-  stuff
-\item
-  stuff
-\item
-  stuff
-\end{itemize}
+The strap follower was more sophisticated then the blob follower. It filtered the image in a manner similar to the blob finder, however, it used HSV values instead of RGB values. It also utilized the depth map information. After filtering on color it took the remaining pixels and transformed their image coordinates into base\_link coordinates. If the coordinate was within certain z-thresholds it was ignored. The points that were within the z-thresholds were put into a grid. The grid can be thought of as similar to a 2D histogram. Each cell in the grid is a bin and points within the cell's bounds all get put in that same bin.
 
+After the points were classified in the bin the centroid of each bin was calculated. Those bins with no points in it were ignored. The bin with the closest centroid was remembered and that point was published as the next point in the strap to go to.
 
 \subsection{Implementation}
+The blob finder actually used the older C openCV libraries. These were much harder to use and it took some time to figure out how to get the CMakeList to properly link all of the files. For the strap follower we made sure to use the new up-to-date C++ libraries.
 
+Instead of the bin algorithm we originally tried to use some of the new features of the Point Cloud Library (PCL) such as voxels and octrees.  However, we could not get these to compile on the robot because of an older version of the PCL that did not have the methods we needed.
 
+We also tried using the filter functions of the PCL library but could not figure out how to get it to compile because it used Boost pointers which do not act the same as a standard C++ pointer.
 
 \subsection{Observations}
 
+The blob finder had a lot of noise. We believe we should have averaged the centroids over time. In addition we had problems with using RGB for filtering. The night before the demo we had it working, but when it came time to do the demo because of slightly different lighting conditions we could not consistently pick up the strap. Luckily we had our threshold values in specified as parameters in the launch file so it was easy to change on the file.
 
-\subsection{Future Plans}
-
-\begin{itemize}
-\item
-  stuff
-\item
-  stuff
-\item
-  stuff
-\end{itemize}
