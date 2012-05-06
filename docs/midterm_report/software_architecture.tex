@@ -98,38 +98,50 @@ This node is responsible for taking in a set of path points and converting it to
     \item Path Planner will correct its computed path based on new information in the path point list
   \end{enumerate}
 
-\todo[color=green,inline]{Fill in new node specifications}
 \subsection{Path Finder}
+
+This node is responsible for taking in sensor information and map information and finding a potential points that the robot should navigate to. These points will eventually be constructed into a path segment which will be put together to make an entire path. We implemented multiple instances of this node.
 
      \subsubsection{Requirments}
      \begin{enumerate}
-       \item stuff
+       \item The path finder will not suggest points in which an obstacle is known to exist
+       \item The path finder will return the points in the order in which it suggests navigating to
+             them
+       \item The path finder will update its suggestion over time as new information is provided
      \end{enumerate}
  
 \subsection{Kinect}
 
+This node is responsible for any vision processing and depth map processing that the other nodes need to accomplish their goals.  This includes things such as color detection (based on the image data) and distance detection (based on the depth map). Multiple binaries are included in this node. Each accomplishes different things. The launch file can be customized to launch the ones that are necessary for the task at hand.
+
   \subsubsection{Requirments}
   \begin{enumerate}
-    \item stuff
+    \item The Kinect node shall receive information from the Microsoft Kinect sensor
+    \item The Kinect node shall provide the image processing capabilities to any node that desires it
+    \item The Kinect node shall provide depth information to any node that desires it.
   \end{enumerate}
 
 \subsection{Costmap}
 
+This node is responsible for populating the robot's representation of the world map with places it cannot go. It will do so using information from the sensors.
+
   \subsubsection{Requirments}
   \begin{enumerate}
-    \item stuff
+    \item Costmap shall receive information from the different sensors on the robot
+    \item Costmap shall provide a list of points which the robot cannot visit.
   \end{enumerate}
        
+\subsection{Goal Planner}
 
-\subsection{A Star Search}
+This node is responsible for commanding the movement nodes in order to accomplish useful tasks. This node operates at a higher level from the other nodes and is not concerned with how the robot goes places, only that it goes to the places that goal planner commanded it to go to. Goal planner can receive sensory information in order to determine the places the robot should be going.
 
-   \subsubsection{Requirments}
-   \begin{enumerate}
-     \item stuff
-   \end{enumerate}
+  \subsubsection{Requirements}
+  \begin{enumerate}
+    \item Goal planner shall be capable of determining where the robot should go to accomplish its tasks
+    \item Goal planner shall give the movement nodes waypoints to navigate to
+  \end{enumerate}
 
 \todo[color=red,inline]{Check the definitions of new message specifications.}
-
 \section{Custom Message Specifications}
 
 \subsection{SegStatus}
