@@ -21,7 +21,9 @@ cycle.
 
 \subsubsection{Steering Algorithm}
 
-We will use the linear steering algorithm. This algorithm takes a number
+\paragraph{Steering to a Path Segment}
+
+We used the linear steering algorithm. This algorithm takes a number
 of inputs such as:
 
 \begin{itemize}
@@ -42,20 +44,13 @@ and dot these with the vectors from the start point to the current point
 $xrs*nx+yrs*ny$. We take this product and add it to $d_\theta$ to get
 the final corrected heading $-K_d*offset+K_{\theta}*d_\theta$.
 
-\subsection{Implementation}
+\paragraph{Steering to a Point}
 
-The \texttt{steering\_example.cpp} sample code was tweaked to include a
-file reader to allow us to easily modify constants $K_d$ and $K_\theta$.
-We also ended up coding a rudimentary path planner that has hard coded
-path segments.
+For the strap following demo we used a bread crumb approach to path generation. Essentially instead of coming up with an entire path based on the sensor data we use only the closest desired point. Because this does not use a segment like in the other algorithm we had to modify the algorithm a bit.
 
-\subsection{Observations}
+When steering to a point steering simply computes a line from the robot's current position to the specified point. It currently uses a constant velocity, but this could easily be changed to accelerate and decelerate and do more complicated things.
 
-We ran into several problems when trying to perfect our steering code.
-The hardest part of this demo was getting all of the previous nodes
-integrated and functioning. We had to integrate several dummy messages
-and structures to glue together everything until all the nodes can be
-completed.
+It differs from steering to a path segment in that it assumes it has no offset from the desired path only an offset in orientation. In other words it controls only spin not forward velocity.
 
 \subsection{Observations}
 
@@ -67,17 +62,4 @@ always get the desired results.
 We found that the values of $K_d=0.5$ and $K_\theta = 1.0$ worked well
 for the robot.
 
-\subsection{Future Plans}
-
-\begin{itemize}
-\item
-  Non-linear steering: We plan on replacing the linear steering
-  algorithm with the non-linear one
-\item
-  Arc path steering: We plan on generating arch path segments and
-  allowing the steering node to maintain control over these segments.
-\item
-  Python source code: We plan on porting all of our existing code to
-  python. We would like to utilize rospy for ease of programming and to
-  get rid of compile time.
-\end{itemize}
+Before spring break we had planned on implementing a non-linear steering algorithm, however, the linear algorithm functioned just fine for our purposes throughout the entire semester. There was an attempt at making a non-linear steering algorithm, however, it was not debugged and so it crashes on start up because of indexing errors. This code can be found in a previous version in our repository.
