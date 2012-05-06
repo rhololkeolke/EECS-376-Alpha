@@ -1,0 +1,97 @@
+\BOOKMARK [-1][-]{part.1}{I Overview}{}
+\BOOKMARK [0][-]{section.0.1}{Team Members and Responsibilities}{part.1}
+\BOOKMARK [1][-]{section.0.2}{Project Goals}{section.0.1}
+\BOOKMARK [1][-]{section.0.3}{Schedule and Milestones}{section.0.1}
+\BOOKMARK [1][-]{section.0.4}{Language Selection}{section.0.1}
+\BOOKMARK [1][-]{section.0.5}{Tools}{section.0.1}
+\BOOKMARK [2][-]{subsection.0.5.1}{Git}{section.0.5}
+\BOOKMARK [2][-]{subsection.0.5.2}{ROS Launch}{section.0.5}
+\BOOKMARK [2][-]{subsection.0.5.3}{Unit Testing}{section.0.5}
+\BOOKMARK [2][-]{subsection.0.5.4}{Integration Testing}{section.0.5}
+\BOOKMARK [-1][-]{part.2}{II Software Architecture}{}
+\BOOKMARK [0][-]{section.0.6}{Node Architecture}{part.2}
+\BOOKMARK [1][-]{section.0.7}{ROS Packaging and Stacks}{section.0.6}
+\BOOKMARK [1][-]{section.0.8}{Keeping the Nodes in Sync}{section.0.6}
+\BOOKMARK [1][-]{section.0.9}{Node Specifications}{section.0.6}
+\BOOKMARK [2][-]{subsection.0.9.1}{Velocity Profiler}{section.0.9}
+\BOOKMARK [2][-]{subsection.0.9.2}{Look Ahead}{section.0.9}
+\BOOKMARK [2][-]{subsection.0.9.3}{Steering}{section.0.9}
+\BOOKMARK [2][-]{subsection.0.9.4}{Path Planner}{section.0.9}
+\BOOKMARK [2][-]{subsection.0.9.5}{Path Finder}{section.0.9}
+\BOOKMARK [2][-]{subsection.0.9.6}{Kinect}{section.0.9}
+\BOOKMARK [2][-]{subsection.0.9.7}{Costmap}{section.0.9}
+\BOOKMARK [2][-]{subsection.0.9.8}{Goal Planner}{section.0.9}
+\BOOKMARK [1][-]{section.0.10}{Custom Message Specifications}{section.0.6}
+\BOOKMARK [2][-]{subsection.0.10.1}{SegStatus}{section.0.10}
+\BOOKMARK [2][-]{subsection.0.10.2}{Obstacle}{section.0.10}
+\BOOKMARK [2][-]{subsection.0.10.3}{BlobDistance}{section.0.10}
+\BOOKMARK [2][-]{subsection.0.10.4}{CentroidPoint}{section.0.10}
+\BOOKMARK [2][-]{subsection.0.10.5}{Goal}{section.0.10}
+\BOOKMARK [2][-]{subsection.0.10.6}{PathList}{section.0.10}
+\BOOKMARK [2][-]{subsection.0.10.7}{PathSegment}{section.0.10}
+\BOOKMARK [2][-]{subsection.0.10.8}{PointList}{section.0.10}
+\BOOKMARK [1][-]{section.0.11}{Topics}{section.0.6}
+\BOOKMARK [2][-]{subsection.0.11.1}{des\137vel}{section.0.11}
+\BOOKMARK [2][-]{subsection.0.11.2}{cmd\137vel}{section.0.11}
+\BOOKMARK [2][-]{subsection.0.11.3}{base\137laser1\137scan and base\137scan}{section.0.11}
+\BOOKMARK [2][-]{subsection.0.11.4}{seg\137status}{section.0.11}
+\BOOKMARK [2][-]{subsection.0.11.5}{path}{section.0.11}
+\BOOKMARK [2][-]{subsection.0.11.6}{point\137list}{section.0.11}
+\BOOKMARK [2][-]{subsection.0.11.7}{goal\137point}{section.0.11}
+\BOOKMARK [2][-]{subsection.0.11.8}{obstacles}{section.0.11}
+\BOOKMARK [2][-]{subsection.0.11.9}{motors\137enabled}{section.0.11}
+\BOOKMARK [2][-]{subsection.0.11.10}{map\137pos}{section.0.11}
+\BOOKMARK [-1][-]{part.3}{III Nodes}{}
+\BOOKMARK [0][-]{section.0.12}{Velocity Profiler}{part.3}
+\BOOKMARK [1][-]{subsection.0.12.1}{Theory of Operation}{section.0.12}
+\BOOKMARK [2][-]{subsection.0.12.2}{Implementation}{subsection.0.12.1}
+\BOOKMARK [2][-]{subsection.0.12.3}{Observations}{subsection.0.12.1}
+\BOOKMARK [2][-]{subsection.0.12.4}{Future Plans}{subsection.0.12.1}
+\BOOKMARK [1][-]{section.0.13}{Look Ahead}{section.0.12}
+\BOOKMARK [2][-]{subsection.0.13.1}{Theory of Operation}{section.0.13}
+\BOOKMARK [2][-]{subsection.0.13.2}{Observations}{section.0.13}
+\BOOKMARK [2][-]{subsection.0.13.3}{Unimplemented Functions}{section.0.13}
+\BOOKMARK [1][-]{section.0.14}{Steering Node}{section.0.12}
+\BOOKMARK [2][-]{subsection.0.14.1}{Theory of Operation}{section.0.14}
+\BOOKMARK [2][-]{subsection.0.14.2}{Observations}{section.0.14}
+\BOOKMARK [1][-]{section.0.15}{Pathplanner Node}{section.0.12}
+\BOOKMARK [2][-]{subsection.0.15.1}{Implementation}{section.0.15}
+\BOOKMARK [2][-]{subsection.0.15.2}{Observations}{section.0.15}
+\BOOKMARK [2][-]{subsection.0.15.3}{Future Plans}{section.0.15}
+\BOOKMARK [1][-]{section.0.16}{Position Publisher Node}{section.0.12}
+\BOOKMARK [2][-]{subsection.0.16.1}{Implementation}{section.0.16}
+\BOOKMARK [2][-]{subsection.0.16.2}{Observations}{section.0.16}
+\BOOKMARK [1][-]{section.0.17}{Costmap}{section.0.12}
+\BOOKMARK [2][-]{subsection.0.17.1}{Theory of Operation}{section.0.17}
+\BOOKMARK [2][-]{subsection.0.17.2}{Implementation}{section.0.17}
+\BOOKMARK [2][-]{subsection.0.17.3}{Observations}{section.0.17}
+\BOOKMARK [2][-]{subsection.0.17.4}{Future Plans}{section.0.17}
+\BOOKMARK [1][-]{section.0.18}{Goal Planner Node}{section.0.12}
+\BOOKMARK [2][-]{subsection.0.18.1}{Implementation}{section.0.18}
+\BOOKMARK [2][-]{subsection.0.18.2}{Observations}{section.0.18}
+\BOOKMARK [2][-]{subsection.0.18.3}{Future Plans}{section.0.18}
+\BOOKMARK [1][-]{section.0.19}{Kinect Node}{section.0.12}
+\BOOKMARK [2][-]{subsection.0.19.1}{Theory of Operation}{section.0.19}
+\BOOKMARK [2][-]{subsection.0.19.2}{Implementation}{section.0.19}
+\BOOKMARK [2][-]{subsection.0.19.3}{Observations}{section.0.19}
+\BOOKMARK [1][-]{section.0.20}{Astar Node}{section.0.12}
+\BOOKMARK [2][-]{subsection.0.20.1}{Theory of Operation}{section.0.20}
+\BOOKMARK [2][-]{subsection.0.20.2}{Implementation}{section.0.20}
+\BOOKMARK [2][-]{subsection.0.20.3}{Observations}{section.0.20}
+\BOOKMARK [2][-]{subsection.0.20.4}{Lessons Learned}{section.0.20}
+\BOOKMARK [1][-]{section.0.21}{Brushfire}{section.0.12}
+\BOOKMARK [2][-]{subsection.0.21.1}{Algorithm}{section.0.21}
+\BOOKMARK [2][-]{subsection.0.21.2}{Implementation}{section.0.21}
+\BOOKMARK [2][-]{subsection.0.21.3}{Observations}{section.0.21}
+\BOOKMARK [-1][-]{part.4}{IV Demo Code}{}
+\BOOKMARK [0][-]{section.0.22}{Demo 1}{part.4}
+\BOOKMARK [1][-]{section.0.23}{Demo 2}{section.0.22}
+\BOOKMARK [1][-]{section.0.24}{Demo 3}{section.0.22}
+\BOOKMARK [1][-]{section.0.25}{Demo 4}{section.0.22}
+\BOOKMARK [1][-]{section.0.26}{Obstacle Avoidance Demo}{section.0.22}
+\BOOKMARK [1][-]{section.0.27}{Kinect Demo 1}{section.0.22}
+\BOOKMARK [1][-]{section.0.28}{Kinect Demo 2}{section.0.22}
+\BOOKMARK [1][-]{section.0.29}{Final}{section.0.22}
+\BOOKMARK [-1][-]{part.5}{V Conclusion}{}
+\BOOKMARK [0][-]{section.0.30}{Acknowledgements}{part.5}
+\BOOKMARK [0][-]{appendix.A}{Git Statistics}{part.5}

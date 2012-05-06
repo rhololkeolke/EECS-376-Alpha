@@ -1,0 +1,7 @@
+<!-- Look Ahead Code -->
+<launch>
+	<node pkg="look_ahead_alpha" type="main.py" name="look_ahead_main" output="screen">
+	      <param name="box_width" type="double" value="0.5"/>
+	      <param name="box_height" type="double" value="1.0"/>
+	</node>
+</launch>

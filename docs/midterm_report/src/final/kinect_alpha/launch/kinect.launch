@@ -1,0 +1,15 @@
+<!---->
+<launch>
+
+	<!-- Kinect driver -->
+        <include file="$(find openni_launch)/launch/openni.launch" />
+        
+        <!-- Costmap launch -->
+        <include file="costmap_alpha/costmap.launch" />
+	
+        <!-- Static transform from Harlie's base to the pan mount -->
+        <node pkg="tf" type="static_transform_publisher" name="kinect_static_tf_pub" respawn="true"
+         args="0.0 0.0 1.125 0.0 .88 0.0 base_link camera_link 100" />
+	
+
+</launch>

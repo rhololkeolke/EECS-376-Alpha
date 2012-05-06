@@ -1,0 +1,4 @@
+<launch>
+	<!-- Path Publisher Node -->
+	<node pkg="pathplanner_alpha" type="main.py" name="path_publisher_main" output="screen"/>
+</launch>

@@ -1,0 +1,6 @@
+<!-- This is the main launch file for all of the velocity profiler's nodes-->
+<launch>
+
+	<!-- Main velocity profiler node -->
+	<node pkg="velocity_profiler_alpha" type="main2.py" name="velocity_profiler_main" output="screen" respawn="true"/>
+</launch>
