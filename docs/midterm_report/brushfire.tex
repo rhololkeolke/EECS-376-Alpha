@@ -1,1 +1,15 @@
 \section{Brushfire}
+
+The brushfire algorithm is responsible for generating a potential path given a list of obstacles from a rolling costmap.  The brushfire gives a best guess path based on local information by computing a distance gradient from obstacles and sticking to the points farthest from the obstacles and closest to the goal.  Unlike A* this algorithm prefers to stay away from obstacles by default. It is also less computationally intensive.
+
+\subsection{Algorithm}
+
+This node recycles many of the concepts and functions from our A* implementation.  It uses the same grid specification as the A* for its internal global grid. As the brushfire receives information from the costmap it fills in the global grid. As of now the algorithm never clears an obstacle from its global grid. The actual brushfire, however, looks a small rolling window centered around the robot. The data in the local window is what is in the global map in the area the window covers. This approach allows us to keep track of all the sensor data without taking forever to compute the brushfire values for the entire map.
+
+\subsection{Implementation}
+We implemented this starting at around 3 am the night before the final demo when we realized that we were not going to be able to get the dual costmap working in time to use our A* code.  There are a few bugs in the current version. Sometimes the sensor data does not show up in the map and so the robot will try to drive through walls. We are not sure if this is a problem with the costmap or with our transformation of map points to our internal grid representation. However, we think it may be costmap related as transforming the robot's position which is known into the grid space and then back to map space yields the correct results. Additionally the points the robot tries to drive through seem reasonable based on the overlay of the grid on the map.
+
+The second bug is that sometimes the brushfire does not follow the gradient properly. We are not sure if this a problem with the algorithm or if perhaps steering is failing to properly keep the robot on the specified path. However, we find it more likely that there is an error in the gradient following code in our brushfire node.
+
+\subsection{Observations}
+The brushfire when it worked performed much better than the A* because it did not rely on global information. It also tried to get as far from obstacles as possible by default.
