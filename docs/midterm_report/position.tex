@@ -1,38 +1,11 @@
 \section{Position Publisher Node}
 
-What do I do?
-
-\subsection{Theory of Operation}
-
-
-\subsubsection{Position Publisher Algorithm}
- This algorithm takes a number
-of inputs such as:
-
-
-\begin{itemize}
-\item
-  stuff
-\item
-  stuff
-\item
-  stuff
-\end{itemize}
-
+This node is simply around for convenience. Instead of doing the transform from odom to map in every node we simply made a node that does the transform and publishes the result.
 
 \subsection{Implementation}
 
+Originally when we were converting everything to python we did not know how to use the tf library.  So we wrote this node in C++ because we had working C++ transform code from our previous steering demo.
 
 \subsection{Observations}
 
-
-\subsection{Future Plans}
-
-\begin{itemize}
-\item
-  stuff
-\item
-  stuff
-\item
-  stuff
-\end{itemize}
+This node actually turned out to be extremely useful. When setting up the robot we could simply echo the output of this node and double check that the robot was properly localized. It also meant that all the nodes were on the exact same page as to where the robot was at. The tf code will transform through time and so if the nodes were using time stamps we might have had discrepancy in transform information as the robot moved.
