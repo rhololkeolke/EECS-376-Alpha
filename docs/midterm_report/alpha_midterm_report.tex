@@ -1,4 +1,4 @@
-\documentclass[10pt,letterpaper,draft]{report}
+\documentclass[10pt,letterpaper,final]{report}
 \usepackage[utf8]{inputenc} \usepackage{amsmath} \usepackage{amsfonts}
 \usepackage{hyperref}
 \usepackage{ctable}
@@ -20,7 +20,7 @@
   David Jannotta\\
   Eddie Massey III}
 \title{EECS 376/476 Mobile Robotics\\
-  Team Alpha Midterm Report} \date{May 3, 2012}
+  Team Alpha Final Report} \date{May 5, 2012}
 \begin{document}
 \bibliographystyle{IEEEtran}
 \listoftodos
@@ -50,6 +50,42 @@ Our team would like to express our appreciation for the class and all that we le
 
 \appendix
 \chapter{Git Statistics}
+
+These are graphs generated from data in our git repository. The numbers can be used as a guide for who contributed what. However, the numbers should not be taken at face value.  For one not all of the code committed was used. Some branches were essentially abandoned when they did not pan out. Secondly multiple computers were used during the development including alpha. Alpha was the shared computer in the lab so those commits could have come from anyone. Still it is interesting to see the data trends. Especially the commits vs days of the week and the commits vs hours.
+
+\FloatBarrier
+\begin{figure}[h]
+  \centering
+  \includegraphics{images/commits_by_author.png}
+  \caption{Commits by Author}
+\end{figure}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics{images/lines_of_code_by_author.png}
+  \caption{Lines of code by author}
+\end{figure}
+
+
+\begin{figure}[h]
+  \centering
+  \includegraphics{images/day_of_week.png}
+  \caption{Commits per Day of the Week}
+\end{figure}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics{images/hour_of_day.png}
+  \caption{Commits by hour of the day}
+\end{figure}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics{images/files_by_date.png}
+  \caption{Number of Files vs Date}
+\end{figure}
+
+
 
 
 \end{document}
