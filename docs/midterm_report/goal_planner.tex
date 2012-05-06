@@ -1,39 +1,14 @@
 \section{Goal Planner Node}
-
-What do I do?
-
-\subsection{Theory of Operation}
-
+The purpose of the goal planner is to pass the robot waypoints. While the path planner and point publisher are responsible for ensuring that the path is accurate, the goal planner determines the waypoints of the path itself. 
 
 \subsubsection{Goal Planning Algorithm}
- This algorithm takes a number
-of inputs such as:
-
-
-\begin{itemize}
-\item
-  stuff
-\item
-  stuff
-\item
-  stuff
-\end{itemize}
-
+There is no perscribed algorithm for goal planning. The way points were hard coded into the program, as they are points within the hallway that the robot is calculating paths to. There were three points, the first being the corner before the objective (1), one slightly up the hall after (2), so that the robot would turn down the hall by the vending machines, then the last was in front of the door to the lab, which was our final objective (3).
 
 \subsection{Implementation}
-
-
+The predetermined goal points are imported from a csv file, then put in a list. The top element of the list is then published when necessary. The goal planner takes in data from the postion publisher, so that when it reaches a point in the map, it will begin to publish the next goal point. When the second point had been reached, and the robot was facing down the hall toward the vending machines, the kinect portion of the obstacle avoidance was swtiched off, and a color finding grid, similar to that of the strap following demo was implemented. Thus the goal, the magnet, would be detected and its point driven to, instead of being avoided.
 
 \subsection{Observations}
-
+This ultimately worked very well for us, as the waypoints controlled where the robot went, while the obstacle avoidance code and the path planner determined exactly how it got there. This became very important when our astar class failed to work directly before the deadline, as the robot would still reach it's goal, we just needed to find another way to determine that there were obstacles in the way.
 
 \subsection{Future Plans}
-
-\begin{itemize}
-\item
-  stuff
-\item
-  stuff
-\item
-  stuff
-\end{itemize}
+The predetermined path is a somewhat basic. In the next itteration of the goal planning node, we would like the ability to have the goal planner dynamically determine the path, or allow a user determine the path using an interface. This would allow the robot to be used in almost area, as it would not need a gobal map, only a coordinate to drive to. While this particular demo would require map data, it is possible that GPS coordinates could be used to determine the goals.
