@@ -1,42 +1,30 @@
 \part{Overview}
 
 \section{Team Members and Responsibilities}
+\todo[color=green,inline]{Update the group responsibilities}
 
 The members of the alpha team and their respective roles are:
 
-Devin Schwab - Group Leader, Velocity Profiler, A* Search
+Devin Schwab - Group Leader, Velocity Profiler/Brushfire, A* Search
 
-Mark Shultz - Steering, Kinect Sensor, Costmap
+Mark Shultz - Steering, Kinect Sensor, Costmap, Brushfire
 
-David Jannotta - Path Planning
+David Jannotta - Path Planning, Goal Planner
 
-Eddie Massey III - Sensors\\
+Eddie Massey III - Look Ahead, A* Search\\
 
-Each team member was given a specific node to work on.  This allows us
-to work in parallel as the interfaces to our nodes are defined in the
-software architecture. Along with the main tasks various other tasks
-have been assigned.
+In general each team member was given a specific node to work on. This allowed us to work in parallel as the interfaces to our nodes were defined prior to each node being created. However, there was some overlap between who worked on what node based on group member's expertise and availability.  For instance the Brushfire node was worked on by both Mark and Devin.
 
-For instance Eddie has been tasked with creating a ROS Launch file
-(see Tools section) and Mark has been tasked with creating our package
-structure (see Packaging and Stacks section).
-
+In addition to the actual coding work various other tasks were assigned. This included things like the creation of launch files, the collection of bag files and documentation.
 
 \section{Project Goals}
-\todo[color=blue,inline]{Should the goal be changed?}
-The main goal for the semester is to program a robot that is capable
-of taking in sensory information from the environment and then use
-that information to autonomously plan goals and execute them.  To
-accomplish this overall goal multiple capabilities will need to be
-added to the robot.  These capabilities include:
+The main goal for this semester was the final project. The final project involved navigating through an environment with unknown obstacles to a piece of metal, picking up the piece of metal and navigating back to the start. To accomplish this the robot needed the following capabilities:
 
 \begin{enumerate}
-\item Take in goal destinations and calculate a path based on stored
-  map information and current location
-\item Autocorrect path when obstacles are detected
-\item Correct trajectory using a steering algorithm
-\item Detect objects using the Kinect camera and autonomously plan
-  actions based on the data
+     \item Take in goal destination and calculate a path to the location based on stored map information and current location
+     \item Detect objects using sensors such as the Microsoft Kinect
+     \item Update the overall plan as new obstacles are detected
+     \item Calculate a trajectory along the desired path
 \end{enumerate}
 
 \todo[color=green,inline]{Fill out more information about each subtask}
@@ -65,7 +53,6 @@ After spring break we refactored our code in python and sought to farmiliarize o
 
 \section{Tools}
 
-
 \subsection{Git}
 
 In order to keep track of the different versions of our source files
@@ -86,7 +73,7 @@ demo is merged into master and tagged for future reference.
 
 \input{ros_launch}
 
-\todo[color=blue,inline]{Is GTest still necessary?}
+\todo[color=red,inline]{Replace with a section on Pytest and integration tests}
 \subsection{GTest}
 
 GTest is Google's C++ Unit testing
