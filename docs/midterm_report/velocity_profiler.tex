@@ -65,8 +65,15 @@ In order to test this algorithm a number of matlab scripts that plot the results
 
 The code used to generate this figure is included in the report, but you can view the repository at \url{https://github.com/rhololkeolke/Velocity-Profiler-Simulations/}
 
+\subsection{Implementation}
+
+For the original barrel avoiding code the arc code was implemented. However, the implementation of the node itself had many bugs.  In the second version we were going to implement the arc propagation algorithm, however, the steering did such a good job of smoothing the linear segments that we did not end up using arc segments in path planner. For this reason reimplementing and debugging the algorithm's implementation in our node was not a priority.
+
 \subsection{Observations}
 
 Keeping track of segment completion the way velocity profile does allows our path planner to be a little sloppy in the path segments its publishing. The path segments don't have to start exactly where the robot is at and there can be small gaps and offsets between the different path segments. Steering will correct any path offsets and orientation errors and the velocity profiler will simply keep track of how close it is to the end along the specified segment.
 
 As mentioned in the algorithm description having a hard cutoff between negative and positive segment distance done values for arcs and spins can cause problems for long segments. One way to solve this is to use short segments like we did. Another way is to combine the original integration algorithm with our current algorithm. At the beginning of the algorithm the integration data is really accurate, however, as the robot moves the integration data gets less and less error. To account for this each algorithm could be used in something like a Kalman filter or particle filter. At the beginning of the segment the ``believability'' of the integration will be very high and will dominate, as the robot moves this believability will decay and eventually the new algorithm will dominate.
+
+\subsection{Future Plans}
+If we continued working on this then we would like to implement the arc code.
